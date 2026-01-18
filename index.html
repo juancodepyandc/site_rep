@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Atelier Électronique Premium</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+</head>
+<body>
+<header>
+  <h1>Atelier Électronique Premium</h1>
+  <p>Réparation électronique & PC sur mesure</p>
+</header>
+
+<section id="accueil">
+  <h2>Services</h2>
+  <div class="cards">
+    <div class="card">Réparation PC</div>
+    <div class="card">Réparation Mobile</div>
+    <div class="card">PC sur mesure</div>
+  </div>
+</section>
+
+<section id="pc-repair">
+  <h2>Réparation PC</h2>
+  <form id="form-pc">
+    <input type="text" name="from_name" placeholder="Votre nom" required />
+    <input type="email" name="reply_to" placeholder="Votre email" required />
+    <select name="probleme">
+      <option>Écran</option>
+      <option>Carte mère</option>
+      <option>Logiciel</option>
+      <option>Autre</option>
+    </select>
+    <textarea name="description" placeholder="Description détaillée" required></textarea>
+    <button type="submit">Demander un devis</button>
+  </form>
+</section>
+
+<section id="mobile-repair">
+  <h2>Réparation Mobile</h2>
+  <form id="form-mobile">
+    <input type="text" name="from_name" placeholder="Votre nom" required />
+    <input type="email" name="reply_to" placeholder="Votre email" required />
+    <select name="appareil">
+      <option>Android</option>
+      <option>iPhone</option>
+    </select>
+    <textarea name="description" placeholder="Description détaillée" required></textarea>
+    <button type="submit">Demander un devis</button>
+  </form>
+</section>
+
+<section id="contact">
+  <h2>Contact & Support</h2>
+  <form id="form-contact">
+    <input type="text" name="from_name" placeholder="Votre nom" required />
+    <input type="email" name="reply_to" placeholder="Votre email" required />
+    <textarea name="message" placeholder="Votre demande" required></textarea>
+    <button type="submit">Envoyer</button>
+  </form>
+</section>
+
+<footer>
+  <p>© Atelier Électronique Premium</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
