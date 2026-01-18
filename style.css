@@ -1,0 +1,14 @@
+*{box-sizing:border-box;font-family:Inter,Arial,sans-serif}
+body{margin:0;background:#0e0e11;color:#fff}
+header{padding:40px;text-align:center;background:#14141a}
+section{padding:40px;max-width:900px;margin:auto}
+h2{margin-bottom:20px}
+.cards{display:flex;gap:20px;flex-wrap:wrap}
+.card{flex:1;padding:30px;background:#1c1c24;border-radius:12px;text-align:center}
+form{display:flex;flex-direction:column;gap:12px}
+input,select,textarea,button{padding:12px;border-radius:8px;border:none}
+input,select,textarea{background:#222;color:#fff}
+button{background:#5a7cff;color:#fff;font-weight:600;cursor:pointer}
+button:hover{background:#6f8cff}
+footer{text-align:center;padding:20px;color:#aaa}
+@media(max-width:700px){.cards{flex-direction:column}}
