@@ -2,70 +2,533 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Atelier Électronique Premium</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atelier Électronique — Réparation & PC sur mesure</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="style.css" />
+
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 </head>
+
 <body>
-<header>
-  <h1>Atelier Électronique Premium</h1>
-  <p>Réparation électronique & PC sur mesure</p>
-</header>
-
-<section id="accueil">
-  <h2>Services</h2>
-  <div class="cards">
-    <div class="card">Réparation PC</div>
-    <div class="card">Réparation Mobile</div>
-    <div class="card">PC sur mesure</div>
+  <div class="bg">
+    <div class="blob b1" aria-hidden="true"></div>
+    <div class="blob b2" aria-hidden="true"></div>
+    <div class="grid" aria-hidden="true"></div>
   </div>
-</section>
 
-<section id="pc-repair">
-  <h2>Réparation PC</h2>
-  <form id="form-pc">
-    <input type="text" name="from_name" placeholder="Votre nom" required />
-    <input type="email" name="reply_to" placeholder="Votre email" required />
-    <select name="probleme">
-      <option>Écran</option>
-      <option>Carte mère</option>
-      <option>Logiciel</option>
-      <option>Autre</option>
-    </select>
-    <textarea name="description" placeholder="Description détaillée" required></textarea>
-    <button type="submit">Demander un devis</button>
-  </form>
-</section>
+  <header class="topbar">
+    <div class="container topbar__inner">
+      <a class="brand" href="#" data-nav="home" aria-label="Aller à l'accueil">
+        <span class="brand__mark" aria-hidden="true">AE</span>
+        <span class="brand__text">
+          <span class="brand__name">Atelier Électronique</span>
+          <span class="brand__tag">Réparation & PC sur mesure</span>
+        </span>
+      </a>
 
-<section id="mobile-repair">
-  <h2>Réparation Mobile</h2>
-  <form id="form-mobile">
-    <input type="text" name="from_name" placeholder="Votre nom" required />
-    <input type="email" name="reply_to" placeholder="Votre email" required />
-    <select name="appareil">
-      <option>Android</option>
-      <option>iPhone</option>
-    </select>
-    <textarea name="description" placeholder="Description détaillée" required></textarea>
-    <button type="submit">Demander un devis</button>
-  </form>
-</section>
+      <nav class="nav">
+        <button class="nav__toggle" id="navToggle" aria-label="Ouvrir le menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
 
-<section id="contact">
-  <h2>Contact & Support</h2>
-  <form id="form-contact">
-    <input type="text" name="from_name" placeholder="Votre nom" required />
-    <input type="email" name="reply_to" placeholder="Votre email" required />
-    <textarea name="message" placeholder="Votre demande" required></textarea>
-    <button type="submit">Envoyer</button>
-  </form>
-</section>
+        <div class="nav__links" id="navLinks">
+          <a href="#accueil" data-nav="home" class="nav__link is-active">Accueil</a>
+          <a href="#reparation-pc" data-nav="pc" class="nav__link">Réparation PC</a>
+          <a href="#reparation-mobile" data-nav="mobile" class="nav__link">Réparation Mobile</a>
+          <a href="#pc-sur-mesure" data-nav="custom" class="nav__link">PC sur mesure</a>
+          <a href="#contact" data-nav="contact" class="nav__link">Contact</a>
+        </div>
+      </nav>
+    </div>
+  </header>
 
-<footer>
-  <p>© Atelier Électronique Premium</p>
-</footer>
+  <main class="main">
+    <section class="view is-active" id="view-home" data-view="home">
+      <div class="container hero">
+        <div class="hero__left reveal">
+          <div class="pill">
+            <span class="dot"></span>
+            Atelier technique — diagnostic clair, réponse rapide
+          </div>
 
-<script src="script.js"></script>
+          <h1 class="hero__title">
+            Réparation électronique fiable,
+            <span class="accent">PC premium</span> sur mesure.
+          </h1>
+
+          <p class="hero__subtitle">
+            Ici, pas de jargon inutile : on explique, on documente, on propose un devis net.
+            Que ce soit un PC qui ne démarre plus, un smartphone capricieux, ou une configuration gamer/creator,
+            l’objectif est simple : un résultat propre, durable, et sans surprise.
+          </p>
+
+          <div class="hero__cta">
+            <button class="btn btn--primary" data-nav="pc">Demander un devis PC</button>
+            <button class="btn btn--ghost" data-nav="custom">Simuler mon PC sur mesure</button>
+          </div>
+
+          <div class="trust">
+            <div class="trust__item">
+              <span class="trust__kpi">Diagnostic</span>
+              <span class="trust__txt">transparent et détaillé</span>
+            </div>
+            <div class="trust__item">
+              <span class="trust__kpi">Devis</span>
+              <span class="trust__txt">clair avant intervention</span>
+            </div>
+            <div class="trust__item">
+              <span class="trust__kpi">Atelier</span>
+              <span class="trust__txt">soin & finitions premium</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero__right reveal">
+          <div class="showcase">
+            <div class="showcase__card">
+              <div class="showcase__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M4 6.5h16v9H4v-9Z" stroke="currentColor" stroke-width="1.6" />
+                  <path d="M8 18h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                  <path d="M10 15.5h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="showcase__title">Réparation PC</div>
+                <div class="showcase__desc">Pannes, lenteurs, surchauffe, récupération…</div>
+              </div>
+              <button class="chip" data-nav="pc">Ouvrir</button>
+            </div>
+
+            <div class="showcase__card">
+              <div class="showcase__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M8 3h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.6"/>
+                  <path d="M10 18h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="showcase__title">Réparation Mobile</div>
+                <div class="showcase__desc">Écran, batterie, connecteur, diagnostics.</div>
+              </div>
+              <button class="chip" data-nav="mobile">Ouvrir</button>
+            </div>
+
+            <div class="showcase__card">
+              <div class="showcase__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M7 7h10v10H7V7Z" stroke="currentColor" stroke-width="1.6"/>
+                  <path d="M9 3v4M15 3v4M9 17v4M15 17v4M3 9h4M3 15h4M17 9h4M17 15h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div class="showcase__title">PC sur mesure</div>
+                <div class="showcase__desc">Simulation, cohérence, devis immédiat.</div>
+              </div>
+              <button class="chip" data-nav="custom">Ouvrir</button>
+            </div>
+          </div>
+
+          <div class="note reveal">
+            <div class="note__title">Approche atelier</div>
+            <p class="note__text">
+              On privilégie la fiabilité, le propre et le durable : nettoyage, repaste, tests, optimisation,
+              et conseils adaptés à ton usage réel (bureautique, gaming, création, étude).
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-pc" data-view="pc">
+      <div class="container section">
+        <div class="section__head reveal">
+          <h2 class="section__title">Réparation PC</h2>
+          <p class="section__subtitle">
+            Décris précisément le symptôme : plus tu donnes d’infos, plus le diagnostic est rapide et pertinent.
+          </p>
+        </div>
+
+        <div class="panel reveal">
+          <form id="form-pc" class="form">
+            <div class="form__grid">
+              <div class="field">
+                <label>Nom</label>
+                <input type="text" name="from_name" placeholder="Ex : Juan" required />
+              </div>
+
+              <div class="field">
+                <label>Email</label>
+                <input type="email" name="reply_to" placeholder="Ex : nom@domaine.fr" required />
+              </div>
+
+              <div class="field">
+                <label>Type de problème</label>
+                <select name="pc_issue" required>
+                  <option value="" disabled selected>Choisir…</option>
+                  <option>Démarrage / écran noir</option>
+                  <option>Lenteur / freezes</option>
+                  <option>Surchauffe / ventilateurs</option>
+                  <option>Stockage / données</option>
+                  <option>Virus / système</option>
+                  <option>Port(s) / connectique</option>
+                  <option>Autre</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>Urgence</label>
+                <select name="urgency" required>
+                  <option value="" disabled selected>Choisir…</option>
+                  <option>Standard</option>
+                  <option>Prioritaire (besoin rapide)</option>
+                  <option>Très urgent (jour même si possible)</option>
+                </select>
+              </div>
+
+              <div class="field field--full">
+                <label>Modèle du PC / composants connus</label>
+                <input type="text" name="pc_model" placeholder="Ex : Lenovo Legion 5 / i7-12700H / RTX 3060…" required />
+              </div>
+
+              <div class="field field--full">
+                <label>Description très détaillée</label>
+                <textarea name="description" rows="7" placeholder="Ce que tu faisais au moment de la panne, messages d’erreur, températures, bruit, dernière mise à jour, chute, liquide, etc." required></textarea>
+              </div>
+            </div>
+
+            <div class="form__actions">
+              <button class="btn btn--primary" type="submit">
+                Demander un devis
+              </button>
+              <div class="form__hint" id="pcStatus" aria-live="polite"></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-mobile" data-view="mobile">
+      <div class="container section">
+        <div class="section__head reveal">
+          <h2 class="section__title">Réparation Mobile</h2>
+          <p class="section__subtitle">
+            Écran, batterie, charge, diagnostics : on te répond avec une estimation claire et réaliste.
+          </p>
+        </div>
+
+        <div class="panel reveal">
+          <form id="form-mobile" class="form">
+            <div class="form__grid">
+              <div class="field">
+                <label>Nom</label>
+                <input type="text" name="from_name" placeholder="Ex : Juan" required />
+              </div>
+
+              <div class="field">
+                <label>Email</label>
+                <input type="email" name="reply_to" placeholder="Ex : nom@domaine.fr" required />
+              </div>
+
+              <div class="field">
+                <label>Type d’appareil</label>
+                <select name="device_type" required>
+                  <option value="" disabled selected>Choisir…</option>
+                  <option>iPhone</option>
+                  <option>Android</option>
+                  <option>Tablette</option>
+                  <option>Autre</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>Problème rencontré</label>
+                <select name="mobile_issue" required>
+                  <option value="" disabled selected>Choisir…</option>
+                  <option>Écran cassé / tactile</option>
+                  <option>Batterie</option>
+                  <option>Charge (port / câble)</option>
+                  <option>Caméra / audio</option>
+                  <option>Réseau / Wi-Fi / Bluetooth</option>
+                  <option>Diagnostic (ne s’allume pas)</option>
+                  <option>Autre</option>
+                </select>
+              </div>
+
+              <div class="field field--full">
+                <label>Modèle</label>
+                <input type="text" name="model" placeholder="Ex : iPhone 13 / Samsung S22 / iPad…" required />
+              </div>
+
+              <div class="field field--full">
+                <label>Description libre</label>
+                <textarea name="description" rows="7" placeholder="Décris les symptômes, depuis quand, après quoi, et tout détail utile." required></textarea>
+              </div>
+            </div>
+
+            <div class="form__actions">
+              <button class="btn btn--primary" type="submit">Demander un devis</button>
+              <div class="form__hint" id="mobileStatus" aria-live="polite"></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-custom" data-view="custom">
+      <div class="container section">
+        <div class="section__head reveal">
+          <h2 class="section__title">Création de PC sur mesure</h2>
+          <p class="section__subtitle">
+            On construit un PC cohérent, optimisé et propre, adapté à ton usage.
+            <strong>Prix de base affiché : 20&nbsp;€</strong>.
+            Le prix peut augmenter selon <strong>watercooling</strong>, <strong>câble management</strong> et <strong>personnalisation</strong>.
+          </p>
+        </div>
+
+        <div class="layout">
+          <div class="panel reveal">
+            <div class="panel__title">Simulateur de configuration</div>
+
+            <form id="form-custom" class="form form--compact" autocomplete="off">
+              <div class="form__grid">
+                <div class="field">
+                  <label>Processeur</label>
+                  <select id="cpu" required>
+                    <option value="" disabled selected>Choisir…</option>
+                    <option value="Intel Core i5-13400F|1700|210">Intel Core i5-13400F</option>
+                    <option value="Intel Core i7-14700K|1700|430">Intel Core i7-14700K</option>
+                    <option value="AMD Ryzen 5 7600|AM5|240">AMD Ryzen 5 7600</option>
+                    <option value="AMD Ryzen 7 7800X3D|AM5|390">AMD Ryzen 7 7800X3D</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label>Carte mère</label>
+                  <select id="mobo" required>
+                    <option value="" disabled selected>Choisir…</option>
+                    <option value="B760 (DDR5)|1700|160">B760 (DDR5)</option>
+                    <option value="Z790 (DDR5)|1700|260">Z790 (DDR5)</option>
+                    <option value="B650 (DDR5)|AM5|180">B650 (DDR5)</option>
+                    <option value="X670 (DDR5)|AM5|290">X670 (DDR5)</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label>RAM</label>
+                  <select id="ram" required>
+                    <option value="" disabled selected>Choisir…</option>
+                    <option value="16 Go DDR5|16|60">16 Go DDR5</option>
+                    <option value="32 Go DDR5|32|110">32 Go DDR5</option>
+                    <option value="64 Go DDR5|64|210">64 Go DDR5</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label>Carte graphique</label>
+                  <select id="gpu" required>
+                    <option value="" disabled selected>Choisir…</option>
+                    <option value="RTX 4060|115|330">RTX 4060</option>
+                    <option value="RTX 4070 SUPER|220|650">RTX 4070 SUPER</option>
+                    <option value="RTX 4080 SUPER|320|1100">RTX 4080 SUPER</option>
+                    <option value="RX 7800 XT|260|560">RX 7800 XT</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label>Stockage</label>
+                  <select id="storage" required>
+                    <option value="" disabled selected>Choisir…</option>
+                    <option value="SSD NVMe 1 To|1|85">SSD NVMe 1 To</option>
+                    <option value="SSD NVMe 2 To|2|140">SSD NVMe 2 To</option>
+                    <option value="SSD 1 To + HDD 2 To|3|155">SSD 1 To + HDD 2 To</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label>Alimentation</label>
+                  <select id="psu" required>
+                    <option value="" disabled selected>Choisir…</option>
+                    <option value="650W Gold|650|95">650W Gold</option>
+                    <option value="750W Gold|750|115">750W Gold</option>
+                    <option value="850W Gold|850|140">850W Gold</option>
+                    <option value="1000W Gold|1000|190">1000W Gold</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label>Boîtier</label>
+                  <select id="case" required>
+                    <option value="" disabled selected>Choisir…</option>
+                    <option value="Airflow compact|0|80">Airflow compact</option>
+                    <option value="Airflow moyen tour|0|110">Airflow moyen tour</option>
+                    <option value="Premium vitré|0|160">Premium vitré</option>
+                  </select>
+                </div>
+
+                <div class="field field--full">
+                  <label class="check">
+                    <input type="checkbox" id="customCables" />
+                    <span>Câbles personnalisés (option)</span>
+                  </label>
+                </div>
+
+                <div class="field field--full">
+                  <label class="check">
+                    <input type="checkbox" id="watercooling" />
+                    <span>Watercooling / AIO (option)</span>
+                  </label>
+                </div>
+
+                <div class="field field--full">
+                  <label class="check">
+                    <input type="checkbox" id="cableMgmt" />
+                    <span>Câble management premium (option)</span>
+                  </label>
+                </div>
+
+                <div class="field field--full">
+                  <label>Ton usage (pour affiner le devis)</label>
+                  <select id="usage" required>
+                    <option value="" disabled selected>Choisir…</option>
+                    <option>Jeu (1080p / 1440p)</option>
+                    <option>Jeu (4K)</option>
+                    <option>Création (montage / 3D / IA)</option>
+                    <option>Bureautique / étude</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="quote">
+                <div class="quote__top">
+                  <div class="quote__title">Estimation</div>
+                  <div class="price">
+                    <span class="price__label">Total estimé</span>
+                    <span class="price__value" id="price">—</span>
+                  </div>
+                </div>
+
+                <div class="alerts" id="alerts" role="status" aria-live="polite"></div>
+
+                <div class="quote__actions">
+                  <div class="small">
+                    Processus : simule ta configuration → clique sur <strong>Envoyer mon devis</strong>.
+                    Tu recevras ensuite une réponse personnalisée (options, cohérence, délais).
+                  </div>
+
+                  <div class="btnrow">
+                    <button class="btn btn--ghost" type="button" id="resetCustom">Réinitialiser</button>
+                    <button class="btn btn--primary" type="submit" id="sendCustom">Envoyer mon devis</button>
+                  </div>
+
+                  <div class="form__hint" id="customStatus" aria-live="polite"></div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <aside class="side reveal">
+            <div class="side__card">
+              <div class="side__title">Ce que tu obtiens</div>
+              <ul class="side__list">
+                <li>Montage propre et testé</li>
+                <li>Optimisation airflow & températures</li>
+                <li>Conseils réglages + drivers</li>
+                <li>Finitions premium si souhaité</li>
+              </ul>
+            </div>
+
+            <div class="side__card">
+              <div class="side__title">Prix de base</div>
+              <div class="side__big">20 €</div>
+              <div class="side__muted">
+                Le prix peut augmenter selon watercooling, câble management et personnalisation.
+              </div>
+            </div>
+
+            <div class="side__card">
+              <div class="side__title">Conseil</div>
+              <div class="side__muted">
+                Si tu hésites, envoie quand même un devis : on te propose une configuration cohérente
+                selon ton budget et ton usage.
+              </div>
+              <button class="btn btn--primary btn--full" data-nav="contact">Parler au support</button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-contact" data-view="contact">
+      <div class="container section">
+        <div class="section__head reveal">
+          <h2 class="section__title">Service client</h2>
+          <p class="section__subtitle">
+            Question, demande particulière, suivi : on te répond proprement, avec des infos vérifiables.
+          </p>
+        </div>
+
+        <div class="panel reveal">
+          <form id="form-contact" class="form">
+            <div class="form__grid">
+              <div class="field">
+                <label>Nom</label>
+                <input type="text" name="from_name" placeholder="Ex : Juan" required />
+              </div>
+
+              <div class="field">
+                <label>Email</label>
+                <input type="email" name="reply_to" placeholder="Ex : nom@domaine.fr" required />
+              </div>
+
+              <div class="field">
+                <label>Type de demande</label>
+                <select name="topic" required>
+                  <option value="" disabled selected>Choisir…</option>
+                  <option>Autres demandes</option>
+                  <option>Support client</option>
+                  <option>Suivi d’un devis</option>
+                  <option>Partenariat / pro</option>
+                </select>
+              </div>
+
+              <div class="field field--full">
+                <label>Message</label>
+                <textarea name="message" rows="8" placeholder="Détaille ton besoin, ton matériel, et ton objectif." required></textarea>
+              </div>
+            </div>
+
+            <div class="form__actions">
+              <button class="btn btn--primary" type="submit">Envoyer</button>
+              <div class="form__hint" id="contactStatus" aria-live="polite"></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="footer__left">
+        <div class="footer__brand">Atelier Électronique</div>
+        <div class="footer__muted">Réparation électronique & création PC sur mesure.</div>
+      </div>
+
+      <div class="footer__right">
+        <button class="chip chip--dark" data-nav="home">Retour haut</button>
+        <span class="footer__muted">© <span id="year"></span></span>
+      </div>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="script.js"></script>
 </body>
 </html>
