@@ -1,4 +1,4 @@
-(function initEmailJS(){
+(function(){
   emailjs.init("FNOmFW1q3gEntsR0J");
 })();
 
@@ -6,20 +6,20 @@ const SERVICE_ID = "service_8r68jtk";
 const TEMPLATE_ID = "template_sd7paiv";
 const TO_EMAIL = "rabuteaujuandavid@gmail.com";
 
-const $ = (sel, root=document) => root.querySelector(sel);
-const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-function toast(text){
+function toast(t){
   const el = $("#toast");
-  el.textContent = text;
+  el.textContent = t;
   el.classList.add("is-show");
-  window.clearTimeout(toast._t);
-  toast._t = window.setTimeout(()=> el.classList.remove("is-show"), 2500);
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=> el.classList.remove("is-show"), 2600);
 }
 
-function setStatus(id, text){
+function setStatus(id, txt){
   const el = document.getElementById(id);
-  if(el) el.textContent = text || "";
+  if(el) el.textContent = txt || "";
 }
 
 const navToggle = $("#navToggle");
@@ -43,7 +43,7 @@ function revealInView(){
   if(!active) return;
   $$(".reveal", active).forEach((el, i)=>{
     el.classList.remove("is-in");
-    window.setTimeout(()=> el.classList.add("is-in"), 60 + i*55);
+    setTimeout(()=> el.classList.add("is-in"), 90 + i*70);
   });
 }
 
@@ -60,10 +60,12 @@ links.forEach(a => a.addEventListener("click", (e)=>{
   showView(e.currentTarget.dataset.nav);
 }));
 
-$$("[data-nav]").forEach(btn=>{
-  btn.addEventListener("click", (e)=>{
+$$("[data-nav]").forEach(el=>{
+  el.addEventListener("click", (e)=>{
+    const key = e.currentTarget.dataset.nav;
+    if(!key) return;
     e.preventDefault();
-    showView(e.currentTarget.dataset.nav);
+    showView(key);
   });
 });
 
@@ -72,19 +74,13 @@ revealInView();
 async function sendEmail({subject, from_name, reply_to, message, statusElId}){
   try{
     setStatus(statusElId, "Envoi en cours…");
-    await emailjs.send(SERVICE_ID, TEMPLATE_ID, {
-      subject,
-      from_name,
-      reply_to,
-      message,
-      to_email: TO_EMAIL
-    });
+    await emailjs.send(SERVICE_ID, TEMPLATE_ID, { subject, from_name, reply_to, message, to_email: TO_EMAIL });
     setStatus(statusElId, "Envoyé. Réponse dès que possible.");
     toast("Demande envoyée ✅");
     return true;
   }catch(err){
     console.error(err);
-    setStatus(statusElId, "Erreur d’envoi. Vérifie ton email et réessaye.");
+    setStatus(statusElId, "Erreur d’envoi. Réessaye.");
     toast("Erreur d’envoi ❌");
     return false;
   }
@@ -115,16 +111,12 @@ document.getElementById("form-contact").addEventListener("submit", async (e)=>{
   e.preventDefault();
   const form = e.currentTarget;
   const fd = new FormData(form);
-
-  const message =
-    `topic : ${fd.get("topic")}\n` +
-    `message : ${fd.get("message")}`;
-
+  const msg = `topic : ${fd.get("topic")}\nmessage : ${fd.get("message")}`;
   const ok = await sendEmail({
     subject: `Service client — ${fd.get("topic")}`,
     from_name: fd.get("from_name"),
     reply_to: fd.get("reply_to"),
-    message,
+    message: msg,
     statusElId: "contactStatus"
   });
   if(ok) form.reset();
@@ -147,51 +139,61 @@ const usageEl = $("#usage");
 const priceEl = $("#price");
 const alertsEl = $("#alerts");
 
-function parseOptionValue(raw){
-  const parts = raw.split("|");
-  return { label: parts[0], meta: parts[1] || "", price: Number(parts[2] || 0) };
-}
-function getSelected(el){ return (el && el.value) ? parseOptionValue(el.value) : null; }
-function formatEuro(n){ return new Intl.NumberFormat("fr-FR", {style:"currency", currency:"EUR"}).format(n); }
-function clearAlerts(){ alertsEl.innerHTML = ""; }
-function pushAlert(type, text){
-  const div = document.createElement("div");
-  div.className = `alert ${type}`;
-  div.textContent = text;
-  alertsEl.appendChild(div);
+function parseValue(raw){
+  const p = raw.split("|");
+  return { label: p[0], meta: p[1] || "", price: Number(p[2] || 0) };
 }
 
-function computeTotal(){
-  const cpu = getSelected(cpuEl);
-  const mobo = getSelected(moboEl);
-  const ram = getSelected(ramEl);
-  const gpu = getSelected(gpuEl);
-  const storage = getSelected(storageEl);
-  const psu = getSelected(psuEl);
-  const casev = getSelected(caseEl);
+function selected(el){
+  return (el && el.value) ? parseValue(el.value) : null;
+}
+
+function euro(n){
+  return new Intl.NumberFormat("fr-FR", {style:"currency", currency:"EUR"}).format(n);
+}
+
+function clearAlerts(){
+  alertsEl.innerHTML = "";
+}
+
+function alertBox(type, text){
+  const d = document.createElement("div");
+  d.className = `alert ${type}`;
+  d.textContent = text;
+  alertsEl.appendChild(d);
+}
+
+function compute(){
+  const cpu = selected(cpuEl);
+  const mobo = selected(moboEl);
+  const ram = selected(ramEl);
+  const gpu = selected(gpuEl);
+  const storage = selected(storageEl);
+  const psu = selected(psuEl);
+  const casev = selected(caseEl);
 
   if(!cpu || !mobo || !ram || !gpu || !storage || !psu || !casev || !usageEl.value){
     priceEl.textContent = "—";
     clearAlerts();
-    pushAlert("warn", "Choisis tous les composants pour obtenir une estimation fiable.");
+    alertBox("warn", "Choisis tous les composants pour obtenir une estimation fiable.");
     return { ready:false, total:0, warnings:["Choix incomplets"] };
   }
 
   const optCables = customCablesEl.checked ? 35 : 0;
   const optWater = watercoolingEl.checked ? 90 : 0;
-  const optCableMgmt = cableMgmtEl.checked ? 25 : 0;
+  const optCable = cableMgmtEl.checked ? 25 : 0;
 
-  const partsTotal = cpu.price + mobo.price + ram.price + gpu.price + storage.price + psu.price + casev.price;
-  const total = BASE_PRICE + partsTotal + optCables + optWater + optCableMgmt;
+  const parts = cpu.price + mobo.price + ram.price + gpu.price + storage.price + psu.price + casev.price;
+  const total = BASE_PRICE + parts + optCables + optWater + optCable;
 
   const warnings = [];
   clearAlerts();
 
   if(cpu.meta !== mobo.meta){
     warnings.push("Incompatibilité socket CPU / carte mère.");
-    pushAlert("bad", "Incompatibilité : le socket du processeur ne correspond pas à la carte mère.");
+    alertBox("bad", "Incompatibilité : le socket du processeur ne correspond pas à la carte mère.");
   }else{
-    pushAlert("good", "Compatibilité socket : OK");
+    alertBox("good", "Compatibilité socket : OK");
   }
 
   const psuW = Number(psu.meta);
@@ -201,68 +203,66 @@ function computeTotal(){
 
   if(psuW < needed){
     warnings.push("Alimentation probablement insuffisante.");
-    pushAlert("bad", `Alimentation trop juste : conseillé ≥ ${needed}W (marge incluse).`);
+    alertBox("bad", `Alimentation trop juste : conseillé ≥ ${needed}W (marge incluse).`);
   }else if(psuW < needed + 100){
     warnings.push("Alimentation OK mais marge faible.");
-    pushAlert("warn", "Alimentation : ça passe, mais une marge plus large améliore la stabilité.");
+    alertBox("warn", "Alimentation : ça passe, mais une marge plus large améliore la stabilité.");
   }else{
-    pushAlert("good", "Alimentation : marge confortable");
+    alertBox("good", "Alimentation : marge confortable");
   }
 
   const cpuTier = (cpu.label.includes("i5") || cpu.label.includes("Ryzen 5")) ? 1 : 2;
   const gpuTier = (gpu.label.includes("4060")) ? 1 : 2;
   if(gpuTier > cpuTier){
     warnings.push("Configuration potentiellement déséquilibrée (GPU au-dessus du CPU).");
-    pushAlert("warn", "Alerte cohérence : GPU plus haut de gamme que le CPU → risque de bottleneck selon usage.");
+    alertBox("warn", "Alerte cohérence : GPU plus haut de gamme que le CPU → possible bottleneck selon usage.");
   }
 
   const ramGB = Number(ram.meta);
   const usage = usageEl.value || "";
   if((usage.includes("Création") || usage.includes("4K")) && ramGB < 32){
     warnings.push("RAM probablement faible pour création / 4K.");
-    pushAlert("warn", "Pour création / 4K, 32 Go (ou plus) est généralement plus confortable.");
+    alertBox("warn", "Pour création / 4K, 32 Go (ou plus) est souvent plus confortable.");
   }
 
-  priceEl.textContent = formatEuro(total);
-
+  priceEl.textContent = euro(total);
   if(warnings.length === 0){
-    pushAlert("good", "Configuration cohérente : estimation prête à être envoyée.");
+    alertBox("good", "Configuration cohérente : estimation prête à être envoyée.");
   }
   return { ready:true, total, warnings };
 }
 
 [cpuEl,moboEl,ramEl,gpuEl,storageEl,psuEl,caseEl,customCablesEl,watercoolingEl,cableMgmtEl,usageEl].forEach(el=>{
-  if(el) el.addEventListener("change", computeTotal);
+  if(el) el.addEventListener("change", compute);
 });
-computeTotal();
+compute();
 
 $("#resetCustom").addEventListener("click", ()=>{
   $("#form-custom").reset();
-  computeTotal();
+  compute();
   toast("Simulation réinitialisée");
 });
 
 $("#form-custom").addEventListener("submit", async (e)=>{
   e.preventDefault();
-
-  const state = computeTotal();
+  const state = compute();
   if(!state.ready){
     toast("Complète la simulation avant d’envoyer");
     return;
   }
 
   const name = window.prompt("Ton nom (pour le devis) :");
-  if(!name){ toast("Nom requis pour envoyer le devis"); return; }
+  if(!name){ toast("Nom requis"); return; }
   const email = window.prompt("Ton email (pour recevoir la réponse) :");
-  if(!email){ toast("Email requis pour envoyer le devis"); return; }
+  if(!email){ toast("Email requis"); return; }
 
-  const cpu = getSelected(cpuEl);
-  const mobo = getSelected(moboEl);
-  const ram = getSelected(ramEl);
-  const gpu = getSelected(gpuEl);
-  const storage = getSelected(storageEl);
-  const psu = getSelected(psuEl);
-  const casev = getSelected(caseEl);
+  const cpu = selected(cpuEl);
+  const mobo = selected(moboEl);
+  const ram = selected(ramEl);
+  const gpu = selected(gpuEl);
+  const storage = selected(storageEl);
+  const psu = selected(psuEl);
+  const casev = selected(caseEl);
 
   const options = [];
   if(customCablesEl.checked) options.push("Câbles personnalisés");
@@ -281,7 +281,7 @@ $("#form-custom").addEventListener("submit", async (e)=>{
     `boitier : ${casev.label}`,
     `options : ${options.length ? options.join(", ") : "aucune"}`,
     `prix_base : ${BASE_PRICE} EUR`,
-    `prix_estime : ${formatEuro(state.total)}`,
+    `prix_estime : ${euro(state.total)}`,
     `alertes : ${state.warnings.length ? state.warnings.join(" | ") : "aucune"}`
   ].join("\n");
 
@@ -295,3 +295,21 @@ $("#form-custom").addEventListener("submit", async (e)=>{
 });
 
 $("#year").textContent = String(new Date().getFullYear());
+
+(function tiltCards(){
+  const cards = $$(".tilt");
+  const strength = 10;
+  cards.forEach(card=>{
+    card.addEventListener("mousemove", (e)=>{
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - 0.5;
+      const y = (e.clientY - r.top) / r.height - 0.5;
+      const rx = (-y * strength).toFixed(2);
+      const ry = (x * strength).toFixed(2);
+      card.style.transform = `translateY(-5px) scale(1.01) rotateX(${rx}deg) rotateY(${ry}deg)`;
+    });
+    card.addEventListener("mouseleave", ()=>{
+      card.style.transform = "";
+    });
+  });
+})();
