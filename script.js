@@ -314,10 +314,6 @@ $("#year").textContent = String(new Date().getFullYear());
   });
 })();
 
-// ==================================================
-// 🔥 PAYPAL — ACHAT IMMÉDIAT (AJOUTÉ)
-// ==================================================
-
 const buyNowBtn = document.getElementById("buyNow");
 
 if (buyNowBtn) {
@@ -343,7 +339,7 @@ if (buyNowBtn) {
       buyNowBtn.disabled = true;
       buyNowBtn.textContent = "Redirection vers PayPal…";
 
-      const res = await fetch("/api/paypal/create-order", {
+      const res = await fetch("/api/paypal-create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
