@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paiement confirmé</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="center">
+  <div class="result success">
+    <h1>Paiement confirmé</h1>
+    <p>Merci pour ta commande. Le paiement a bien été validé.</p>
+    <p>Tu recevras un email de confirmation rapidement.</p>
+    <button class="btn btn--primary btn--shine" onclick="finish()">Finaliser</button>
+  </div>
+
+<script>
+async function finish(){
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token");
+  if(token){
+    await fetch("/api/paypal-capture-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderID: token })
+    });
+  }
+  window.location.href = "/";
+}
+</script>
+</body>
+</html>
