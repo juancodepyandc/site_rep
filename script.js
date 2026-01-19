@@ -313,3 +313,63 @@ $("#year").textContent = String(new Date().getFullYear());
     });
   });
 })();
+
+// ==================================================
+// 🔥 PAYPAL — ACHAT IMMÉDIAT (AJOUTÉ)
+// ==================================================
+
+const buyNowBtn = document.getElementById("buyNow");
+
+if (buyNowBtn) {
+  buyNowBtn.addEventListener("click", async () => {
+    const state = compute();
+
+    if (!state.ready) {
+      toast("Complète la configuration avant d’acheter");
+      return;
+    }
+
+    const cpu = selected(cpuEl);
+    const gpu = selected(gpuEl);
+    const ram = selected(ramEl);
+
+    const summary = {
+      cpu: cpu?.label || "",
+      gpu: gpu?.label || "",
+      ram: ram?.label || ""
+    };
+
+    try {
+      buyNowBtn.disabled = true;
+      buyNowBtn.textContent = "Redirection vers PayPal…";
+
+      const res = await fetch("/api/paypal/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: state.total,
+          currency: "EUR",
+          summary
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.approveUrl) {
+        console.error(data);
+        toast("Erreur PayPal ❌");
+        buyNowBtn.disabled = false;
+        buyNowBtn.textContent = "Acheter maintenant";
+        return;
+      }
+
+      window.location.href = data.approveUrl;
+
+    } catch (err) {
+      console.error(err);
+      toast("Erreur réseau ❌");
+      buyNowBtn.disabled = false;
+      buyNowBtn.textContent = "Acheter maintenant";
+    }
+  });
+}
