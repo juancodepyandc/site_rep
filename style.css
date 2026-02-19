@@ -1572,3 +1572,6 @@ body.is-modal-open{
   .contact-card__value{font-size:15px}
   .brand__mark{width:82px;height:40px}
 }
+#openPreview3d{
+  display:none;
+}
