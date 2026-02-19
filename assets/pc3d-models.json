@@ -1,0 +1,1095 @@
+{
+  "version": 2,
+  "updatedAt": "2026-02-17T16:04:42.369Z",
+  "note": "Modeles GLB reels (Poly Pizza) avec fallback procedural. Fichiers synchronises localement via scripts/sync-pc3d-models.mjs.",
+  "models": {
+    "case": {
+      "byId": {},
+      "byBrand": {
+        "MSI": [
+          {
+            "url": "assets/models/poly/case/computer-tower-4TZXM3lO5KK.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4TZXM3lO5KK",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Corsair": [
+          {
+            "url": "assets/models/poly/case/computer-tower-4TZXM3lO5KK.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4TZXM3lO5KK",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "NZXT": [
+          {
+            "url": "assets/models/poly/case/computer-tower-4TZXM3lO5KK.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4TZXM3lO5KK",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Lian Li": [
+          {
+            "url": "assets/models/poly/case/computer-tower-4TZXM3lO5KK.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4TZXM3lO5KK",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Fractal": [
+          {
+            "url": "assets/models/poly/case/computer-tower-4TZXM3lO5KK.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4TZXM3lO5KK",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "be quiet!": [
+          {
+            "url": "assets/models/poly/case/computer-tower-4TZXM3lO5KK.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4TZXM3lO5KK",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Antec": [
+          {
+            "url": "assets/models/poly/case/computer-tower-4TZXM3lO5KK.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4TZXM3lO5KK",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Montech": [
+          {
+            "url": "assets/models/poly/case/computer-tower-4TZXM3lO5KK.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4TZXM3lO5KK",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Phanteks": [
+          {
+            "url": "assets/models/poly/case/computer-tower-4TZXM3lO5KK.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4TZXM3lO5KK",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Dell": [
+          {
+            "url": "assets/models/poly/case/dell-optiplex-micro-3mANYC9YrZf.glb",
+            "source": "poly.pizza",
+            "sourceModel": "3mANYC9YrZf",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "HP": [
+          {
+            "url": "assets/models/poly/case/dell-optiplex-micro-3mANYC9YrZf.glb",
+            "source": "poly.pizza",
+            "sourceModel": "3mANYC9YrZf",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Lenovo": [
+          {
+            "url": "assets/models/poly/case/dell-optiplex-micro-3mANYC9YrZf.glb",
+            "source": "poly.pizza",
+            "sourceModel": "3mANYC9YrZf",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Acer": [
+          {
+            "url": "assets/models/poly/case/dell-optiplex-micro-3mANYC9YrZf.glb",
+            "source": "poly.pizza",
+            "sourceModel": "3mANYC9YrZf",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Asus": [
+          {
+            "url": "assets/models/poly/case/dell-optiplex-micro-3mANYC9YrZf.glb",
+            "source": "poly.pizza",
+            "sourceModel": "3mANYC9YrZf",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ]
+      },
+      "default": [
+        {
+          "url": "assets/models/poly/case/computer-tower-4TZXM3lO5KK.glb",
+          "source": "poly.pizza",
+          "sourceModel": "4TZXM3lO5KK",
+          "autoRotate": true,
+          "scaleMode": "contain"
+        },
+        {
+          "url": "assets/models/poly/case/dell-optiplex-micro-3mANYC9YrZf.glb",
+          "source": "poly.pizza",
+          "sourceModel": "3mANYC9YrZf",
+          "autoRotate": true,
+          "scaleMode": "contain"
+        }
+      ]
+    },
+    "motherboard": {
+      "byId": {},
+      "byBrand": {
+        "MSI": [
+          {
+            "url": "assets/models/poly/motherboard/circuit-board-fxKdRjNq20j.glb",
+            "source": "poly.pizza",
+            "sourceModel": "fxKdRjNq20j",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          },
+          {
+            "url": "assets/models/poly/motherboard/collectible-board-qaVbbKkil7.glb",
+            "source": "poly.pizza",
+            "sourceModel": "qaVbbKkil7",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "ASUS": [
+          {
+            "url": "assets/models/poly/motherboard/circuit-board-fxKdRjNq20j.glb",
+            "source": "poly.pizza",
+            "sourceModel": "fxKdRjNq20j",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          },
+          {
+            "url": "assets/models/poly/motherboard/collectible-board-qaVbbKkil7.glb",
+            "source": "poly.pizza",
+            "sourceModel": "qaVbbKkil7",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Gigabyte": [
+          {
+            "url": "assets/models/poly/motherboard/circuit-board-fxKdRjNq20j.glb",
+            "source": "poly.pizza",
+            "sourceModel": "fxKdRjNq20j",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          },
+          {
+            "url": "assets/models/poly/motherboard/collectible-board-qaVbbKkil7.glb",
+            "source": "poly.pizza",
+            "sourceModel": "qaVbbKkil7",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "ASRock": [
+          {
+            "url": "assets/models/poly/motherboard/circuit-board-fxKdRjNq20j.glb",
+            "source": "poly.pizza",
+            "sourceModel": "fxKdRjNq20j",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          },
+          {
+            "url": "assets/models/poly/motherboard/collectible-board-qaVbbKkil7.glb",
+            "source": "poly.pizza",
+            "sourceModel": "qaVbbKkil7",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Biostar": [
+          {
+            "url": "assets/models/poly/motherboard/circuit-board-fxKdRjNq20j.glb",
+            "source": "poly.pizza",
+            "sourceModel": "fxKdRjNq20j",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "NZXT": [
+          {
+            "url": "assets/models/poly/motherboard/circuit-board-fxKdRjNq20j.glb",
+            "source": "poly.pizza",
+            "sourceModel": "fxKdRjNq20j",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Colorful": [
+          {
+            "url": "assets/models/poly/motherboard/circuit-board-fxKdRjNq20j.glb",
+            "source": "poly.pizza",
+            "sourceModel": "fxKdRjNq20j",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "EVGA": [
+          {
+            "url": "assets/models/poly/motherboard/circuit-board-fxKdRjNq20j.glb",
+            "source": "poly.pizza",
+            "sourceModel": "fxKdRjNq20j",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ]
+      },
+      "default": [
+        {
+          "url": "assets/models/poly/motherboard/circuit-board-fxKdRjNq20j.glb",
+          "source": "poly.pizza",
+          "sourceModel": "fxKdRjNq20j",
+          "autoRotate": true,
+          "scaleMode": "contain"
+        },
+        {
+          "url": "assets/models/poly/motherboard/collectible-board-qaVbbKkil7.glb",
+          "source": "poly.pizza",
+          "sourceModel": "qaVbbKkil7",
+          "autoRotate": true,
+          "scaleMode": "contain"
+        }
+      ]
+    },
+    "gpu": {
+      "byId": {},
+      "byBrand": {
+        "NVIDIA": [
+          {
+            "url": "assets/models/poly/gpu/graphics-card-i45v5trpyR.glb",
+            "source": "poly.pizza",
+            "sourceModel": "i45v5trpyR",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          },
+          {
+            "url": "assets/models/poly/gpu/graphics-card-pcb-7IAF3hGUe6N.glb",
+            "source": "poly.pizza",
+            "sourceModel": "7IAF3hGUe6N",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "AMD": [
+          {
+            "url": "assets/models/poly/gpu/graphics-card-i45v5trpyR.glb",
+            "source": "poly.pizza",
+            "sourceModel": "i45v5trpyR",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          },
+          {
+            "url": "assets/models/poly/gpu/graphics-card-pcb-7IAF3hGUe6N.glb",
+            "source": "poly.pizza",
+            "sourceModel": "7IAF3hGUe6N",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Intel": [
+          {
+            "url": "assets/models/poly/gpu/graphics-card-i45v5trpyR.glb",
+            "source": "poly.pizza",
+            "sourceModel": "i45v5trpyR",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          },
+          {
+            "url": "assets/models/poly/gpu/graphics-card-pcb-7IAF3hGUe6N.glb",
+            "source": "poly.pizza",
+            "sourceModel": "7IAF3hGUe6N",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Asus": [
+          {
+            "url": "assets/models/poly/gpu/graphics-card-i45v5trpyR.glb",
+            "source": "poly.pizza",
+            "sourceModel": "i45v5trpyR",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "MSI": [
+          {
+            "url": "assets/models/poly/gpu/graphics-card-i45v5trpyR.glb",
+            "source": "poly.pizza",
+            "sourceModel": "i45v5trpyR",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Gigabyte": [
+          {
+            "url": "assets/models/poly/gpu/graphics-card-i45v5trpyR.glb",
+            "source": "poly.pizza",
+            "sourceModel": "i45v5trpyR",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Sapphire": [
+          {
+            "url": "assets/models/poly/gpu/graphics-card-i45v5trpyR.glb",
+            "source": "poly.pizza",
+            "sourceModel": "i45v5trpyR",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "XFX": [
+          {
+            "url": "assets/models/poly/gpu/graphics-card-i45v5trpyR.glb",
+            "source": "poly.pizza",
+            "sourceModel": "i45v5trpyR",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "PowerColor": [
+          {
+            "url": "assets/models/poly/gpu/graphics-card-i45v5trpyR.glb",
+            "source": "poly.pizza",
+            "sourceModel": "i45v5trpyR",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Zotac": [
+          {
+            "url": "assets/models/poly/gpu/graphics-card-i45v5trpyR.glb",
+            "source": "poly.pizza",
+            "sourceModel": "i45v5trpyR",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "PNY": [
+          {
+            "url": "assets/models/poly/gpu/graphics-card-i45v5trpyR.glb",
+            "source": "poly.pizza",
+            "sourceModel": "i45v5trpyR",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ]
+      },
+      "default": [
+        {
+          "url": "assets/models/poly/gpu/graphics-card-i45v5trpyR.glb",
+          "source": "poly.pizza",
+          "sourceModel": "i45v5trpyR",
+          "autoRotate": true,
+          "scaleMode": "contain"
+        },
+        {
+          "url": "assets/models/poly/gpu/graphics-card-pcb-7IAF3hGUe6N.glb",
+          "source": "poly.pizza",
+          "sourceModel": "7IAF3hGUe6N",
+          "autoRotate": true,
+          "scaleMode": "contain"
+        }
+      ]
+    },
+    "psu": {
+      "byId": {},
+      "byBrand": {
+        "Corsair": [
+          {
+            "url": "assets/models/poly/psu/power-box-WFVjj4vnGg.glb",
+            "source": "poly.pizza",
+            "sourceModel": "WFVjj4vnGg",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Seasonic": [
+          {
+            "url": "assets/models/poly/psu/power-box-WFVjj4vnGg.glb",
+            "source": "poly.pizza",
+            "sourceModel": "WFVjj4vnGg",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "be quiet!": [
+          {
+            "url": "assets/models/poly/psu/power-box-WFVjj4vnGg.glb",
+            "source": "poly.pizza",
+            "sourceModel": "WFVjj4vnGg",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "MSI": [
+          {
+            "url": "assets/models/poly/psu/power-box-WFVjj4vnGg.glb",
+            "source": "poly.pizza",
+            "sourceModel": "WFVjj4vnGg",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "ASUS": [
+          {
+            "url": "assets/models/poly/psu/power-box-WFVjj4vnGg.glb",
+            "source": "poly.pizza",
+            "sourceModel": "WFVjj4vnGg",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Gigabyte": [
+          {
+            "url": "assets/models/poly/psu/power-box-WFVjj4vnGg.glb",
+            "source": "poly.pizza",
+            "sourceModel": "WFVjj4vnGg",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Cooler Master": [
+          {
+            "url": "assets/models/poly/psu/power-box-WFVjj4vnGg.glb",
+            "source": "poly.pizza",
+            "sourceModel": "WFVjj4vnGg",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Thermaltake": [
+          {
+            "url": "assets/models/poly/psu/power-box-WFVjj4vnGg.glb",
+            "source": "poly.pizza",
+            "sourceModel": "WFVjj4vnGg",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "NZXT": [
+          {
+            "url": "assets/models/poly/psu/power-box-WFVjj4vnGg.glb",
+            "source": "poly.pizza",
+            "sourceModel": "WFVjj4vnGg",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "FSP": [
+          {
+            "url": "assets/models/poly/psu/power-box-WFVjj4vnGg.glb",
+            "source": "poly.pizza",
+            "sourceModel": "WFVjj4vnGg",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ]
+      },
+      "default": [
+        {
+          "url": "assets/models/poly/psu/power-box-WFVjj4vnGg.glb",
+          "source": "poly.pizza",
+          "sourceModel": "WFVjj4vnGg",
+          "autoRotate": true,
+          "scaleMode": "contain"
+        }
+      ]
+    },
+    "ram": {
+      "byId": {},
+      "byBrand": {
+        "Corsair": [
+          {
+            "url": "assets/models/poly/ram/ram-stick-obBMPOGYvy.glb",
+            "source": "poly.pizza",
+            "sourceModel": "obBMPOGYvy",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "G.Skill": [
+          {
+            "url": "assets/models/poly/ram/ram-stick-obBMPOGYvy.glb",
+            "source": "poly.pizza",
+            "sourceModel": "obBMPOGYvy",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Kingston": [
+          {
+            "url": "assets/models/poly/ram/ram-stick-obBMPOGYvy.glb",
+            "source": "poly.pizza",
+            "sourceModel": "obBMPOGYvy",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Crucial": [
+          {
+            "url": "assets/models/poly/ram/ram-stick-obBMPOGYvy.glb",
+            "source": "poly.pizza",
+            "sourceModel": "obBMPOGYvy",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "TeamGroup": [
+          {
+            "url": "assets/models/poly/ram/ram-stick-obBMPOGYvy.glb",
+            "source": "poly.pizza",
+            "sourceModel": "obBMPOGYvy",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "ADATA": [
+          {
+            "url": "assets/models/poly/ram/ram-stick-obBMPOGYvy.glb",
+            "source": "poly.pizza",
+            "sourceModel": "obBMPOGYvy",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Patriot": [
+          {
+            "url": "assets/models/poly/ram/ram-stick-obBMPOGYvy.glb",
+            "source": "poly.pizza",
+            "sourceModel": "obBMPOGYvy",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Lexar": [
+          {
+            "url": "assets/models/poly/ram/ram-stick-obBMPOGYvy.glb",
+            "source": "poly.pizza",
+            "sourceModel": "obBMPOGYvy",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Mushkin": [
+          {
+            "url": "assets/models/poly/ram/ram-stick-obBMPOGYvy.glb",
+            "source": "poly.pizza",
+            "sourceModel": "obBMPOGYvy",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "PNY": [
+          {
+            "url": "assets/models/poly/ram/ram-stick-obBMPOGYvy.glb",
+            "source": "poly.pizza",
+            "sourceModel": "obBMPOGYvy",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "KLEVV": [
+          {
+            "url": "assets/models/poly/ram/ram-stick-obBMPOGYvy.glb",
+            "source": "poly.pizza",
+            "sourceModel": "obBMPOGYvy",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ]
+      },
+      "default": [
+        {
+          "url": "assets/models/poly/ram/ram-stick-obBMPOGYvy.glb",
+          "source": "poly.pizza",
+          "sourceModel": "obBMPOGYvy",
+          "autoRotate": true,
+          "scaleMode": "contain"
+        }
+      ]
+    },
+    "storage": {
+      "byId": {},
+      "byBrand": {
+        "Samsung": [
+          {
+            "url": "assets/models/poly/storage/ssd-sax4h1Dx9z.glb",
+            "source": "poly.pizza",
+            "sourceModel": "sax4h1Dx9z",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "WD": [
+          {
+            "url": "assets/models/poly/storage/ssd-sax4h1Dx9z.glb",
+            "source": "poly.pizza",
+            "sourceModel": "sax4h1Dx9z",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Crucial": [
+          {
+            "url": "assets/models/poly/storage/ssd-sax4h1Dx9z.glb",
+            "source": "poly.pizza",
+            "sourceModel": "sax4h1Dx9z",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Kingston": [
+          {
+            "url": "assets/models/poly/storage/ssd-sax4h1Dx9z.glb",
+            "source": "poly.pizza",
+            "sourceModel": "sax4h1Dx9z",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Corsair": [
+          {
+            "url": "assets/models/poly/storage/ssd-sax4h1Dx9z.glb",
+            "source": "poly.pizza",
+            "sourceModel": "sax4h1Dx9z",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Seagate": [
+          {
+            "url": "assets/models/poly/storage/ssd-sax4h1Dx9z.glb",
+            "source": "poly.pizza",
+            "sourceModel": "sax4h1Dx9z",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Lexar": [
+          {
+            "url": "assets/models/poly/storage/ssd-sax4h1Dx9z.glb",
+            "source": "poly.pizza",
+            "sourceModel": "sax4h1Dx9z",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Sabrent": [
+          {
+            "url": "assets/models/poly/storage/ssd-sax4h1Dx9z.glb",
+            "source": "poly.pizza",
+            "sourceModel": "sax4h1Dx9z",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "ADATA": [
+          {
+            "url": "assets/models/poly/storage/ssd-sax4h1Dx9z.glb",
+            "source": "poly.pizza",
+            "sourceModel": "sax4h1Dx9z",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "TeamGroup": [
+          {
+            "url": "assets/models/poly/storage/ssd-sax4h1Dx9z.glb",
+            "source": "poly.pizza",
+            "sourceModel": "sax4h1Dx9z",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ]
+      },
+      "default": [
+        {
+          "url": "assets/models/poly/storage/ssd-sax4h1Dx9z.glb",
+          "source": "poly.pizza",
+          "sourceModel": "sax4h1Dx9z",
+          "autoRotate": true,
+          "scaleMode": "contain"
+        }
+      ]
+    },
+    "cpu_block": {
+      "byId": {},
+      "byBrand": {
+        "Corsair": [
+          {
+            "url": "assets/models/poly/cpu_block/cpu-package-oF0cAyddAI.glb",
+            "source": "poly.pizza",
+            "sourceModel": "oF0cAyddAI",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "NZXT": [
+          {
+            "url": "assets/models/poly/cpu_block/cpu-package-oF0cAyddAI.glb",
+            "source": "poly.pizza",
+            "sourceModel": "oF0cAyddAI",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Arctic": [
+          {
+            "url": "assets/models/poly/cpu_block/cpu-package-oF0cAyddAI.glb",
+            "source": "poly.pizza",
+            "sourceModel": "oF0cAyddAI",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Lian Li": [
+          {
+            "url": "assets/models/poly/cpu_block/cpu-package-oF0cAyddAI.glb",
+            "source": "poly.pizza",
+            "sourceModel": "oF0cAyddAI",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "DeepCool": [
+          {
+            "url": "assets/models/poly/cpu_block/cpu-package-oF0cAyddAI.glb",
+            "source": "poly.pizza",
+            "sourceModel": "oF0cAyddAI",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Cooler Master": [
+          {
+            "url": "assets/models/poly/cpu_block/cpu-package-oF0cAyddAI.glb",
+            "source": "poly.pizza",
+            "sourceModel": "oF0cAyddAI",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "ASUS": [
+          {
+            "url": "assets/models/poly/cpu_block/cpu-package-oF0cAyddAI.glb",
+            "source": "poly.pizza",
+            "sourceModel": "oF0cAyddAI",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "MSI": [
+          {
+            "url": "assets/models/poly/cpu_block/cpu-package-oF0cAyddAI.glb",
+            "source": "poly.pizza",
+            "sourceModel": "oF0cAyddAI",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ]
+      },
+      "default": [
+        {
+          "url": "assets/models/poly/cpu_block/cpu-package-oF0cAyddAI.glb",
+          "source": "poly.pizza",
+          "sourceModel": "oF0cAyddAI",
+          "autoRotate": true,
+          "scaleMode": "contain"
+        }
+      ]
+    },
+    "cpu_cooler_air": {
+      "byId": {},
+      "byBrand": {
+        "Noctua": [
+          {
+            "url": "assets/models/poly/cpu_cooler_air/air-cooler-fan-2cGxqg3pVA3.glb",
+            "source": "poly.pizza",
+            "sourceModel": "2cGxqg3pVA3",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "be quiet!": [
+          {
+            "url": "assets/models/poly/cpu_cooler_air/air-cooler-fan-2cGxqg3pVA3.glb",
+            "source": "poly.pizza",
+            "sourceModel": "2cGxqg3pVA3",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "DeepCool": [
+          {
+            "url": "assets/models/poly/cpu_cooler_air/air-cooler-fan-2cGxqg3pVA3.glb",
+            "source": "poly.pizza",
+            "sourceModel": "2cGxqg3pVA3",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Cooler Master": [
+          {
+            "url": "assets/models/poly/cpu_cooler_air/air-cooler-fan-2cGxqg3pVA3.glb",
+            "source": "poly.pizza",
+            "sourceModel": "2cGxqg3pVA3",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Thermalright": [
+          {
+            "url": "assets/models/poly/cpu_cooler_air/air-cooler-fan-2cGxqg3pVA3.glb",
+            "source": "poly.pizza",
+            "sourceModel": "2cGxqg3pVA3",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Arctic": [
+          {
+            "url": "assets/models/poly/cpu_cooler_air/air-cooler-fan-2cGxqg3pVA3.glb",
+            "source": "poly.pizza",
+            "sourceModel": "2cGxqg3pVA3",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Scythe": [
+          {
+            "url": "assets/models/poly/cpu_cooler_air/air-cooler-fan-2cGxqg3pVA3.glb",
+            "source": "poly.pizza",
+            "sourceModel": "2cGxqg3pVA3",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ]
+      },
+      "default": [
+        {
+          "url": "assets/models/poly/cpu_cooler_air/air-cooler-fan-2cGxqg3pVA3.glb",
+          "source": "poly.pizza",
+          "sourceModel": "2cGxqg3pVA3",
+          "autoRotate": true,
+          "scaleMode": "contain"
+        }
+      ]
+    },
+    "cpu_cooler_stock": {
+      "byId": {},
+      "byBrand": {
+        "AMD": [
+          {
+            "url": "assets/models/poly/cpu_cooler_stock/stock-cooler-fan-dPExITRhhZ.glb",
+            "source": "poly.pizza",
+            "sourceModel": "dPExITRhhZ",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Intel": [
+          {
+            "url": "assets/models/poly/cpu_cooler_stock/stock-cooler-fan-dPExITRhhZ.glb",
+            "source": "poly.pizza",
+            "sourceModel": "dPExITRhhZ",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ]
+      },
+      "default": [
+        {
+          "url": "assets/models/poly/cpu_cooler_stock/stock-cooler-fan-dPExITRhhZ.glb",
+          "source": "poly.pizza",
+          "sourceModel": "dPExITRhhZ",
+          "autoRotate": true,
+          "scaleMode": "contain"
+        }
+      ]
+    },
+    "radiator": {
+      "byId": {},
+      "byBrand": {
+        "Corsair": [
+          {
+            "url": "assets/models/poly/radiator/radiator-4XJ-DH66eKY.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4XJ-DH66eKY",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "NZXT": [
+          {
+            "url": "assets/models/poly/radiator/radiator-4XJ-DH66eKY.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4XJ-DH66eKY",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Arctic": [
+          {
+            "url": "assets/models/poly/radiator/radiator-4XJ-DH66eKY.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4XJ-DH66eKY",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Lian Li": [
+          {
+            "url": "assets/models/poly/radiator/radiator-4XJ-DH66eKY.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4XJ-DH66eKY",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "EK": [
+          {
+            "url": "assets/models/poly/radiator/radiator-4XJ-DH66eKY.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4XJ-DH66eKY",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Alphacool": [
+          {
+            "url": "assets/models/poly/radiator/radiator-4XJ-DH66eKY.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4XJ-DH66eKY",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Cooler Master": [
+          {
+            "url": "assets/models/poly/radiator/radiator-4XJ-DH66eKY.glb",
+            "source": "poly.pizza",
+            "sourceModel": "4XJ-DH66eKY",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ]
+      },
+      "default": [
+        {
+          "url": "assets/models/poly/radiator/radiator-4XJ-DH66eKY.glb",
+          "source": "poly.pizza",
+          "sourceModel": "4XJ-DH66eKY",
+          "autoRotate": true,
+          "scaleMode": "contain"
+        }
+      ]
+    },
+    "case_fan": {
+      "byId": {},
+      "byBrand": {
+        "Noctua": [
+          {
+            "url": "assets/models/poly/case_fan/case-fan-dPExITRhhZ.glb",
+            "source": "poly.pizza",
+            "sourceModel": "dPExITRhhZ",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Corsair": [
+          {
+            "url": "assets/models/poly/case_fan/case-fan-dPExITRhhZ.glb",
+            "source": "poly.pizza",
+            "sourceModel": "dPExITRhhZ",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Lian Li": [
+          {
+            "url": "assets/models/poly/case_fan/case-fan-dPExITRhhZ.glb",
+            "source": "poly.pizza",
+            "sourceModel": "dPExITRhhZ",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "be quiet!": [
+          {
+            "url": "assets/models/poly/case_fan/case-fan-dPExITRhhZ.glb",
+            "source": "poly.pizza",
+            "sourceModel": "dPExITRhhZ",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Arctic": [
+          {
+            "url": "assets/models/poly/case_fan/case-fan-dPExITRhhZ.glb",
+            "source": "poly.pizza",
+            "sourceModel": "dPExITRhhZ",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "NZXT": [
+          {
+            "url": "assets/models/poly/case_fan/case-fan-dPExITRhhZ.glb",
+            "source": "poly.pizza",
+            "sourceModel": "dPExITRhhZ",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Cooler Master": [
+          {
+            "url": "assets/models/poly/case_fan/case-fan-dPExITRhhZ.glb",
+            "source": "poly.pizza",
+            "sourceModel": "dPExITRhhZ",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ],
+        "Thermaltake": [
+          {
+            "url": "assets/models/poly/case_fan/case-fan-dPExITRhhZ.glb",
+            "source": "poly.pizza",
+            "sourceModel": "dPExITRhhZ",
+            "autoRotate": true,
+            "scaleMode": "contain"
+          }
+        ]
+      },
+      "default": [
+        {
+          "url": "assets/models/poly/case_fan/case-fan-dPExITRhhZ.glb",
+          "source": "poly.pizza",
+          "sourceModel": "dPExITRhhZ",
+          "autoRotate": true,
+          "scaleMode": "contain"
+        }
+      ]
+    }
+  }
+}

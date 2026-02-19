@@ -1,0 +1,127 @@
+{
+  "version": "1.0.0",
+  "unit": "mm",
+  "defaults": {
+    "case": {
+      "inner": { "length": 450, "width": 220, "height": 470 },
+      "moboAnchor": { "x": -175, "y": 10, "z": -70 },
+      "gpuPcieAnchor": { "x": -25, "y": -20, "z": 5 },
+      "psuAnchor": { "x": 150, "y": -180, "z": 40 },
+      "radiatorMounts": {
+        "top": [240, 280, 360],
+        "front": [240, 280, 360],
+        "rear": [120, 140]
+      },
+      "forbiddenVolumes": [
+        { "id": "psu-shroud", "min": [40, -230, -110], "max": [230, -120, 110] }
+      ]
+    },
+    "motherboard": {
+      "ATX": { "length": 305, "width": 244, "thickness": 24 },
+      "mATX": { "length": 244, "width": 244, "thickness": 24 },
+      "ITX": { "length": 170, "width": 170, "thickness": 24 }
+    },
+    "gpu": {
+      "height": 130,
+      "thickness": 60,
+      "slotPitch": 20,
+      "maxSlots": 4
+    },
+    "psu": {
+      "width": 150,
+      "height": 86,
+      "lengthMin": 140,
+      "lengthMax": 220
+    },
+    "radiator": {
+      "height": 140,
+      "thicknessCore": 28,
+      "fanThickness": 25,
+      "tubeClearance": 24
+    },
+    "tube": {
+      "radius": 6,
+      "minBendRadius": 30,
+      "maxLength": 900
+    }
+  },
+  "cases": {
+    "case-msi-100r": {
+      "inner": { "length": 440, "width": 214, "height": 455 },
+      "radiatorMounts": {
+        "top": [120, 240],
+        "front": [120, 140, 240],
+        "rear": [120]
+      },
+      "forbiddenVolumes": [
+        { "id": "psu-shroud", "min": [10, -228, -106], "max": [228, -130, 106] }
+      ]
+    },
+    "case-corsair-5000d": {
+      "inner": { "length": 520, "width": 245, "height": 520 },
+      "radiatorMounts": {
+        "top": [240, 280, 360],
+        "front": [240, 280, 360],
+        "side": [240, 280, 360],
+        "rear": [120, 140]
+      },
+      "forbiddenVolumes": [
+        { "id": "drive-cage", "min": [170, -240, 30], "max": [250, -140, 110] }
+      ]
+    },
+    "case-lianli-o11d-mini": {
+      "inner": { "length": 430, "width": 270, "height": 425 },
+      "radiatorMounts": {
+        "top": [240, 280, 360],
+        "side": [240, 280, 360],
+        "bottom": [240, 280, 360],
+        "rear": [120]
+      },
+      "forbiddenVolumes": [
+        { "id": "side-chamber", "min": [120, -210, 80], "max": [250, 210, 150] }
+      ]
+    },
+    "case-fractal-north-atx": {
+      "inner": { "length": 445, "width": 215, "height": 450 },
+      "radiatorMounts": {
+        "front": [240, 280, 360],
+        "top": [240],
+        "rear": [120]
+      }
+    }
+  },
+  "example": {
+    "case": {
+      "id": "case-corsair-5000d",
+      "maxGpuLength": 420,
+      "maxRadiator": 360,
+      "maxCoolerHeight": 170
+    },
+    "motherboard": {
+      "id": "mb-msi-b650-tom",
+      "formFactor": "ATX",
+      "socket": "AM5"
+    },
+    "gpu": {
+      "id": "gpu-nv-5070ti",
+      "length": 330,
+      "height": 135,
+      "thickness": 62,
+      "slotCount": 3
+    },
+    "radiator": {
+      "id": "cool-aio-360-arctic-rgb",
+      "size": 360,
+      "mount": "top",
+      "thicknessTotal": 53
+    },
+    "tubeSpline": {
+      "start": [-40, 60, -20],
+      "control1": [-10, 95, 10],
+      "control2": [70, 85, 25],
+      "end": [130, 100, 40],
+      "minBendRadius": 30,
+      "maxLength": 900
+    }
+  }
+}
