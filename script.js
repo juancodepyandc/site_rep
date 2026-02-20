@@ -3292,7 +3292,29 @@ function writeQuoteStore(store) {
   localStorage.setItem(QUOTE_STORAGE_KEY, JSON.stringify(store));
 }
 
+async function saveQuoteToServer(record) {
+  try {
+    const r = await fetch("/api/save-quote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ record })
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
 
+async function loadQuoteFromServer(code) {
+  try {
+    const r = await fetch(`/api/load-quote?code=${encodeURIComponent(code)}`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data?.record || null;
+  } catch {
+    return null;
+  }
+}
 
 async function saveQuoteToServer(record) {
   try {
