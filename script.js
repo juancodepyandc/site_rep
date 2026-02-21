@@ -3305,27 +3305,31 @@ function writeQuoteStore(store) {
 
 async function saveQuoteToDatabase(record) {
   try {
-    const res = await fetch("/api/quote", {
+    const res = await fetch("/api/save-quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ record })
+      body: JSON.stringify({ record }),
+      keepalive: true
     });
-    if (!res.ok) return false;
-    return true;
+
+    return res.ok;
   } catch {
     return false;
   }
 }
 
 async function fetchQuoteFromDatabase(code) {
+  const clean = String(code || "").trim().toUpperCase();
+  if (!clean) return null;
+
   try {
-    const res = await fetch(`/api/quote?code=${encodeURIComponent(String(code || "").trim().toUpperCase())}`, {
-      method: "GET",
-      headers: { "Accept": "application/json" }
-    });
+    const res = await fetch(`/api/load-quote?code=${encodeURIComponent(clean)}`, { method: "GET" });
     if (!res.ok) return null;
+
     const data = await res.json();
-    return data?.record || null;
+    if (data && data.ok && data.record) return data.record;
+
+    return null;
   } catch {
     return null;
   }
