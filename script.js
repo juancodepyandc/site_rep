@@ -457,15 +457,15 @@ const CATALOG = {
     { id: "cool-aio-360-msi-s360", brand: "MSI", name: "MEG CoreLiquid S360", type: "aio", radiator: 360, score: 9.3, price: 229 }
   ],
   customCables: [
-    { id: "cab-none", brand: "Aucun", category: "Aucun", name: "Aucun cÃ¢ble custom", score: 5.0, price: 0, isNone: true },
+    { id: "cab-none", brand: "Aucun", category: "Aucun", name: "Aucun câble custom", score: 5.0, price: 0, isNone: true },
 
-    { id: "cab-mobo-ext", brand: "CableMod", category: "Carte mÃ¨re (24-pin)", name: "Extension 24-pin ATX", score: 8.1, price: 35 },
-    { id: "cab-mobo-pro", brand: "CableMod", category: "Carte mÃ¨re (24-pin)", name: "Kit 24-pin Pro ModMesh", score: 9.0, price: 69 },
-    { id: "cab-mobo-full", brand: "Atelier", category: "Carte mÃ¨re (24-pin)", name: "24-pin full custom longueur exacte", score: 9.5, price: 95 },
-    { id: "cab-mobo-lianli", brand: "Lian Li", category: "Carte mÃ¨re (24-pin)", name: "Strimer Plus V2 24-pin RGB", score: 9.1, price: 64 },
-    { id: "cab-mobo-asiahorse", brand: "AsiaHorse", category: "Carte mÃ¨re (24-pin)", name: "24-pin sleeved premium", score: 8.4, price: 42 },
-    { id: "cab-mobo-corsair-link", brand: "Corsair", category: "Carte mÃ¨re (24-pin)", name: "iCUE braided 24-pin premium", score: 8.7, price: 59 },
-    { id: "cab-mobo-phanteks", brand: "Phanteks", category: "Carte mÃ¨re (24-pin)", name: "24-pin extension premium", score: 8.3, price: 39 },
+    { id: "cab-mobo-ext", brand: "CableMod", category: "Carte mère (24-pin)", name: "Extension 24-pin ATX", score: 8.1, price: 35 },
+    { id: "cab-mobo-pro", brand: "CableMod", category: "Carte mère (24-pin)", name: "Kit 24-pin Pro ModMesh", score: 9.0, price: 69 },
+    { id: "cab-mobo-full", brand: "Atelier", category: "Carte mère (24-pin)", name: "24-pin full custom longueur exacte", score: 9.5, price: 95 },
+    { id: "cab-mobo-lianli", brand: "Lian Li", category: "Carte mère (24-pin)", name: "Strimer Plus V2 24-pin RGB", score: 9.1, price: 64 },
+    { id: "cab-mobo-asiahorse", brand: "AsiaHorse", category: "Carte mère (24-pin)", name: "24-pin sleeved premium", score: 8.4, price: 42 },
+    { id: "cab-mobo-corsair-link", brand: "Corsair", category: "Carte mère (24-pin)", name: "iCUE braided 24-pin premium", score: 8.7, price: 59 },
+    { id: "cab-mobo-phanteks", brand: "Phanteks", category: "Carte mère (24-pin)", name: "24-pin extension premium", score: 8.3, price: 39 },
 
     { id: "cab-gpu-1x8", brand: "CableMod", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU custom 1x8-pin", score: 8.0, price: 29, requiredPcie8: 1 },
     { id: "cab-gpu-2x8", brand: "CableMod", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU custom 2x8-pin", score: 8.7, price: 49, requiredPcie8: 2 },
@@ -481,39 +481,39 @@ const CATALOG = {
 
     { id: "cab-cpu-1eps", brand: "CableMod", category: "CPU (EPS 8-pin)", name: "CPU custom 1x8-pin EPS", score: 8.2, price: 25, requiredEps8: 1 },
     { id: "cab-cpu-2eps", brand: "CableMod", category: "CPU (EPS 8-pin)", name: "CPU custom 2x8-pin EPS", score: 9.0, price: 45, requiredEps8: 2 },
-    { id: "cab-cpu-full", brand: "Atelier", category: "CPU (EPS 8-pin)", name: "CPU full custom gainÃ©", score: 9.4, price: 59, dynamic: true },
+    { id: "cab-cpu-full", brand: "Atelier", category: "CPU (EPS 8-pin)", name: "CPU full custom gainé", score: 9.4, price: 59, dynamic: true },
     { id: "cab-cpu-lianli", brand: "Lian Li", category: "CPU (EPS 8-pin)", name: "Strimer Plus EPS 8-pin", score: 8.7, price: 52, requiredEps8: 1 },
     { id: "cab-cpu-asiahorse-2eps", brand: "AsiaHorse", category: "CPU (EPS 8-pin)", name: "Dual EPS 8-pin custom", score: 8.8, price: 44, requiredEps8: 2 },
     { id: "cab-cpu-corsair-1eps", brand: "Corsair", category: "CPU (EPS 8-pin)", name: "EPS 8-pin premium braided", score: 8.6, price: 31, requiredEps8: 1 },
     { id: "cab-cpu-corsair-2eps", brand: "Corsair", category: "CPU (EPS 8-pin)", name: "Double EPS 8-pin premium", score: 9.0, price: 56, requiredEps8: 2 },
 
-    { id: "cab-oth-sata", brand: "Atelier", category: "Autres (SATA/ARGB/FAN)", name: "Pack SATA gainÃ©", score: 7.6, price: 19 },
+    { id: "cab-oth-sata", brand: "Atelier", category: "Autres (SATA/ARGB/FAN)", name: "Pack SATA gainé", score: 7.6, price: 19 },
     { id: "cab-oth-argb", brand: "Atelier", category: "Autres (SATA/ARGB/FAN)", name: "Pack ARGB/FAN propre", score: 8.3, price: 29 },
-    { id: "cab-oth-show", brand: "Atelier", category: "Autres (SATA/ARGB/FAN)", name: "Pack routing avancÃ©", score: 9.2, price: 49 },
+    { id: "cab-oth-show", brand: "Atelier", category: "Autres (SATA/ARGB/FAN)", name: "Pack routing avancé", score: 9.2, price: 49 },
     { id: "cab-oth-corsair", brand: "Corsair", category: "Autres (SATA/ARGB/FAN)", name: "Kit iCUE LINK routing RGB", score: 8.8, price: 59 },
     { id: "cab-oth-lianli", brand: "Lian Li", category: "Autres (SATA/ARGB/FAN)", name: "UNI FAN + hub routing propre", score: 9.0, price: 69 },
     { id: "cab-oth-phanteks", brand: "Phanteks", category: "Autres (SATA/ARGB/FAN)", name: "Pack ARGB D-RGB premium", score: 8.4, price: 36 },
     { id: "cab-oth-modmesh", brand: "CableMod", category: "Autres (SATA/ARGB/FAN)", name: "Extensions SATA + ARGB ModMesh", score: 8.9, price: 47 },
     { id: "cab-gpu-thermaltake-12", brand: "Thermaltake", category: "Carte graphique (PCIe/12VHPWR)", name: "12VHPWR premium extension", score: 9.1, price: 85, requires12vhpwr: true },
     { id: "cab-cpu-thermaltake-2eps", brand: "Thermaltake", category: "CPU (EPS 8-pin)", name: "Dual EPS 8-pin extension", score: 8.7, price: 42, requiredEps8: 2 },
-    { id: "cab-mobo-thermaltake", brand: "Thermaltake", category: "Carte mÃ¨re (24-pin)", name: "24-pin RGB premium", score: 8.8, price: 58 },
+    { id: "cab-mobo-thermaltake", brand: "Thermaltake", category: "Carte mère (24-pin)", name: "24-pin RGB premium", score: 8.8, price: 58 },
     { id: "cab-oth-nzxt", brand: "NZXT", category: "Autres (SATA/ARGB/FAN)", name: "Pack routing RGB/HUB", score: 8.6, price: 44 },
-    { id: "cab-gpu-bequiet-12", brand: "be quiet!", category: "Carte graphique (PCIe/12VHPWR)", name: "12VHPWR gainÃ© premium", score: 9.0, price: 79, requires12vhpwr: true },
+    { id: "cab-gpu-bequiet-12", brand: "be quiet!", category: "Carte graphique (PCIe/12VHPWR)", name: "12VHPWR gainé premium", score: 9.0, price: 79, requires12vhpwr: true },
     { id: "cab-cpu-phanteks-2eps", brand: "Phanteks", category: "CPU (EPS 8-pin)", name: "Double EPS 8-pin premium", score: 8.6, price: 41, requiredEps8: 2 },
-    { id: "cab-mobo-coolermaster", brand: "Cooler Master", category: "Carte mÃ¨re (24-pin)", name: "24-pin custom sleeved", score: 8.5, price: 46 },
-    { id: "cab-mobo-seasonic", brand: "Seasonic", category: "Carte mÃ¨re (24-pin)", name: "24-pin premium gainÃ©", score: 8.8, price: 54 },
-    { id: "cab-mobo-ezdiy", brand: "EZDIY-FAB", category: "Carte mÃ¨re (24-pin)", name: "24-pin ARGB extension", score: 8.1, price: 33 },
-    { id: "cab-mobo-montech", brand: "Montech", category: "Carte mÃ¨re (24-pin)", name: "24-pin sleeved black/white", score: 8.0, price: 29 },
+    { id: "cab-mobo-coolermaster", brand: "Cooler Master", category: "Carte mère (24-pin)", name: "24-pin custom sleeved", score: 8.5, price: 46 },
+    { id: "cab-mobo-seasonic", brand: "Seasonic", category: "Carte mère (24-pin)", name: "24-pin premium gainé", score: 8.8, price: 54 },
+    { id: "cab-mobo-ezdiy", brand: "EZDIY-FAB", category: "Carte mère (24-pin)", name: "24-pin ARGB extension", score: 8.1, price: 33 },
+    { id: "cab-mobo-montech", brand: "Montech", category: "Carte mère (24-pin)", name: "24-pin sleeved black/white", score: 8.0, price: 29 },
     { id: "cab-gpu-moddiy-12v2x6", brand: "MODDIY", category: "Carte graphique (PCIe/12VHPWR)", name: "12V-2x6 silicone ultra-flex", score: 9.5, price: 99, requires12vhpwr: true },
     { id: "cab-gpu-silverstone-2x8", brand: "SilverStone", category: "Carte graphique (PCIe/12VHPWR)", name: "Dual PCIe 8-pin premium", score: 8.4, price: 41, requiredPcie8: 2 },
     { id: "cab-gpu-antec-3x8", brand: "Antec", category: "Carte graphique (PCIe/12VHPWR)", name: "Triple PCIe 8-pin extension", score: 8.8, price: 55, requiredPcie8: 3 },
-    { id: "cab-cpu-seasonic-2eps", brand: "Seasonic", category: "CPU (EPS 8-pin)", name: "Double EPS 8-pin gainÃ©", score: 8.9, price: 48, requiredEps8: 2 },
+    { id: "cab-cpu-seasonic-2eps", brand: "Seasonic", category: "CPU (EPS 8-pin)", name: "Double EPS 8-pin gainé", score: 8.9, price: 48, requiredEps8: 2 },
     { id: "cab-cpu-ezdiy-1eps", brand: "EZDIY-FAB", category: "CPU (EPS 8-pin)", name: "EPS 8-pin ARGB extension", score: 8.0, price: 24, requiredEps8: 1 },
     { id: "cab-cpu-bequiet-2eps", brand: "be quiet!", category: "CPU (EPS 8-pin)", name: "Dual EPS premium black", score: 8.7, price: 43, requiredEps8: 2 },
     { id: "cab-oth-thermaltake", brand: "Thermaltake", category: "Autres (SATA/ARGB/FAN)", name: "Pack hub + gaines ARGB", score: 8.7, price: 46 },
     { id: "cab-oth-ezdiy", brand: "EZDIY-FAB", category: "Autres (SATA/ARGB/FAN)", name: "Kit extension ARGB/FAN", score: 8.2, price: 28 },
     { id: "cab-oth-moddiy", brand: "MODDIY", category: "Autres (SATA/ARGB/FAN)", name: "Pack SATA + splitters premium", score: 8.8, price: 39 },
-    { id: "cab-mobo-lianli-v3", brand: "Lian Li", category: "Carte mÃ¨re (24-pin)", name: "Strimer V3 24-pin RGB", score: 9.3, price: 79 },
+    { id: "cab-mobo-lianli-v3", brand: "Lian Li", category: "Carte mère (24-pin)", name: "Strimer V3 24-pin RGB", score: 9.3, price: 79 },
     { id: "cab-gpu-corsair-3x8", brand: "Corsair", category: "Carte graphique (PCIe/12VHPWR)", name: "Triple PCIe 8-pin premium", score: 8.9, price: 62, requiredPcie8: 3 },
     { id: "cab-gpu-ezdiy-12", brand: "EZDIY-FAB", category: "Carte graphique (PCIe/12VHPWR)", name: "12VHPWR ARGB extension", score: 8.6, price: 55, requires12vhpwr: true },
     { id: "cab-cpu-lianli-2eps", brand: "Lian Li", category: "CPU (EPS 8-pin)", name: "Double EPS RGB extension", score: 8.8, price: 57, requiredEps8: 2 },
@@ -526,9 +526,9 @@ const CATALOG = {
     { id: "mgmt-rgb-sync", brand: "Atelier", name: "Synchronisation RGB via app", score: 9.1, price: 59 }
   ],
   delivery: [
-    { id: "proc-economy", brand: "Atelier", name: "Traitement Ã©conomique", mode: "economy", prepWindow: "5-8 jours ouvrÃ©s", score: 7.0, baseFee: 8, speedFactor: 0.72, insuranceFactor: 0.8 },
-    { id: "proc-normal", brand: "Atelier", name: "Traitement normal", mode: "normal", prepWindow: "3-5 jours ouvrÃ©s", score: 8.4, baseFee: 18, speedFactor: 1.0, insuranceFactor: 1.0 },
-    { id: "proc-priority", brand: "Atelier", name: "Traitement prioritaire", mode: "priority", prepWindow: "2-3 jours ouvrÃ©s", score: 9.2, baseFee: 36, speedFactor: 1.35, insuranceFactor: 1.2 }
+    { id: "proc-economy", brand: "Atelier", name: "Traitement économique", mode: "economy", prepWindow: "5-8 jours ouvrés", score: 7.0, baseFee: 8, speedFactor: 0.72, insuranceFactor: 0.8 },
+    { id: "proc-normal", brand: "Atelier", name: "Traitement normal", mode: "normal", prepWindow: "3-5 jours ouvrés", score: 8.4, baseFee: 18, speedFactor: 1.0, insuranceFactor: 1.0 },
+    { id: "proc-priority", brand: "Atelier", name: "Traitement prioritaire", mode: "priority", prepWindow: "2-3 jours ouvrés", score: 9.2, baseFee: 36, speedFactor: 1.35, insuranceFactor: 1.2 }
   ]
 };
 
@@ -659,11 +659,11 @@ const CATALOG_EXPANSION = {
     { id: "cool-aio-360-deepcool-mystique", brand: "DeepCool", name: "Mystique 360", type: "aio", radiator: 360, score: 9.4, price: 219 }
   ],
   customCables: [
-    { id: "cab-mobo-cablemod-pro-90", brand: "CableMod", category: "Carte mÃ¨re (24-pin)", name: "24-pin Pro coudÃ© 90Â°", score: 9.2, price: 74 },
-    { id: "cab-mobo-corsair-prem-black", brand: "Corsair", category: "Carte mÃ¨re (24-pin)", name: "24-pin premium black edition", score: 8.7, price: 57 },
-    { id: "cab-mobo-moddiy-ultraflex", brand: "MODDIY", category: "Carte mÃ¨re (24-pin)", name: "24-pin ultra-flex silicone", score: 9.0, price: 61 },
+    { id: "cab-mobo-cablemod-pro-90", brand: "CableMod", category: "Carte mère (24-pin)", name: "24-pin Pro coudé 90a°", score: 9.2, price: 74 },
+    { id: "cab-mobo-corsair-prem-black", brand: "Corsair", category: "Carte mère (24-pin)", name: "24-pin premium black edition", score: 8.7, price: 57 },
+    { id: "cab-mobo-moddiy-ultraflex", brand: "MODDIY", category: "Carte mère (24-pin)", name: "24-pin ultra-flex silicone", score: 9.0, price: 61 },
     { id: "cab-gpu-1x8-ezdiy", brand: "EZDIY-FAB", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU custom 1x8-pin ARGB", score: 8.1, price: 26, requiredPcie8: 1 },
-    { id: "cab-gpu-2x8-silverstone", brand: "SilverStone", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU custom 2x8-pin tressÃ©", score: 8.5, price: 43, requiredPcie8: 2 },
+    { id: "cab-gpu-2x8-silverstone", brand: "SilverStone", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU custom 2x8-pin tressé", score: 8.5, price: 43, requiredPcie8: 2 },
     { id: "cab-gpu-3x8-coolermaster", brand: "Cooler Master", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU custom 3x8-pin premium", score: 8.9, price: 58, requiredPcie8: 3 },
     { id: "cab-gpu-12vhpwr-corsair-elite", brand: "Corsair", category: "Carte graphique (PCIe/12VHPWR)", name: "12V-2x6 Elite braided", score: 9.5, price: 109, requires12vhpwr: true },
     { id: "cab-gpu-12vhpwr-lianli-v3", brand: "Lian Li", category: "Carte graphique (PCIe/12VHPWR)", name: "Strimer V3 12VHPWR", score: 9.4, price: 96, requires12vhpwr: true },
@@ -674,11 +674,11 @@ const CATALOG_EXPANSION = {
     { id: "cab-oth-corsair-link-pro", brand: "Corsair", category: "Autres (SATA/ARGB/FAN)", name: "iCUE LINK Pro routing set", score: 9.1, price: 74 },
     { id: "cab-oth-phanteks-neon", brand: "Phanteks", category: "Autres (SATA/ARGB/FAN)", name: "Pack D-RGB Neon + extensions", score: 8.6, price: 41 },
     { id: "cab-oth-thermalright-rgb", brand: "Thermalright", category: "Autres (SATA/ARGB/FAN)", name: "Kit ARGB/FAN tidy wiring", score: 8.0, price: 24 },
-    { id: "cab-mobo-cablemod-pro-180", brand: "CableMod", category: "Carte mÃ¨re (24-pin)", name: "24-pin Pro coudÃ© 180Â°", score: 9.3, price: 82 },
-    { id: "cab-mobo-corsair-rgb-v2", brand: "Corsair", category: "Carte mÃ¨re (24-pin)", name: "24-pin RGB braided V2", score: 8.9, price: 68 },
-    { id: "cab-mobo-ezdiy-white", brand: "EZDIY-FAB", category: "Carte mÃ¨re (24-pin)", name: "24-pin white premium", score: 8.2, price: 37 },
-    { id: "cab-mobo-asiahorse-rgb-v3", brand: "AsiaHorse", category: "Carte mÃ¨re (24-pin)", name: "24-pin RGB v3", score: 8.6, price: 49 },
-    { id: "cab-mobo-phanteks-drgb", brand: "Phanteks", category: "Carte mÃ¨re (24-pin)", name: "24-pin D-RGB extension", score: 8.5, price: 46 },
+    { id: "cab-mobo-cablemod-pro-180", brand: "CableMod", category: "Carte mère (24-pin)", name: "24-pin Pro coudé 180a°", score: 9.3, price: 82 },
+    { id: "cab-mobo-corsair-rgb-v2", brand: "Corsair", category: "Carte mère (24-pin)", name: "24-pin RGB braided V2", score: 8.9, price: 68 },
+    { id: "cab-mobo-ezdiy-white", brand: "EZDIY-FAB", category: "Carte mère (24-pin)", name: "24-pin white premium", score: 8.2, price: 37 },
+    { id: "cab-mobo-asiahorse-rgb-v3", brand: "AsiaHorse", category: "Carte mère (24-pin)", name: "24-pin RGB v3", score: 8.6, price: 49 },
+    { id: "cab-mobo-phanteks-drgb", brand: "Phanteks", category: "Carte mère (24-pin)", name: "24-pin D-RGB extension", score: 8.5, price: 46 },
     { id: "cab-gpu-1x8-cablemod-pro", brand: "CableMod", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU 1x8-pin Pro", score: 8.4, price: 34, requiredPcie8: 1 },
     { id: "cab-gpu-2x8-lianli-v3", brand: "Lian Li", category: "Carte graphique (PCIe/12VHPWR)", name: "Strimer V3 double 8-pin", score: 9.2, price: 83, requiredPcie8: 2 },
     { id: "cab-gpu-2x8-corsair-prem", brand: "Corsair", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU 2x8-pin premium", score: 8.8, price: 52, requiredPcie8: 2 },
@@ -696,9 +696,9 @@ const CATALOG_EXPANSION = {
     { id: "cab-oth-argb-pro", brand: "Phanteks", category: "Autres (SATA/ARGB/FAN)", name: "D-RGB pro routing pack", score: 8.8, price: 44 },
     { id: "cab-oth-fan-corsair", brand: "Corsair", category: "Autres (SATA/ARGB/FAN)", name: "Fan hub + extensions premium", score: 8.9, price: 52 },
     { id: "cab-oth-fan-lianli-v2", brand: "Lian Li", category: "Autres (SATA/ARGB/FAN)", name: "UNI FAN routing set V2", score: 9.2, price: 79 },
-    { id: "cab-mobo-lianli-strimer-v3", brand: "Lian Li", category: "Carte mÃ¨re (24-pin)", name: "Strimer V3 24-pin", score: 9.4, price: 109 },
-    { id: "cab-mobo-nzxt-sleeved-24", brand: "NZXT", category: "Carte mÃ¨re (24-pin)", name: "24-pin sleeved premium", score: 8.4, price: 44 },
-    { id: "cab-mobo-fractal-flex", brand: "Fractal", category: "Carte mÃ¨re (24-pin)", name: "24-pin Flex B-20", score: 8.2, price: 39 },
+    { id: "cab-mobo-lianli-strimer-v3", brand: "Lian Li", category: "Carte mère (24-pin)", name: "Strimer V3 24-pin", score: 9.4, price: 109 },
+    { id: "cab-mobo-nzxt-sleeved-24", brand: "NZXT", category: "Carte mère (24-pin)", name: "24-pin sleeved premium", score: 8.4, price: 44 },
+    { id: "cab-mobo-fractal-flex", brand: "Fractal", category: "Carte mère (24-pin)", name: "24-pin Flex B-20", score: 8.2, price: 39 },
     { id: "cab-gpu-4x8-cablemod-pro", brand: "CableMod", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU 4x8-pin Pro", score: 9.2, price: 89, requiredPcie8: 4 },
     { id: "cab-gpu-12vhpwr-lianli-v3-plus", brand: "Lian Li", category: "Carte graphique (PCIe/12VHPWR)", name: "Strimer V3 Plus 12VHPWR", score: 9.6, price: 119, requires12vhpwr: true },
     { id: "cab-gpu-12vhpwr-msi-meg", brand: "MSI", category: "Carte graphique (PCIe/12VHPWR)", name: "12VHPWR MEG braided", score: 9.0, price: 84, requires12vhpwr: true },
@@ -825,12 +825,12 @@ const CATEGORY_CONFIG = {
 };
 
 const USAGE_PROFILE = {
-  "Jeu compÃ©titif (1080p)": { minCpu: 6.5, minGpu: 6.8, minRam: 16, minVram: 8, minStorage: 1, ratioLow: 0.88, ratioHigh: 1.3 },
+  "Jeu compétitif (1080p)": { minCpu: 6.5, minGpu: 6.8, minRam: 16, minVram: 8, minStorage: 1, ratioLow: 0.88, ratioHigh: 1.3 },
   "Jeu AAA (1440p / ultrawide)": { minCpu: 7.2, minGpu: 8.0, minRam: 32, minVram: 12, minStorage: 2, ratioLow: 0.85, ratioHigh: 1.25 },
   "Jeu (4K)": { minCpu: 8.0, minGpu: 9.0, minRam: 32, minVram: 16, minStorage: 2, ratioLow: 0.82, ratioHigh: 1.2 },
-  "CrÃ©ation (montage / 3D / IA)": { minCpu: 8.7, minGpu: 8.5, minRam: 64, minVram: 16, minStorage: 2, ratioLow: 0.95, ratioHigh: 1.35 },
-  "Streaming + multitÃ¢che": { minCpu: 8.0, minGpu: 7.5, minRam: 32, minVram: 12, minStorage: 2, ratioLow: 0.95, ratioHigh: 1.35 },
-  "Bureautique / Ã©tude": { minCpu: 5.6, minGpu: 5.0, minRam: 16, minVram: 0, minStorage: 1, ratioLow: 0.7, ratioHigh: 1.6 }
+  "Création (montage / 3D / IA)": { minCpu: 8.7, minGpu: 8.5, minRam: 64, minVram: 16, minStorage: 2, ratioLow: 0.95, ratioHigh: 1.35 },
+  "Streaming + multitâche": { minCpu: 8.0, minGpu: 7.5, minRam: 32, minVram: 12, minStorage: 2, ratioLow: 0.95, ratioHigh: 1.35 },
+  "Bureautique / étude": { minCpu: 5.6, minGpu: 5.0, minRam: 16, minVram: 0, minStorage: 1, ratioLow: 0.7, ratioHigh: 1.6 }
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -918,7 +918,7 @@ function setStatus(id, text) {
 function sortByBrandGenerationScore(items) {
   const categoryOrder = {
     "Aucun": 0,
-    "Carte mÃ¨re (24-pin)": 1,
+    "Carte mère (24-pin)": 1,
     "Carte graphique (PCIe/12VHPWR)": 2,
     "CPU (EPS 8-pin)": 3,
     "Autres (SATA/ARGB/FAN)": 4
@@ -942,7 +942,7 @@ function sortByBrandGenerationScore(items) {
 }
 
 function optionLabel(key, item) {
-  if (key === "cpu") return `${item.brand} ${item.name} | GÃ©nÃ©ration ${item.generation} | ${euro(item.price)}`;
+  if (key === "cpu") return `${item.brand} ${item.name} | Génération ${item.generation} | ${euro(item.price)}`;
   if (key === "mobo") return `${item.brand} ${item.name} | Socket ${item.socket} | ${item.ramType} | ${euro(item.price)}`;
   if (key === "ram") return `${item.brand} ${item.name} | ${item.type} ${item.gb} Go | ${euro(item.price)}`;
   if (key === "gpu") return `${item.brand} ${item.name} | VRAM ${item.vram} Go | ${euro(item.price)}`;
@@ -952,7 +952,7 @@ function optionLabel(key, item) {
   if (key === "watercooling") return `${item.brand} ${item.name} | ${item.estimateOnly ? "Sur devis" : euro(item.price)}`;
   if (key === "customCables") return `${item.brand} ${item.name} | ${euro(item.price)}`;
   if (key === "cableMgmt") return `${item.brand} ${item.name} | ${euro(item.price)}`;
-  if (key === "delivery") return `${item.name} | ${item.prepWindow || "dÃ©lai variable"} | base ${euro(item.baseFee || 0)}`;
+  if (key === "delivery") return `${item.name} | ${item.prepWindow || "délai variable"} | base ${euro(item.baseFee || 0)}`;
   return `${item.brand} ${item.name} | ${euro(item.price || 0)}`;
 }
 
@@ -960,55 +960,55 @@ function comboOptionTexts(key, item) {
   if (key === "cpu") {
     return {
       title: `${item.brand} ${item.name}`,
-      meta: `GÃ©nÃ©ration ${item.generation} â€¢ Socket ${item.socket} â€¢ ${euro(item.price)}`
+      meta: `Génération ${item.generation} a: Socket ${item.socket} a: ${euro(item.price)}`
     };
   }
   if (key === "mobo") {
     return {
       title: `${item.brand} ${item.name}`,
-      meta: `Socket ${item.socket} â€¢ ${item.ramType} â€¢ ${euro(item.price)}`
+      meta: `Socket ${item.socket} a: ${item.ramType} a: ${euro(item.price)}`
     };
   }
   if (key === "ram") {
     return {
       title: `${item.brand} ${item.name}`,
-      meta: `${item.type} ${item.gb} Go â€¢ ${item.generation} MT/s â€¢ ${euro(item.price)}`
+      meta: `${item.type} ${item.gb} Go a: ${item.generation} MT/s a: ${euro(item.price)}`
     };
   }
   if (key === "gpu") {
     return {
       title: `${item.brand} ${item.name}`,
-      meta: `${item.vram} Go VRAM â€¢ ${item.tdp}W â€¢ ${euro(item.price)}`
+      meta: `${item.vram} Go VRAM a: ${item.tdp}W a: ${euro(item.price)}`
     };
   }
   if (key === "storage") {
     return {
       title: `${item.brand} ${item.name}`,
-      meta: `${item.tb} To â€¢ PCIe Gen ${item.generation} â€¢ ${euro(item.price)}`
+      meta: `${item.tb} To a: PCIe Gen ${item.generation} a: ${euro(item.price)}`
     };
   }
   if (key === "psu") {
     return {
       title: `${item.brand} ${item.name}`,
-      meta: `${item.watts}W â€¢ Score ${item.score || "-"} â€¢ ${euro(item.price)}`
+      meta: `${item.watts}W a: Score ${item.score || "-"} a: ${euro(item.price)}`
     };
   }
   if (key === "case") {
     return {
       title: `${item.brand} ${item.name}`,
-      meta: `GPU max ${item.maxGpu}mm â€¢ Radiateur max ${item.maxRad}mm â€¢ ${euro(item.price)}`
+      meta: `GPU max ${item.maxGpu}mm a: Radiateur max ${item.maxRad}mm a: ${euro(item.price)}`
     };
   }
   if (key === "watercooling") {
     return {
       title: `${item.brand} ${item.name}`,
-      meta: item.estimateOnly ? "Sur devis" : `${item.type.toUpperCase()} â€¢ ${item.radiator ? `${item.radiator}mm` : "Air"} â€¢ ${euro(item.price)}`
+      meta: item.estimateOnly ? "Sur devis" : `${item.type.toUpperCase()} a: ${item.radiator ? `${item.radiator}mm` : "Air"} a: ${euro(item.price)}`
     };
   }
   if (key === "customCables") {
     return {
       title: `${item.brand} ${item.name}`,
-      meta: `${item.category} â€¢ ${euro(item.price)}`
+      meta: `${item.category} a: ${euro(item.price)}`
     };
   }
   if (key === "cableMgmt") {
@@ -1020,7 +1020,7 @@ function comboOptionTexts(key, item) {
   if (key === "delivery") {
     return {
       title: `${item.name}`,
-      meta: `${item.prepWindow || "dÃ©lai variable"} â€¢ Base ${euro(item.baseFee || 0)}`
+      meta: `${item.prepWindow || "délai variable"} a: Base ${euro(item.baseFee || 0)}`
     };
   }
   return {
@@ -1041,7 +1041,7 @@ function badgeToneClass(badge) {
 function shortLabel(key, item) {
   if (!item) return "";
   if (key === "delivery") return item.name;
-  if (key === "customCables") return `${item.category} â€¢ ${item.brand} ${item.name}`;
+  if (key === "customCables") return `${item.category} a: ${item.brand} ${item.name}`;
   return `${item.brand} ${item.name}`;
 }
 
@@ -1111,7 +1111,7 @@ function inferUnknownComponent(key, query) {
     const price = tier >= 9 ? 620 : tier >= 8 ? 430 : tier >= 7 ? 260 : 160;
     return {
       id: `unknown-cpu-${Date.now()}`,
-      brand: isIntel ? "Intel" : isAmd ? "AMD" : "RÃ©fÃ©rence externe",
+      brand: isIntel ? "Intel" : isAmd ? "AMD" : "Référence externe",
       name: query,
       generation: Number((q.match(/(\d{4,5})/) || [])[1]) || 0,
       socket,
@@ -1132,7 +1132,7 @@ function inferUnknownComponent(key, query) {
     const price = tier >= 3 ? 330 : 185;
     return {
       id: `unknown-mobo-${Date.now()}`,
-      brand: "RÃ©fÃ©rence externe",
+      brand: "Référence externe",
       name: query,
       generation,
       socket,
@@ -1152,7 +1152,7 @@ function inferUnknownComponent(key, query) {
     const price = Math.round((ddr === "DDR5" ? 3.2 : 2.2) * gb);
     return {
       id: `unknown-ram-${Date.now()}`,
-      brand: "RÃ©fÃ©rence externe",
+      brand: "Référence externe",
       name: query,
       generation: speed,
       type: ddr,
@@ -1174,7 +1174,7 @@ function inferUnknownComponent(key, query) {
     const price = Math.round((rank * 110) + (vram * 9));
     return {
       id: `unknown-gpu-${Date.now()}`,
-      brand: isNvidia ? "NVIDIA" : isAmd ? "AMD" : "RÃ©fÃ©rence externe",
+      brand: isNvidia ? "NVIDIA" : isAmd ? "AMD" : "Référence externe",
       name: query,
       generation,
       vram,
@@ -1194,7 +1194,7 @@ function inferUnknownComponent(key, query) {
     const price = Math.round((gen === 5 ? 130 : 78) * tb);
     return {
       id: `unknown-storage-${Date.now()}`,
-      brand: "RÃ©fÃ©rence externe",
+      brand: "Référence externe",
       name: query,
       generation: gen,
       tb,
@@ -1210,7 +1210,7 @@ function inferUnknownComponent(key, query) {
     const price = Math.round(watts * 0.19);
     return {
       id: `unknown-psu-${Date.now()}`,
-      brand: "RÃ©fÃ©rence externe",
+      brand: "Référence externe",
       name: query,
       generation: watts,
       watts,
@@ -1227,7 +1227,7 @@ function inferUnknownComponent(key, query) {
     const price = maxRad >= 420 ? 219 : maxRad >= 360 ? 169 : 129;
     return {
       id: `unknown-case-${Date.now()}`,
-      brand: "RÃ©fÃ©rence externe",
+      brand: "Référence externe",
       name: query,
       generation: 0,
       maxGpu,
@@ -1245,7 +1245,7 @@ function inferUnknownComponent(key, query) {
     const price = type === "custom" ? 0 : type === "air" ? 79 : (radiator >= 360 ? 179 : radiator >= 280 ? 149 : 119);
     return {
       id: `unknown-cooling-${Date.now()}`,
-      brand: "RÃ©fÃ©rence externe",
+      brand: "Référence externe",
       name: query,
       type,
       radiator: type === "air" ? 0 : radiator,
@@ -1266,11 +1266,11 @@ function inferUnknownComponent(key, query) {
       : cpu
         ? "CPU (EPS 8-pin)"
         : mobo
-          ? "Carte mÃ¨re (24-pin)"
+          ? "Carte mère (24-pin)"
           : "Autres (SATA/ARGB/FAN)";
     return {
       id: `unknown-cable-${Date.now()}`,
-      brand: "RÃ©fÃ©rence externe",
+      brand: "Référence externe",
       category,
       name: query,
       score: 8.0,
@@ -1286,7 +1286,7 @@ function inferUnknownComponent(key, query) {
   if (key === "cableMgmt") {
     return {
       id: `unknown-mgmt-${Date.now()}`,
-      brand: "RÃ©fÃ©rence externe",
+      brand: "Référence externe",
       name: query,
       score: 8.3,
       price: 39,
@@ -1302,7 +1302,7 @@ function inferUnknownComponent(key, query) {
       brand: "Atelier",
       name: query,
       mode,
-      prepWindow: mode === "priority" ? "2-3 jours ouvrÃ©s" : mode === "economy" ? "5-8 jours ouvrÃ©s" : "3-5 jours ouvrÃ©s",
+      prepWindow: mode === "priority" ? "2-3 jours ouvrés" : mode === "economy" ? "5-8 jours ouvrés" : "3-5 jours ouvrés",
       score: mode === "priority" ? 9.0 : mode === "economy" ? 7.0 : 8.2,
       baseFee: mode === "priority" ? 36 : mode === "economy" ? 8 : 18,
       speedFactor: mode === "priority" ? 1.35 : mode === "economy" ? 0.72 : 1.0,
@@ -1508,7 +1508,7 @@ function optionAvailability(key, item, ctx = getCableContext()) {
 
       if (item.requires12vhpwr) return { available: false, reason: "GPU en PCIe 8-pin, pas en 12VHPWR" };
       if (item.requiredPcie8 && item.requiredPcie8 !== ctx.gpuNeeds.pcie8) {
-        return { available: false, reason: `GPU nÃ©cessite ${ctx.gpuNeeds.pcie8} x 8-pin` };
+        return { available: false, reason: `GPU nécessite ${ctx.gpuNeeds.pcie8} x 8-pin` };
       }
       if (ctx.psuPins.pcie8 < ctx.gpuNeeds.pcie8) {
         return { available: false, reason: "Nombre de connecteurs PCIe alim insuffisant" };
@@ -1520,7 +1520,7 @@ function optionAvailability(key, item, ctx = getCableContext()) {
       if (!ctx.cpu || !ctx.psu) return { available: true, reason: "" };
       if (ctx.psuPins.eps8 < ctx.cpuEpsNeed) return { available: false, reason: "EPS alim insuffisant pour le CPU" };
       if (item.requiredEps8 && item.requiredEps8 !== ctx.cpuEpsNeed) {
-        return { available: false, reason: `CPU conseillÃ© en ${ctx.cpuEpsNeed} x EPS 8-pin` };
+        return { available: false, reason: `CPU conseillé en ${ctx.cpuEpsNeed} x EPS 8-pin` };
       }
       return { available: true, reason: "" };
     }
@@ -1951,7 +1951,7 @@ function availabilityForCategory(key, item, cableCtx) {
     return { available: false, reason: `Socket ${selectedMobo.socket} requis` };
   }
   if (key === "cpu" && selectedMobo && !cpuMoboGenerationCompatible(item, selectedMobo)) {
-    return { available: false, reason: "Chipset carte mÃ¨re non adaptÃ© Ã  cette gÃ©nÃ©ration CPU" };
+    return { available: false, reason: "Chipset carte mère non adapté Ã  cette génération CPU" };
   }
   if (key === "mobo") {
     if (isPendingExternal(selectedCpu) || isPendingExternal(selectedRam)) return { available: true, reason: "" };
@@ -1959,7 +1959,7 @@ function availabilityForCategory(key, item, cableCtx) {
       return { available: false, reason: `Socket CPU ${selectedCpu.socket} requis` };
     }
     if (selectedCpu && !cpuMoboGenerationCompatible(selectedCpu, item)) {
-      return { available: false, reason: "Chipset non adaptÃ© au CPU sÃ©lectionnÃ©" };
+      return { available: false, reason: "Chipset non adapté au CPU sélectionné" };
     }
     if (selectedRam && item.ramType !== selectedRam.type) {
       return { available: false, reason: `${selectedRam.type} requis` };
@@ -1975,7 +1975,7 @@ function availabilityForCategory(key, item, cableCtx) {
   }
   if (key === "case" && isPendingExternal(selectedGpu)) return { available: true, reason: "" };
   if (key === "case" && selectedGpu && item.maxGpu < selectedGpu.length) {
-    return { available: false, reason: `GPU ${selectedGpu.length} mm non supportÃ©` };
+    return { available: false, reason: `GPU ${selectedGpu.length} mm non supporté` };
   }
   if (key === "watercooling" && isPendingExternal(selectedCase)) return { available: true, reason: "" };
   if (key === "watercooling" && selectedCase && (item.type === "aio" || item.type === "custom") && item.radiator > selectedCase.maxRad) {
@@ -1993,14 +1993,14 @@ function availabilityForCategory(key, item, cableCtx) {
 }
 
 function groupLabelFor(key, item) {
-  if (key === "cpu") return `${item.brand} â€¢ GÃ©nÃ©ration ${item.generation}`;
-  if (key === "gpu") return `${item.brand} â€¢ SÃ©rie ${item.generation}`;
-  if (key === "mobo") return `${item.brand} â€¢ Socket ${item.socket}`;
-  if (key === "ram") return `${item.brand} â€¢ ${item.type}`;
-  if (key === "psu") return `${item.brand} â€¢ ${item.watts}W`;
-  if (key === "storage") return `${item.brand} â€¢ ${item.tb} To`;
+  if (key === "cpu") return `${item.brand} a: Génération ${item.generation}`;
+  if (key === "gpu") return `${item.brand} a: Série ${item.generation}`;
+  if (key === "mobo") return `${item.brand} a: Socket ${item.socket}`;
+  if (key === "ram") return `${item.brand} a: ${item.type}`;
+  if (key === "psu") return `${item.brand} a: ${item.watts}W`;
+  if (key === "storage") return `${item.brand} a: ${item.tb} To`;
   if (key === "case") return `${item.brand}`;
-  if (key === "customCables") return `${item.category} â€¢ ${item.brand}`;
+  if (key === "customCables") return `${item.category} a: ${item.brand}`;
   return item.brand || "Autres";
 }
 
@@ -2092,7 +2092,7 @@ function scheduleUnknownResearch() {
     refreshDependentPersonalizationOptions();
     Object.keys(CATEGORY_CONFIG).forEach((key) => updateFilterInputFromSelection(key));
     compute();
-    toast("RÃ©fÃ©rence externe analysÃ©e via internet et intÃ©grÃ©e.");
+    toast("Référence externe analysée via internet et intégrée.");
   }, 260);
 }
 
@@ -2150,8 +2150,8 @@ function appendOtherChoice(menuEl, key, typed, unknown, filterEl) {
   otherBtn.type = "button";
   otherBtn.className = "combo-other-btn";
   otherBtn.textContent = unknown?.confirmed
-    ? "Modifier la rÃ©fÃ©rence externe"
-    : "Autre rÃ©fÃ©rence (hors liste)";
+    ? "Modifier la référence externe"
+    : "Autre référence (hors liste)";
 
   otherBtn.addEventListener("mousedown", (e) => {
     e.preventDefault();
@@ -2167,7 +2167,7 @@ function appendOtherChoice(menuEl, key, typed, unknown, filterEl) {
     }
 
     if (!typed) {
-      toast("Saisis d'abord la rÃ©fÃ©rence dans le champ.");
+      toast("Saisis d'abord la référence dans le champ.");
       filterEl?.focus();
       closeAllComboMenus(key);
       return;
@@ -2195,8 +2195,8 @@ function renderComboMenu(key, items) {
     const status = document.createElement("div");
     status.className = "combo-external";
     status.textContent = unknown.resolved
-      ? `RÃ©fÃ©rence externe intÃ©grÃ©e: ${unknown.query}`
-      : `RÃ©fÃ©rence externe en attente d'analyse: ${unknown.query}`;
+      ? `Référence externe intégrée: ${unknown.query}`
+      : `Référence externe en attente d'analyse: ${unknown.query}`;
     menuEl.appendChild(status);
   }
 
@@ -2204,7 +2204,7 @@ function renderComboMenu(key, items) {
 		    if (typed && !unknown?.confirmed && !NO_EXTERNAL_REFERENCE_KEYS.has(key)) {
 	      const ask = document.createElement("div");
 	      ask.className = "combo-empty";
-	      ask.textContent = `RÃ©fÃ©rence inconnue "${typed}". Es-tu sÃ»r qu'elle existe ?`;
+	      ask.textContent = `Référence inconnue "${typed}". Es-tu sÃ»r qu'elle existe ?`;
 	      menuEl.appendChild(ask);
 
       const actions = document.createElement("div");
@@ -2237,7 +2237,7 @@ function renderComboMenu(key, items) {
 	      const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "combo-unknown-btn combo-unknown-btn--ghost combo-unknown-btn--wide";
-      remove.textContent = "Retirer la rÃ©fÃ©rence externe";
+      remove.textContent = "Retirer la référence externe";
 	      remove.addEventListener("mousedown", (e) => {
 	        e.preventDefault();
 	        clearUnknownComponent(key);
@@ -2248,7 +2248,7 @@ function renderComboMenu(key, items) {
 		    } else {
 		      const empty = document.createElement("div");
 		      empty.className = "combo-empty";
-		      empty.textContent = "Aucun rÃ©sultat";
+		      empty.textContent = "Aucun résultat";
 		      menuEl.appendChild(empty);
 	        appendOtherChoice(menuEl, key, typed, unknown, filterEl);
 		    }
@@ -2261,7 +2261,7 @@ function renderComboMenu(key, items) {
     if (!exact) {
       const suggest = document.createElement("div");
       suggest.className = "combo-empty";
-      suggest.textContent = `RÃ©fÃ©rence exacte introuvable: "${typed}"`;
+      suggest.textContent = `Référence exacte introuvable: "${typed}"`;
       menuEl.appendChild(suggest);
     }
   }
@@ -2406,7 +2406,7 @@ function renderCategory(key) {
   selectEl.innerHTML = "";
   const placeholder = document.createElement("option");
   placeholder.value = "";
-  placeholder.textContent = config.required ? "Choisirâ€¦" : "Choisir (optionnel)â€¦";
+  placeholder.textContent = config.required ? "Choisir a ¦" : "Choisir (optionnel)€¦";
   placeholder.selected = true;
   selectEl.appendChild(placeholder);
 
@@ -2425,7 +2425,7 @@ function renderCategory(key) {
     const availability = availabilityForCategory(key, item, ctx);
     const isCurrentSelection = selectedValue && item.id === selectedValue;
     const badge = optionBadge(key, item, availability);
-    option.textContent = `${badge ? `${badge} ` : ""}${optionLabel(key, item)}${availability.available ? "" : ` â€” Indisponible (${availability.reason})`}`;
+    option.textContent = `${badge ? `${badge} ` : ""}${optionLabel(key, item)}${availability.available ? "" : ` €” Indisponible (${availability.reason})`}`;
     option.disabled = !availability.available && !isCurrentSelection;
     groups.get(groupKey).appendChild(option);
   });
@@ -2622,9 +2622,9 @@ function compute() {
     requiredCategoryKeys().every((key) => Boolean(getSelected(key)))
   );
   if (!requiredReady) {
-    if (priceEl) priceEl.textContent = "â€”";
-    renderBreakdown([{ name: "Estimation", value: "ComplÃ¨te la configuration" }]);
-    alertBox("warn", "Renseigne tous les composants, l'usage et le niveau de traitement atelier pour obtenir un rÃ©sultat fiable.");
+    if (priceEl) priceEl.textContent = "€”";
+    renderBreakdown([{ name: "Estimation", value: "Complète la configuration" }]);
+    alertBox("warn", "Renseigne tous les composants, l'usage et le niveau de traitement atelier pour obtenir un résultat fiable.");
     const notReadyState = {
       ready: false,
       canCheckout: false,
@@ -2640,8 +2640,8 @@ function compute() {
   }
 
   if (budgetMin && budgetMax && budgetMin > budgetMax) {
-    blocking.push("Budget mini supÃ©rieur au budget maxi.");
-    alertBox("bad", "Budget invalide: le budget mini dÃ©passe le budget maxi.");
+    blocking.push("Budget mini supérieur au budget maxi.");
+    alertBox("bad", "Budget invalide: le budget mini dépasse le budget maxi.");
   }
 
   const pendingUnknown = [cpu, mobo, ram, gpu, storage, psu, casev, cooling, customCable, cableMgmt, delivery]
@@ -2653,36 +2653,36 @@ function compute() {
   }
 
   if (!isPendingExternal(cpu) && !isPendingExternal(mobo) && cpu.socket !== mobo.socket) {
-    blocking.push("Socket CPU / carte mÃ¨re incompatible.");
-    alertBox("bad", `IncompatibilitÃ© socket: ${cpu.socket} vs ${mobo.socket}.`);
+    blocking.push("Socket CPU / carte mère incompatible.");
+    alertBox("bad", `Incompatibilité socket: ${cpu.socket} vs ${mobo.socket}.`);
 
     const altBoard = sortByBrandGenerationScore(CATALOG.mobo)
       .filter((item) => item.socket === cpu.socket && item.ramType === ram.type)
       .sort((a, b) => (a.price - b.price))[0];
     if (altBoard) suggestions.push(`Suggestion compatible: ${altBoard.brand} ${altBoard.name} (${euro(altBoard.price)}).`);
   } else if (!isPendingExternal(cpu) && !isPendingExternal(mobo)) {
-    alertBox("good", "Socket CPU / carte mÃ¨re: OK.");
+    alertBox("good", "Socket CPU / carte mère: OK.");
   }
 
   if (!isPendingExternal(cpu) && !isPendingExternal(mobo) && cpu.socket === mobo.socket && !cpuMoboGenerationCompatible(cpu, mobo)) {
-    blocking.push("Chipset carte mÃ¨re non adaptÃ© Ã  cette gÃ©nÃ©ration de CPU.");
-    alertBox("bad", "Chipset carte mÃ¨re non recommandÃ© pour ce CPU.");
+    blocking.push("Chipset carte mère non adapté Ã  cette génération de CPU.");
+    alertBox("bad", "Chipset carte mère non recommandé pour ce CPU.");
     const altBoardGen = sortByBrandGenerationScore(CATALOG.mobo)
       .filter((item) => item.socket === cpu.socket && item.ramType === ram.type && cpuMoboGenerationCompatible(cpu, item))
       .sort((a, b) => a.price - b.price)[0];
-    if (altBoardGen) suggestions.push(`Carte mÃ¨re de gÃ©nÃ©ration compatible: ${altBoardGen.brand} ${altBoardGen.name}.`);
+    if (altBoardGen) suggestions.push(`Carte mère de génération compatible: ${altBoardGen.brand} ${altBoardGen.name}.`);
   }
 
   if (!isPendingExternal(mobo) && !isPendingExternal(ram) && mobo.ramType !== ram.type) {
-    blocking.push("Type de RAM non supportÃ© par la carte mÃ¨re.");
-    alertBox("bad", `${ram.type} sÃ©lectionnÃ©e, mais la carte mÃ¨re exige ${mobo.ramType}.`);
+    blocking.push("Type de RAM non supporté par la carte mère.");
+    alertBox("bad", `${ram.type} sélectionnée, mais la carte mère exige ${mobo.ramType}.`);
 
     const altRam = sortByBrandGenerationScore(CATALOG.ram)
       .filter((item) => item.type === mobo.ramType)
       .sort((a, b) => Math.abs(a.gb - ram.gb) || (a.price - b.price))[0];
-    if (altRam) suggestions.push(`RAM compatible recommandÃ©e: ${altRam.brand} ${altRam.name} (${euro(altRam.price)}).`);
+    if (altRam) suggestions.push(`RAM compatible recommandée: ${altRam.brand} ${altRam.name} (${euro(altRam.price)}).`);
   } else if (!isPendingExternal(mobo) && !isPendingExternal(ram)) {
-    alertBox("good", "CompatibilitÃ© RAM / carte mÃ¨re: OK.");
+    alertBox("good", "Compatibilité RAM / carte mère: OK.");
   }
 
   if (!isPendingExternal(gpu) && !isPendingExternal(casev) && gpu.length > casev.maxGpu) {
@@ -2692,7 +2692,7 @@ function compute() {
     const altCase = sortByBrandGenerationScore(CATALOG.case)
       .filter((item) => item.maxGpu >= gpu.length)
       .sort((a, b) => a.price - b.price)[0];
-    if (altCase) suggestions.push(`BoÃ®tier compatible proposÃ©: ${altCase.brand} ${altCase.name} (${euro(altCase.price)}).`);
+    if (altCase) suggestions.push(`BoÃ®tier compatible proposé: ${altCase.brand} ${altCase.name} (${euro(altCase.price)}).`);
   } else if (!isPendingExternal(gpu) && !isPendingExternal(casev)) {
     alertBox("good", "Longueur GPU / boÃ®tier: OK.");
   }
@@ -2705,26 +2705,26 @@ function compute() {
       const altCooling = sortByBrandGenerationScore(CATALOG.watercooling)
         .filter((item) => !item.estimateOnly && item.radiator <= casev.maxRad)
         .sort((a, b) => b.score - a.score)[0];
-      if (altCooling) suggestions.push(`Refroidissement compatible conseillÃ©: ${altCooling.brand} ${altCooling.name} (${euro(altCooling.price)}).`);
+      if (altCooling) suggestions.push(`Refroidissement compatible conseillé: ${altCooling.brand} ${altCooling.name} (${euro(altCooling.price)}).`);
     } else {
-      alertBox("good", "CompatibilitÃ© refroidissement / boÃ®tier: OK.");
+      alertBox("good", "Compatibilité refroidissement / boÃ®tier: OK.");
     }
   }
 
   const customCableCheck = optionAvailability("customCables", customCable, cableCtx);
   if (!customCableCheck.available) {
-    warnings.push("Option cÃ¢ble custom indisponible avec cette configuration.");
-    alertBox("warn", `CÃ¢ble custom indisponible: ${customCableCheck.reason}.`);
+    warnings.push("Option câble custom indisponible avec cette configuration.");
+    alertBox("warn", `Câble custom indisponible: ${customCableCheck.reason}.`);
   }
 
   if (delivery.mode === "priority" && cooling.type === "custom") {
-    warnings.push("Traitement prioritaire + boucle custom: dÃ©lai ajustÃ© selon validation atelier.");
-    alertBox("warn", "Le watercooling 100% custom nÃ©cessite validation manuelle, mÃªme en traitement prioritaire.");
+    warnings.push("Traitement prioritaire + boucle custom: délai ajusté selon validation atelier.");
+    alertBox("warn", "Le watercooling 100% custom nécessite validation manuelle, mÃªme en traitement prioritaire.");
   }
 
   if (!isPendingExternal(gpu) && !isPendingExternal(psu) && cableCtx.gpuNeeds.need12vhpwr && !cableCtx.psuPins.has12vhpwr) {
     blocking.push("GPU 12VHPWR/12V-2x6 sans alimentation compatible.");
-    alertBox("bad", "La carte graphique nÃ©cessite un connecteur 12VHPWR/12V-2x6 compatible.");
+    alertBox("bad", "La carte graphique nécessite un connecteur 12VHPWR/12V-2x6 compatible.");
   }
 
   if (!isPendingExternal(gpu) && !isPendingExternal(psu) && !cableCtx.gpuNeeds.need12vhpwr && cableCtx.psuPins.pcie8 < cableCtx.gpuNeeds.pcie8) {
@@ -2733,17 +2733,17 @@ function compute() {
   }
 
   if (!isPendingExternal(cpu) && !isPendingExternal(psu) && cableCtx.psuPins.eps8 < cableCtx.cpuEpsNeed) {
-    blocking.push("Connectique EPS CPU insuffisante cÃ´tÃ© alimentation.");
-    alertBox("bad", `Le CPU conseillÃ© demande ${cableCtx.cpuEpsNeed} x EPS 8-pin.`);
+    blocking.push("Connectique EPS CPU insuffisante cÃ´té alimentation.");
+    alertBox("bad", `Le CPU conseillé demande ${cableCtx.cpuEpsNeed} x EPS 8-pin.`);
   }
 
   if (!isPendingExternal(cpu) && !isPendingExternal(mobo) && cpu.rank >= 8.8 && mobo.tier < 3) {
-    warnings.push("Carte mÃ¨re un peu lÃ©gÃ¨re pour un CPU haut de gamme.");
-    alertBox("warn", "VRM carte mÃ¨re limite pour ce niveau de CPU. Une carte tier 3/4 est recommandÃ©e.");
+    warnings.push("Carte mère un peu légère pour un CPU haut de gamme.");
+    alertBox("warn", "VRM carte mère limite pour ce niveau de CPU. Une carte tier 3/4 est recommandée.");
     const betterBoard = sortByBrandGenerationScore(CATALOG.mobo)
       .filter((item) => item.socket === cpu.socket && item.ramType === ram.type && item.tier >= 3)
       .sort((a, b) => a.price - b.price)[0];
-    if (betterBoard) suggestions.push(`Carte mÃ¨re plus adaptÃ©e: ${betterBoard.brand} ${betterBoard.name} (${euro(betterBoard.price)}).`);
+    if (betterBoard) suggestions.push(`Carte mère plus adaptée: ${betterBoard.brand} ${betterBoard.name} (${euro(betterBoard.price)}).`);
   }
 
   const consumption = cpu.tdp + gpu.tdp + 120 + (cooling.type === "custom" ? 45 : cooling.type === "aio" ? 25 : 10);
@@ -2751,14 +2751,14 @@ function compute() {
 
   if (!isPendingExternal(psu) && psu.watts < recommendedPsu) {
     blocking.push("Alimentation insuffisante pour une marge stable.");
-    alertBox("bad", `Alimentation trop faible: ${psu.watts}W, recommandÃ© ${recommendedPsu}W minimum.`);
+    alertBox("bad", `Alimentation trop faible: ${psu.watts}W, recommandé ${recommendedPsu}W minimum.`);
 
     const altPsu = sortByBrandGenerationScore(CATALOG.psu)
       .filter((item) => item.watts >= recommendedPsu)
       .sort((a, b) => a.price - b.price)[0];
-    if (altPsu) suggestions.push(`Alimentation recommandÃ©e: ${altPsu.brand} ${altPsu.name} (${euro(altPsu.price)}).`);
+    if (altPsu) suggestions.push(`Alimentation recommandée: ${altPsu.brand} ${altPsu.name} (${euro(altPsu.price)}).`);
   } else if (!isPendingExternal(psu) && psu.watts < recommendedPsu + 120) {
-    warnings.push("Marge PSU correcte mais serrÃ©e.");
+    warnings.push("Marge PSU correcte mais serrée.");
     alertBox("warn", `Marge PSU faible: vise ${recommendedPsu + 100}W pour plus de confort.`);
   } else if (!isPendingExternal(psu)) {
     alertBox("good", "Marge alimentation: confortable.");
@@ -2767,107 +2767,107 @@ function compute() {
   const usageProfile = USAGE_PROFILE[usageValue] || USAGE_PROFILE["Jeu AAA (1440p / ultrawide)"];
 
   if (!isPendingExternal(ram) && ram.gb < usageProfile.minRam) {
-    warnings.push("RAM infÃ©rieure au besoin de l'usage sÃ©lectionnÃ©.");
-    alertBox("warn", `Pour "${usageValue}", ${usageProfile.minRam} Go de RAM sont recommandÃ©s.`);
+    warnings.push("RAM inférieure au besoin de l'usage sélectionné.");
+    alertBox("warn", `Pour "${usageValue}", ${usageProfile.minRam} Go de RAM sont recommandés.`);
 
     const betterRam = sortByBrandGenerationScore(CATALOG.ram)
       .filter((item) => item.type === mobo.ramType && item.gb >= usageProfile.minRam)
       .sort((a, b) => a.price - b.price)[0];
-    if (betterRam) suggestions.push(`RAM suggÃ©rÃ©e pour ton usage: ${betterRam.brand} ${betterRam.name}.`);
+    if (betterRam) suggestions.push(`RAM suggérée pour ton usage: ${betterRam.brand} ${betterRam.name}.`);
   }
 
   if (!isPendingExternal(mobo) && !isPendingExternal(ram) && mobo.ramType === "DDR5" && ram.generation < 5600) {
-    warnings.push("FrÃ©quence RAM un peu basse pour une plateforme DDR5.");
-    alertBox("warn", "RAM DDR5 < 5600 MT/s: un kit 6000/6400 est conseillÃ© pour de meilleures perfs.");
+    warnings.push("Fréquence RAM un peu basse pour une plateforme DDR5.");
+    alertBox("warn", "RAM DDR5 < 5600 MT/s: un kit 6000/6400 est conseillé pour de meilleures perfs.");
   }
 
   if (!isPendingExternal(storage) && storage.tb < usageProfile.minStorage) {
-    warnings.push("CapacitÃ© stockage un peu courte pour l'usage.");
-    alertBox("warn", `Stockage conseillÃ© pour cet usage: au moins ${usageProfile.minStorage} To.`);
+    warnings.push("Capacité stockage un peu courte pour l'usage.");
+    alertBox("warn", `Stockage conseillé pour cet usage: au moins ${usageProfile.minStorage} To.`);
 
     const betterStorage = sortByBrandGenerationScore(CATALOG.storage)
       .filter((item) => item.tb >= usageProfile.minStorage)
       .sort((a, b) => a.price - b.price)[0];
-    if (betterStorage) suggestions.push(`Stockage conseillÃ©: ${betterStorage.brand} ${betterStorage.name}.`);
+    if (betterStorage) suggestions.push(`Stockage conseillé: ${betterStorage.brand} ${betterStorage.name}.`);
   }
 
-  if (!isPendingExternal(storage) && usageValue === "CrÃ©ation (montage / 3D / IA)" && storage.score < 8.5) {
-    warnings.push("Stockage correct mais un SSD plus rapide est conseillÃ© pour la crÃ©ation.");
+  if (!isPendingExternal(storage) && usageValue === "Création (montage / 3D / IA)" && storage.score < 8.5) {
+    warnings.push("Stockage correct mais un SSD plus rapide est conseillé pour la création.");
     const proStorage = sortByBrandGenerationScore(CATALOG.storage)
       .filter((item) => item.score >= 8.8 && item.tb >= Math.max(2, usageProfile.minStorage))
       .sort((a, b) => a.price - b.price)[0];
-    if (proStorage) suggestions.push(`Stockage conseillÃ© pour crÃ©ation: ${proStorage.brand} ${proStorage.name}.`);
+    if (proStorage) suggestions.push(`Stockage conseillé pour création: ${proStorage.brand} ${proStorage.name}.`);
   }
 
   if (!isPendingExternal(gpu) && usageProfile.minVram > 0 && gpu.vram < usageProfile.minVram) {
-    warnings.push("VRAM limite pour l'usage demandÃ©.");
-    alertBox("warn", `VRAM recommandÃ©e pour cet usage: ${usageProfile.minVram} Go minimum.`);
+    warnings.push("VRAM limite pour l'usage demandé.");
+    alertBox("warn", `VRAM recommandée pour cet usage: ${usageProfile.minVram} Go minimum.`);
 
     const betterGpuForVram = sortByBrandGenerationScore(CATALOG.gpu)
       .filter((item) => item.vram >= usageProfile.minVram && item.rank >= gpu.rank)
       .sort((a, b) => a.price - b.price)[0];
-    if (betterGpuForVram) suggestions.push(`GPU recommandÃ© pour la VRAM: ${betterGpuForVram.brand} ${betterGpuForVram.name}.`);
+    if (betterGpuForVram) suggestions.push(`GPU recommandé pour la VRAM: ${betterGpuForVram.brand} ${betterGpuForVram.name}.`);
   }
 
   const ratio = cpu.rank / gpu.rank;
-  let bottleneck = { type: "balanced", percent: 0, message: "Ã‰quilibre CPU/GPU cohÃ©rent." };
+  let bottleneck = { type: "balanced", percent: 0, message: "Équilibre CPU/GPU cohérent." };
 
   if (isPendingExternal(cpu) || isPendingExternal(gpu)) {
-    bottleneck = { type: "pending", percent: 0, message: "Goulot d'Ã©tranglement en attente d'analyse de la rÃ©fÃ©rence externe." };
+    bottleneck = { type: "pending", percent: 0, message: "Goulot d'étranglement en attente d'analyse de la référence externe." };
     warnings.push(bottleneck.message);
     alertBox("warn", bottleneck.message);
   } else if (ratio < usageProfile.ratioLow) {
     const percent = Math.max(6, Math.min(35, Math.round(((usageProfile.ratioLow - ratio) / usageProfile.ratioLow) * 100)));
-    bottleneck = { type: "cpu", percent, message: `Goulot d'Ã©tranglement CPU estimÃ© Ã  ~${percent}% sur cet usage.` };
+    bottleneck = { type: "cpu", percent, message: `Goulot d'étranglement CPU estimé à  ~${percent}% sur cet usage.` };
     warnings.push(bottleneck.message);
     alertBox("warn", bottleneck.message);
 
     const betterCpu = nextBetter(CATALOG.cpu, cpu.rank, (item) => item.socket === cpu.socket);
     const lowerGpu = bestBudget(CATALOG.gpu, cpu.rank + 0.5);
     if (betterCpu) suggestions.push(`Option plus performante: ${betterCpu.brand} ${betterCpu.name} (${euro(betterCpu.price)}).`);
-    if (lowerGpu) suggestions.push(`Option plus Ã©quilibrÃ©e (moins chÃ¨re): ${lowerGpu.brand} ${lowerGpu.name} (${euro(lowerGpu.price)}).`);
+    if (lowerGpu) suggestions.push(`Option plus équilibrée (moins chère): ${lowerGpu.brand} ${lowerGpu.name} (${euro(lowerGpu.price)}).`);
   } else if (ratio > usageProfile.ratioHigh) {
     const percent = Math.max(5, Math.min(30, Math.round(((ratio - usageProfile.ratioHigh) / usageProfile.ratioHigh) * 100)));
-    bottleneck = { type: "gpu", percent, message: `Limitation GPU estimÃ©e Ã  ~${percent}% pour cet usage.` };
+    bottleneck = { type: "gpu", percent, message: `Limitation GPU estimée à ~${percent}% pour cet usage.` };
     warnings.push(bottleneck.message);
     alertBox("warn", bottleneck.message);
 
     const betterGpu = nextBetter(CATALOG.gpu, gpu.rank);
     const lowerCpu = bestBudget(CATALOG.cpu, gpu.rank + 0.3, (item) => item.socket === cpu.socket);
     if (betterGpu) suggestions.push(`Option plus performante: ${betterGpu.brand} ${betterGpu.name} (${euro(betterGpu.price)}).`);
-    if (lowerCpu) suggestions.push(`Option plus Ã©conomique: ${lowerCpu.brand} ${lowerCpu.name} (${euro(lowerCpu.price)}).`);
+    if (lowerCpu) suggestions.push(`Option plus économique: ${lowerCpu.brand} ${lowerCpu.name} (${euro(lowerCpu.price)}).`);
   } else {
-    alertBox("good", "Goulot d'Ã©tranglement estimÃ© faible: Ã©quilibre global validÃ©.");
+    alertBox("good", "Goulot d'étranglement estimé faible: équilibre global validé.");
   }
 
   if (!isPendingExternal(cpu) && cpu.rank < usageProfile.minCpu) {
-    warnings.push("CPU un peu faible pour l'usage sÃ©lectionnÃ©.");
+    warnings.push("CPU un peu faible pour l'usage sélectionné.");
     const betterCpuForUsage = sortByBrandGenerationScore(CATALOG.cpu)
       .filter((item) => item.socket === cpu.socket && item.rank >= usageProfile.minCpu)
       .sort((a, b) => a.price - b.price)[0];
-    if (betterCpuForUsage) suggestions.push(`CPU recommandÃ© pour cet usage: ${betterCpuForUsage.brand} ${betterCpuForUsage.name}.`);
+    if (betterCpuForUsage) suggestions.push(`CPU recommandé pour cet usage: ${betterCpuForUsage.brand} ${betterCpuForUsage.name}.`);
   }
 
   if (!isPendingExternal(gpu) && gpu.rank < usageProfile.minGpu) {
-    warnings.push("GPU un peu faible pour l'usage sÃ©lectionnÃ©.");
+    warnings.push("GPU un peu faible pour l'usage sélectionné.");
     const betterGpuForUsage = sortByBrandGenerationScore(CATALOG.gpu)
       .filter((item) => item.rank >= usageProfile.minGpu)
       .sort((a, b) => a.price - b.price)[0];
-    if (betterGpuForUsage) suggestions.push(`GPU recommandÃ© pour cet usage: ${betterGpuForUsage.brand} ${betterGpuForUsage.name}.`);
+    if (betterGpuForUsage) suggestions.push(`GPU recommandé pour cet usage: ${betterGpuForUsage.brand} ${betterGpuForUsage.name}.`);
   }
 
   if (!isPendingExternal(cpu) && !isPendingExternal(cooling) && cpu.tdp >= 125 && cooling.type === "air" && cooling.score < 9) {
-    warnings.push("Refroidissement limitÃ© pour ce CPU.");
-    alertBox("warn", "CPU Ã©nergivore: un AIO 280/360 est recommandÃ© pour meilleure stabilitÃ© thermique.");
+    warnings.push("Refroidissement limité pour ce CPU.");
+    alertBox("warn", "CPU énergivore: un AIO 280/360 est recommandé pour meilleure stabilité thermique.");
   }
 
   if (!isPendingExternal(casev) && !isPendingExternal(gpu) && consumption >= 550 && casev.score < 8.8) {
-    warnings.push("BoÃ®tier un peu juste en airflow pour ce niveau de charge.");
-    alertBox("warn", "Charge thermique Ã©levÃ©e: privilÃ©gie un boÃ®tier airflow premium.");
+    warnings.push("Boîtier un peu juste en airflow pour ce niveau de charge.");
+    alertBox("warn", "Charge thermique élevée: privilégie un boîtier airflow premium.");
     const airflowCase = sortByBrandGenerationScore(CATALOG.case)
       .filter((item) => item.maxGpu >= gpu.length && item.maxRad >= Math.max(360, cooling.radiator || 0) && item.score >= 9)
       .sort((a, b) => a.price - b.price)[0];
-    if (airflowCase) suggestions.push(`BoÃ®tier airflow conseillÃ©: ${airflowCase.brand} ${airflowCase.name}.`);
+    if (airflowCase) suggestions.push(`Boîtier airflow conseillé: ${airflowCase.brand} ${airflowCase.name}.`);
   }
 
   const coolingPrice = cooling.estimateOnly ? 0 : cooling.price;
@@ -2881,22 +2881,22 @@ function compute() {
 
   if (usageMinimum > 0) {
     if (total < usageMinimum) {
-      warnings.push("Total sous le minimum recommandÃ© pour l'usage.");
-      alertBox("warn", `Cette sÃ©lection reste sous le minimum conseillÃ© (${euro(usageMinimum)}).`);
+      warnings.push("Total sous le minimum recommandé pour l'usage.");
+      alertBox("warn", `Cette sélection reste sous le minimum conseillé (${euro(usageMinimum)}).`);
     }
     if (budgetMax && budgetMax < usageMinimum) {
-      blocking.push("Budget maxi infÃ©rieur au minimum requis pour l'usage.");
-      alertBox("bad", `Pour "${usageValue}", le budget maximum doit Ãªtre au moins ${euro(usageMinimum)}.`);
+      blocking.push("Budget maxi inférieur au minimum requis pour l'usage.");
+      alertBox("bad", `Pour "${usageValue}", le budget maximum doit être au moins ${euro(usageMinimum)}.`);
     }
     if (budgetMin && budgetMin < usageMinimum) {
-      warnings.push("Budget mini infÃ©rieur au minimum recommandÃ© pour l'usage.");
-      alertBox("warn", `Budget mini conseillÃ© pour cet usage: ${euro(usageMinimum)}.`);
+      warnings.push("Budget mini inférieur au minimum recommandé pour l'usage.");
+      alertBox("warn", `Budget mini conseillé pour cet usage: ${euro(usageMinimum)}.`);
     }
   }
 
   if (budgetMax && total > budgetMax) {
     const over = Math.round((total - budgetMax) * 100) / 100;
-    warnings.push("Total au-dessus du budget maximum dÃ©fini.");
+    warnings.push("Total au-dessus du budget maximum défini.");
     alertBox("warn", `Total au-dessus de ton budget max de ${euro(over)}.`);
 
     const cheaperGpu = sortByBrandGenerationScore(CATALOG.gpu)
@@ -2909,20 +2909,20 @@ function compute() {
       .filter((item) => item.id !== storage.id && item.price < storage.price && item.tb >= usageProfile.minStorage)
       .sort((a, b) => a.price - b.price)[0];
 
-    if (cheaperGpu) suggestions.push(`Pour rÃ©duire le total: ${cheaperGpu.brand} ${cheaperGpu.name} (${euro(cheaperGpu.price)}).`);
+    if (cheaperGpu) suggestions.push(`Pour réduire le total: ${cheaperGpu.brand} ${cheaperGpu.name} (${euro(cheaperGpu.price)}).`);
     if (cheaperCpu) suggestions.push(`Alternative CPU budget: ${cheaperCpu.brand} ${cheaperCpu.name} (${euro(cheaperCpu.price)}).`);
     if (cheaperStorage) suggestions.push(`Alternative stockage budget: ${cheaperStorage.brand} ${cheaperStorage.name} (${euro(cheaperStorage.price)}).`);
   }
 
   if (budgetMin && total < budgetMin) {
-    warnings.push("Total infÃ©rieur au budget minimum saisi.");
-    alertBox("warn", "Total actuel infÃ©rieur Ã  ton budget mini dÃ©fini.");
+    warnings.push("Total inférieur au budget minimum saisi.");
+    alertBox("warn", "Total actuel inférieur à ton budget mini défini.");
   }
 
   if (cooling.estimateOnly) {
     warnings.push("Watercooling 100% custom: non inclus dans le total (sur devis). ");
-    alertBox("warn", "Watercooling 100% custom sÃ©lectionnÃ©: tarif final Ã  confirmer sur devis technique.");
-    suggestions.push("Pour un total chiffrÃ© immÃ©diat, choisis un AIO (240/280/360/420). Le custom loop reste sur devis.");
+    alertBox("warn", "Watercooling 100% custom sélectionné: tarif final à confirmer sur devis technique.");
+    suggestions.push("Pour un total chiffré immédiat, choisis un AIO (240/280/360/420). Le custom loop reste sur devis.");
   }
 
   const rows = [
@@ -2935,7 +2935,7 @@ function compute() {
     { name: `${psu.brand} ${psu.name}`, value: euro(psu.price) },
     { name: `${casev.brand} ${casev.name}`, value: euro(casev.price) },
     { name: `${cooling.brand} ${cooling.name}`, value: cooling.estimateOnly ? "Sur devis" : euro(cooling.price) },
-    { name: `${customCable.category || customCable.brand} â€” ${customCable.name}`, value: customCableCheck.available ? euro(customCablePrice) : "Indisponible" },
+    { name: `${customCable.category || customCable.brand} €” ${customCable.name}`, value: customCableCheck.available ? euro(customCablePrice) : "Indisponible" },
     { name: `${cableMgmt.brand} ${cableMgmt.name}`, value: euro(cableMgmt.price) },
     { name: `${delivery.name} (${delivery.prepWindow})`, value: euro(processingFee) }
   ];
@@ -2943,20 +2943,20 @@ function compute() {
   if (budgetMin || budgetMax) {
     rows.push({
       name: "Budget cible",
-      value: `${budgetMin ? `min ${euro(budgetMin)}` : "min non dÃ©fini"} / ${budgetMax ? `max ${euro(budgetMax)}` : "max non dÃ©fini"}`
+      value: `${budgetMin ? `min ${euro(budgetMin)}` : "min non défini"} / ${budgetMax ? `max ${euro(budgetMax)}` : "max non défini"}`
     });
   }
   if (usageMinimum > 0) {
-    rows.push({ name: `Minimum recommandÃ© (${usageValue})`, value: euro(usageMinimum) });
+    rows.push({ name: `Minimum recommandé (${usageValue})`, value: euro(usageMinimum) });
   }
-  rows.push({ name: "Total estimÃ©", value: euro(total) });
+  rows.push({ name: "Total estimé", value: euro(total) });
 
   renderBreakdown(rows);
   renderSuggestions([...new Set(suggestions)]);
   if (priceEl) priceEl.textContent = euro(total);
 
   if (!warnings.length && !blocking.length) {
-    alertBox("good", "Configuration cohÃ©rente: prÃªte pour devis ou achat.");
+    alertBox("good", "Configuration cohérente: prête pour devis ou achat.");
   }
 
   scheduleUnknownResearch();
@@ -3046,8 +3046,8 @@ revealInView();
 
 async function sendEmail({ subject, from_name, reply_to, message, statusElId }) {
   try {
-    if (!window.emailjs) throw new Error("EmailJS non chargÃ©");
-    setStatus(statusElId, "Envoi en coursâ€¦");
+    if (!window.emailjs) throw new Error("EmailJS non chargé");
+    setStatus(statusElId, "Envoi en cours…");
     await window.emailjs.send(SERVICE_ID, TEMPLATE_ID, {
       subject,
       from_name,
@@ -3055,13 +3055,13 @@ async function sendEmail({ subject, from_name, reply_to, message, statusElId }) 
       message,
       to_email: TO_EMAIL
     });
-    setStatus(statusElId, "EnvoyÃ©. RÃ©ponse dÃ¨s que possible.");
-    toast("Demande envoyÃ©e âœ…");
+    setStatus(statusElId, "Envoyé. Réponse dès que possible.");
+    toast("Demande envoyée aœ…");
     return true;
   } catch (err) {
     console.error(err);
-    setStatus(statusElId, "Erreur d'envoi. RÃ©essaie.");
-    toast("Erreur d'envoi âŒ");
+    setStatus(statusElId, "Erreur d'envoi. Réessaie.");
+    toast("Erreur d'envoi aŒ");
     return false;
   }
 }
@@ -3088,8 +3088,8 @@ function bindClassicForm(formId, subject, statusElId) {
   });
 }
 
-bindClassicForm("form-pc", "Demande devis â€” RÃ©paration PC", "pcStatus");
-bindClassicForm("form-mobile", "Demande devis â€” RÃ©paration Mobile", "mobileStatus");
+bindClassicForm("form-pc", "Demande devis — Réparation PC", "pcStatus");
+bindClassicForm("form-mobile", "Demande devis — Réparation Mobile", "mobileStatus");
 
 const formContact = document.getElementById("form-contact");
 if (formContact) {
@@ -3104,7 +3104,7 @@ if (formContact) {
     ].join("\n");
 
     const ok = await sendEmail({
-      subject: `Service client â€” ${fd.get("topic")}${quoteCode ? ` (${quoteCode})` : ""}`,
+      subject: `Service client €” ${fd.get("topic")}${quoteCode ? ` (${quoteCode})` : ""}`,
       from_name: fd.get("from_name"),
       reply_to: fd.get("reply_to"),
       message: msg,
@@ -3139,10 +3139,12 @@ let currentQuoteSignature = "";
 let isApplyingPreset = false;
 let minimalPresetLocked = false;
 let minimalPresetSnapshot = {};
+let optimizedPresetLocked = false;
+let optimizedPresetSnapshot = {};
 
 function setQuoteCodeUI(code, meta) {
-  if (quoteCodeValueEl) quoteCodeValueEl.textContent = code || "Non gÃ©nÃ©rÃ©";
-  if (quoteCodeMetaEl) quoteCodeMetaEl.textContent = meta || "GÃ©nÃ¨re un code devis pour retrouver ta simulation.";
+  if (quoteCodeValueEl) quoteCodeValueEl.textContent = code || "Non généré";
+  if (quoteCodeMetaEl) quoteCodeMetaEl.textContent = meta || "Génère un code devis pour retrouver ta simulation.";
 }
 
 function roundBudgetStep(value) {
@@ -3160,10 +3162,10 @@ function currentUsageMinimumBudget() {
 function updateBudgetHint(usageValue, usageMinimum) {
   if (!budgetUsageHintEl) return;
   if (!usageValue || !usageMinimum) {
-    budgetUsageHintEl.textContent = "SÃ©lectionne ton usage pour calculer le minimum recommandÃ©.";
+    budgetUsageHintEl.textContent = "Sélectionne ton usage pour calculer le minimum recommandé.";
     return;
   }
-  budgetUsageHintEl.textContent = `Minimum recommandÃ© (${usageValue}) : ${euro(usageMinimum)}.`;
+  budgetUsageHintEl.textContent = `Minimum recommandé (${usageValue}) : ${euro(usageMinimum)}.`;
 }
 
 function updateBudgetSliderFill(minValue, maxValue, minBound, maxBound) {
@@ -3221,9 +3223,11 @@ function readCurrentSelectValues() {
   );
 }
 
-function clearMinimalPresetGuard() {
+function clearPresetGuards() {
   minimalPresetLocked = false;
   minimalPresetSnapshot = {};
+  optimizedPresetLocked = false;
+  optimizedPresetSnapshot = {};
 }
 
 function applyPresetToForm(offer, modeLabel) {
@@ -3270,13 +3274,20 @@ function applyPresetToForm(offer, modeLabel) {
   if (modeLabel === "minimum") {
     minimalPresetLocked = true;
     minimalPresetSnapshot = readCurrentSelectValues();
+    optimizedPresetLocked = false;
+    optimizedPresetSnapshot = {};
+  } else if (modeLabel === "équilibrée" || modeLabel === "optimisée") {
+    optimizedPresetLocked = true;
+    optimizedPresetSnapshot = readCurrentSelectValues();
+    minimalPresetLocked = false;
+    minimalPresetSnapshot = {};
   } else {
-    clearMinimalPresetGuard();
+    clearPresetGuards();
   }
 
   const state = compute();
   const totalText = state?.total ? ` (${euro(state.total)})` : "";
-  toast(`Configuration ${modeLabel} appliquÃ©e${totalText}`);
+  toast(`Configuration ${modeLabel} appliquée${totalText}`);
   return true;
 }
 
@@ -3292,53 +3303,34 @@ function writeQuoteStore(store) {
   localStorage.setItem(QUOTE_STORAGE_KEY, JSON.stringify(store));
 }
 
-async function saveQuoteToServer(record) {
+async function saveQuoteToDatabase(record) {
   try {
-    const r = await fetch("/api/save-quote", {
+    const res = await fetch("/api/quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ record })
     });
-    return r.ok;
+    if (!res.ok) return false;
+    return true;
   } catch {
     return false;
   }
 }
 
-async function loadQuoteFromServer(code) {
+async function fetchQuoteFromDatabase(code) {
   try {
-    const r = await fetch(`/api/load-quote?code=${encodeURIComponent(code)}`);
-    if (!r.ok) return null;
-    const data = await r.json();
+    const res = await fetch(`/api/quote?code=${encodeURIComponent(String(code || "").trim().toUpperCase())}`, {
+      method: "GET",
+      headers: { "Accept": "application/json" }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
     return data?.record || null;
   } catch {
     return null;
   }
 }
 
-async function saveQuoteToServer(record) {
-  try {
-    const response = await fetch("/api/save-quote", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ record })
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
-async function loadQuoteFromServer(code) {
-  try {
-    const response = await fetch(`/api/load-quote?code=${encodeURIComponent(code)}`);
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data && data.record ? data.record : null;
-  } catch {
-    return null;
-  }
-}
 async function collect3DQuoteArtifacts() {
   const fallback = {
     imageDataUrl: "",
@@ -3448,27 +3440,21 @@ function saveQuote(state, forcedCode = "") {
 
   store[code] = record;
   writeQuoteStore(store);
+  void saveQuoteToDatabase(record);
 
   currentQuoteCode = code;
   currentQuoteSignature = newSignature;
   if (contactQuoteCodeEl) contactQuoteCodeEl.value = code;
   setQuoteCodeUI(code, "Code actif. Utilise-le pour le suivi de devis.");
-  saveQuoteToServer(record);
   return code;
 }
 
-async function loadQuote(code) {
+function loadQuote(code) {
   const store = readQuoteStore();
-  let quote = store[code];
+  const quote = store[code];
+  if (!quote) return false;
 
-  if (!quote) {
-    quote = await loadQuoteFromServer(code);
-    if (!quote) return false;
-    store[code] = quote;
-    writeQuoteStore(store);
-  }
-
-Object.keys(UNKNOWN_COMPONENTS).forEach((key) => delete UNKNOWN_COMPONENTS[key]);
+  Object.keys(UNKNOWN_COMPONENTS).forEach((key) => delete UNKNOWN_COMPONENTS[key]);
 
   Object.entries(CATEGORY_CONFIG).forEach(([key, cfg]) => {
     const selectEl = document.getElementById(cfg.selectId);
@@ -3509,9 +3495,20 @@ Object.keys(UNKNOWN_COMPONENTS).forEach((key) => delete UNKNOWN_COMPONENTS[key])
   currentQuoteCode = code;
   currentQuoteSignature = quote.signature || signature();
   if (contactQuoteCodeEl) contactQuoteCodeEl.value = code;
-  setQuoteCodeUI(code, `Devis chargÃ© (${new Date(quote.createdAt).toLocaleDateString("fr-FR")}).`);
+  setQuoteCodeUI(code, `Devis chargé (${new Date(quote.createdAt).toLocaleDateString("fr-FR")}).`);
   compute();
   return true;
+}
+async function loadQuoteAny(code) {
+  const normalized = String(code || "").trim().toUpperCase();
+  if (!normalized) return false;
+  if (loadQuote(normalized)) return true;
+  const remote = await fetchQuoteFromDatabase(normalized);
+  if (!remote) return false;
+  const store = readQuoteStore();
+  store[normalized] = remote;
+  writeQuoteStore(store);
+  return loadQuote(normalized);
 }
 
 function bindCustomBuilder() {
@@ -3537,16 +3534,23 @@ function bindCustomBuilder() {
     const selectEl = document.getElementById(CATEGORY_CONFIG[key].selectId);
     if (!selectEl) return;
     selectEl.addEventListener("change", async () => {
-      if (!isApplyingPreset && minimalPresetLocked) {
-        const previous = minimalPresetSnapshot[key] || "";
-        const now = selectEl.value || "";
-        if (previous && now && now !== previous) {
+      const guardActive = !isApplyingPreset && (minimalPresetLocked || optimizedPresetLocked);
+      const snapshot = minimalPresetLocked ? minimalPresetSnapshot : optimizedPresetLocked ? optimizedPresetSnapshot : {};
+      const previous = snapshot[key] || "";
+      const now = selectEl.value || "";
+
+      // Budget warning only after user applied a preset AND only if a budget cap exists.
+      const budgetCap = parseBudgetValue("budgetMax");
+      if (guardActive && previous && now && now !== previous && budgetCap) {
+        const stateAfter = compute();
+        const totalAfter = Number(stateAfter?.total || 0);
+        if (totalAfter > budgetCap) {
           const accepted = await themedConfirm(
-            "Cette configuration est au minimum fonctionnel. Modifier ce composant peut te faire dÃ©passer ton budget. Continuer ?",
+            `Ce changement ferait dépasser ton budget (total: ${euro(totalAfter)} > budget: ${euro(budgetCap)}). Continuer ?`,
             {
-              title: "Modification d'une config minimum",
-              confirmText: "Continuer",
-              cancelText: "Garder l'actuel"
+              title: "Dépassement de budget",
+              confirmText: "OK, je continue",
+              cancelText: "Annuler"
             }
           );
           if (!accepted) {
@@ -3561,21 +3565,28 @@ function bindCustomBuilder() {
             }
             return;
           }
-          clearMinimalPresetGuard();
-          toast("Mode minimum dÃ©sactivÃ©: modifications manuelles actives.");
         }
       }
+
       if (selectEl.value) clearUnknownComponent(key, true);
       updateFilterInputFromSelection(key);
       refreshDependentPersonalizationOptions();
-      compute();
+      const state = compute();
+
+      // Keep snapshots in sync when preset mode is active.
+      if (!isApplyingPreset && (minimalPresetLocked || optimizedPresetLocked)) {
+        if (minimalPresetLocked) minimalPresetSnapshot[key] = now;
+        if (optimizedPresetLocked) optimizedPresetSnapshot[key] = now;
+      }
+
+      return state;
     });
   });
 
   const usageEl = document.getElementById("usage");
   if (usageEl) {
     usageEl.addEventListener("change", () => {
-      if (minimalPresetLocked) clearMinimalPresetGuard();
+      if (minimalPresetLocked || optimizedPresetLocked) clearPresetGuards();
       refreshDependentPersonalizationOptions();
       normalizeBudgetControls("usage");
       compute();
@@ -3615,7 +3626,7 @@ function bindCustomBuilder() {
       const usageValue = document.getElementById("usage")?.value || "";
       if (!usageValue) {
         updateBudgetHint("", 0);
-        toast("SÃ©lectionne d'abord ton usage.");
+        toast("Sélectionne d'abord ton usage.");
         return;
       }
 
@@ -3626,7 +3637,7 @@ function bindCustomBuilder() {
         return;
       }
       if (parseBudgetValue("budgetMax") && parseBudgetValue("budgetMax") < offer.total) {
-        toast(`Budget max trop bas: minimum usage estimÃ© Ã  ${euro(offer.total)}.`);
+        toast(`Budget max trop bas: minimum usage estimé Ã  ${euro(offer.total)}.`);
       }
       applyPresetToForm(offer, "minimum");
     });
@@ -3638,17 +3649,17 @@ function bindCustomBuilder() {
       const usageValue = document.getElementById("usage")?.value || "";
       if (!usageValue) {
         updateBudgetHint("", 0);
-        toast("SÃ©lectionne d'abord ton usage.");
+        toast("Sélectionne d'abord ton usage.");
         return;
       }
 
       normalizeBudgetControls("usage");
       const offer = computeUsageBalancedOffer(usageValue);
       if (!offer) {
-        toast("Aucune configuration Ã©quilibrÃ©e trouvÃ©e avec le budget actuel.");
+        toast("Aucune configuration équilibrée trouvée avec le budget actuel.");
         return;
       }
-      applyPresetToForm(offer, "Ã©quilibrÃ©e");
+      applyPresetToForm(offer, "équilibrée");
     });
   }
 
@@ -3659,17 +3670,17 @@ function bindCustomBuilder() {
       Object.keys(UNKNOWN_COMPONENTS).forEach((key) => delete UNKNOWN_COMPONENTS[key]);
       currentQuoteCode = "";
       currentQuoteSignature = "";
-      setQuoteCodeUI("", "Simulation rÃ©initialisÃ©e.");
+      setQuoteCodeUI("", "Simulation réinitialisée.");
       if (contactQuoteCodeEl) contactQuoteCodeEl.value = "";
       closeAllComboMenus("");
       renderAllCategories();
       setOptionalDefaults();
       refreshDependentPersonalizationOptions();
       Object.keys(CATEGORY_CONFIG).forEach((key) => updateFilterInputFromSelection(key));
-      clearMinimalPresetGuard();
+      clearPresetGuards();
       normalizeBudgetControls("usage");
       compute();
-      toast("Simulation rÃ©initialisÃ©e");
+      toast("Simulation réinitialisée");
     });
   }
 
@@ -3678,8 +3689,8 @@ function bindCustomBuilder() {
     openPreviewBtn.addEventListener("click", () => {
       const state = compute();
       if (!state.ready) {
-        toast("ComplÃ¨te toute la configuration avant l'aperÃ§u 3D.");
-        setStatus("customStatus", "AperÃ§u 3D indisponible: complÃ¨te d'abord tous les composants obligatoires.");
+        toast("Complète toute la configuration avant l'aperÃ§u 3D.");
+        setStatus("customStatus", "AperÃ§u 3D indisponible: complète d'abord tous les composants obligatoires.");
         return;
       }
       showView("preview");
@@ -3692,11 +3703,11 @@ function bindCustomBuilder() {
     generateCodeBtn.addEventListener("click", () => {
       const state = compute();
       if (!state.ready) {
-        toast("ComplÃ¨te la simulation avant de gÃ©nÃ©rer le code devis");
+        toast("Complète la simulation avant de générer le code devis");
         return;
       }
       const code = saveQuote(state);
-      toast(`Code devis gÃ©nÃ©rÃ©: ${code}`);
+      toast(`Code devis généré: ${code}`);
     });
   }
 
@@ -3704,14 +3715,14 @@ function bindCustomBuilder() {
   if (copyCodeBtn) {
     copyCodeBtn.addEventListener("click", async () => {
       if (!currentQuoteCode) {
-        toast("GÃ©nÃ¨re d'abord un code devis");
+        toast("Génère d'abord un code devis");
         return;
       }
       try {
         await navigator.clipboard.writeText(currentQuoteCode);
-        toast("Code devis copiÃ©");
+        toast("Code devis copié");
       } catch {
-        toast("Copie auto indisponible, copie manuelle nÃ©cessaire");
+        toast("Copie auto indisponible, copie manuelle nécessaire");
       }
     });
   }
@@ -3724,14 +3735,14 @@ function bindCustomBuilder() {
         toast("Entre un code devis");
         return;
       }
-      const ok = await loadQuote(code);
+      const ok = await loadQuoteAny(code);
       if (!ok) {
-        toast("Code devis introuvable sur cet appareil");
-        setStatus("customStatus", "Aucun devis local ne correspond Ã  ce code.");
+        toast("Code devis introuvable");
+        setStatus("customStatus", "Aucun devis ne correspond Ã  ce code (local + base de données)." );
         return;
       }
-      setStatus("customStatus", `Devis ${code} rechargÃ©.`);
-      toast("Devis chargÃ© âœ…");
+      setStatus("customStatus", `Devis ${code} rechargé.`);
+      toast("Devis chargé aœ…");
     });
   }
 
@@ -3740,7 +3751,7 @@ function bindCustomBuilder() {
     const state = compute();
 
     if (!state.ready) {
-      toast("ComplÃ¨te la configuration avant l'envoi");
+      toast("Complète la configuration avant l'envoi");
       return;
     }
 
@@ -3785,7 +3796,7 @@ function bindCustomBuilder() {
     ].join("\n");
 
     const ok = await sendEmail({
-      subject: `Demande devis â€” PC sur mesure (${code})`,
+      subject: `Demande devis €” PC sur mesure (${code})`,
       from_name: fromName,
       reply_to: replyTo,
       message,
@@ -3793,8 +3804,8 @@ function bindCustomBuilder() {
     });
 
     if (ok) {
-      setStatus("customStatus", `Devis envoyÃ©. Code: ${code}`);
-      toast(`Devis envoyÃ© (${code})`);
+      setStatus("customStatus", `Devis envoyé. Code: ${code}`);
+      toast(`Devis envoyé (${code})`);
     }
   });
 
@@ -3803,13 +3814,13 @@ function bindCustomBuilder() {
     buyNowBtn.addEventListener("click", async () => {
       const state = compute();
       if (!state.ready) {
-        toast("ComplÃ¨te la configuration avant d'acheter");
+        toast("Complète la configuration avant d'acheter");
         return;
       }
 
       if (!state.canCheckout) {
-        toast("Corrige d'abord les incompatibilitÃ©s bloquantes");
-        setStatus("customStatus", "Achat bloquÃ©: incompatibilitÃ©s dÃ©tectÃ©es.");
+        toast("Corrige d'abord les incompatibilités bloquantes");
+        setStatus("customStatus", "Achat bloqué: incompatibilités détectées.");
         return;
       }
 
@@ -3835,7 +3846,7 @@ function bindCustomBuilder() {
 
       try {
         buyNowBtn.disabled = true;
-        buyNowBtn.textContent = "Redirection vers PayPalâ€¦";
+        buyNowBtn.textContent = "Redirection vers PayPal €¦";
 
         const res = await fetch("/api/paypal-create-order", {
           method: "POST",
@@ -3855,14 +3866,14 @@ function bindCustomBuilder() {
         window.location.href = data.approveUrl;
       } catch (err) {
         console.error(err);
-        toast("Erreur rÃ©seau");
+        toast("Erreur réseau");
         buyNowBtn.disabled = false;
         buyNowBtn.textContent = "Acheter maintenant";
       }
     });
   }
 
-  setQuoteCodeUI("", "GÃ©nÃ¨re un code pour retrouver ta simulation plus tard.");
+  setQuoteCodeUI("", "Génère un code pour retrouver ta simulation plus tard.");
   compute();
 }
 
