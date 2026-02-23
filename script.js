@@ -659,7 +659,7 @@ const CATALOG_EXPANSION = {
     { id: "cool-aio-360-deepcool-mystique", brand: "DeepCool", name: "Mystique 360", type: "aio", radiator: 360, score: 9.4, price: 219 }
   ],
   customCables: [
-    { id: "cab-mobo-cablemod-pro-90", brand: "CableMod", category: "Carte mère (24-pin)", name: "24-pin Pro coudé 90a°", score: 9.2, price: 74 },
+    { id: "cab-mobo-cablemod-pro-90", brand: "CableMod", category: "Carte mère (24-pin)", name: "24-pin Pro coudé 90°", score: 9.2, price: 74 },
     { id: "cab-mobo-corsair-prem-black", brand: "Corsair", category: "Carte mère (24-pin)", name: "24-pin premium black edition", score: 8.7, price: 57 },
     { id: "cab-mobo-moddiy-ultraflex", brand: "MODDIY", category: "Carte mère (24-pin)", name: "24-pin ultra-flex silicone", score: 9.0, price: 61 },
     { id: "cab-gpu-1x8-ezdiy", brand: "EZDIY-FAB", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU custom 1x8-pin ARGB", score: 8.1, price: 26, requiredPcie8: 1 },
@@ -674,7 +674,7 @@ const CATALOG_EXPANSION = {
     { id: "cab-oth-corsair-link-pro", brand: "Corsair", category: "Autres (SATA/ARGB/FAN)", name: "iCUE LINK Pro routing set", score: 9.1, price: 74 },
     { id: "cab-oth-phanteks-neon", brand: "Phanteks", category: "Autres (SATA/ARGB/FAN)", name: "Pack D-RGB Neon + extensions", score: 8.6, price: 41 },
     { id: "cab-oth-thermalright-rgb", brand: "Thermalright", category: "Autres (SATA/ARGB/FAN)", name: "Kit ARGB/FAN tidy wiring", score: 8.0, price: 24 },
-    { id: "cab-mobo-cablemod-pro-180", brand: "CableMod", category: "Carte mère (24-pin)", name: "24-pin Pro coudé 180a°", score: 9.3, price: 82 },
+    { id: "cab-mobo-cablemod-pro-180", brand: "CableMod", category: "Carte mère (24-pin)", name: "24-pin Pro coudé 180°", score: 9.3, price: 82 },
     { id: "cab-mobo-corsair-rgb-v2", brand: "Corsair", category: "Carte mère (24-pin)", name: "24-pin RGB braided V2", score: 8.9, price: 68 },
     { id: "cab-mobo-ezdiy-white", brand: "EZDIY-FAB", category: "Carte mère (24-pin)", name: "24-pin white premium", score: 8.2, price: 37 },
     { id: "cab-mobo-asiahorse-rgb-v3", brand: "AsiaHorse", category: "Carte mère (24-pin)", name: "24-pin RGB v3", score: 8.6, price: 49 },
@@ -710,34 +710,392 @@ const CATALOG_EXPANSION = {
   ]
 };
 
-function mergeCatalogExpansion() {
-  Object.entries(CATALOG_EXPANSION).forEach(([key, list]) => {
-    if (!Array.isArray(CATALOG[key]) || !Array.isArray(list)) return;
-    const known = new Set(CATALOG[key].map((item) => item.id));
-    list.forEach((item) => {
-      if (!item?.id || known.has(item.id)) return;
-      CATALOG[key].push(item);
-      known.add(item.id);
+const CATALOG_EXPANSION_PLUS = {
+  cpu: [
+    { id: "cpu-amd-r5-5600x3d", brand: "AMD", name: "Ryzen 5 5600X3D", generation: 5000, socket: "AM4", tdp: 105, rank: 6.6, score: 8.1, price: 229 },
+    { id: "cpu-amd-r7-5800x", brand: "AMD", name: "Ryzen 7 5800X", generation: 5000, socket: "AM4", tdp: 105, rank: 6.8, score: 8.2, price: 229 },
+    { id: "cpu-amd-r9-7900x3d-retail", brand: "AMD", name: "Ryzen 9 7900X3D", generation: 7000, socket: "AM5", tdp: 120, rank: 8.9, score: 9.4, price: 559 },
+    { id: "cpu-amd-r5-9600", brand: "AMD", name: "Ryzen 5 9600", generation: 9000, socket: "AM5", tdp: 65, rank: 7.0, score: 8.6, price: 249 },
+    { id: "cpu-intel-i5-13400", brand: "Intel", name: "Core i5-13400", generation: 13000, socket: "1700", tdp: 65, rank: 6.5, score: 8.1, price: 219 },
+    { id: "cpu-intel-u5-235f", brand: "Intel", name: "Core Ultra 5 235F", generation: 20000, socket: "1851", tdp: 65, rank: 7.3, score: 8.9, price: 269 },
+    { id: "cpu-intel-u7-275k", brand: "Intel", name: "Core Ultra 7 275K", generation: 20000, socket: "1851", tdp: 125, rank: 8.8, score: 9.5, price: 419 },
+    { id: "cpu-intel-u9-285kf", brand: "Intel", name: "Core Ultra 9 285KF", generation: 20000, socket: "1851", tdp: 125, rank: 9.3, score: 9.7, price: 609 }
+  ],
+  mobo: [
+    { id: "mb-msi-b550m-mortar", brand: "MSI", name: "MAG B550M Mortar", generation: 550, socket: "AM4", ramType: "DDR4", tier: 2, score: 8.1, price: 149 },
+    { id: "mb-asrock-b550-taichi", brand: "ASRock", name: "B550 Taichi", generation: 550, socket: "AM4", ramType: "DDR4", tier: 3, score: 8.8, price: 249 },
+    { id: "mb-giga-x870-aero", brand: "Gigabyte", name: "X870 AERO G", generation: 870, socket: "AM5", ramType: "DDR5", tier: 4, score: 9.3, price: 499 },
+    { id: "mb-asus-b650e-i", brand: "ASUS", name: "ROG Strix B650E-I Gaming WiFi", generation: 650, socket: "AM5", ramType: "DDR5", tier: 3, score: 8.9, price: 359 },
+    { id: "mb-msi-z790-carbon-max", brand: "MSI", name: "MPG Z790 Carbon MAX WiFi", generation: 790, socket: "1700", ramType: "DDR5", tier: 4, score: 9.2, price: 449 },
+    { id: "mb-giga-z790-aero-g", brand: "Gigabyte", name: "Z790 AERO G", generation: 790, socket: "1700", ramType: "DDR5", tier: 4, score: 9.1, price: 429 },
+    { id: "mb-asus-z890-hero", brand: "ASUS", name: "ROG Maximus Z890 Hero", generation: 890, socket: "1851", ramType: "DDR5", tier: 4, score: 9.7, price: 829 },
+    { id: "mb-msi-z890-tom", brand: "MSI", name: "MAG Z890 Tomahawk WiFi", generation: 890, socket: "1851", ramType: "DDR5", tier: 3, score: 9.0, price: 379 }
+  ],
+  ram: [
+    { id: "ram-corsair-64-ddr5-6000", brand: "Corsair", name: "Vengeance 64 Go DDR5-6000 CL30", generation: 6000, type: "DDR5", gb: 64, score: 9.4, price: 229 },
+    { id: "ram-gskill-64-ddr5-6400-neo", brand: "G.Skill", name: "Trident Z5 Neo 64 Go DDR5-6400", generation: 6400, type: "DDR5", gb: 64, score: 9.5, price: 289 },
+    { id: "ram-kingston-32-ddr4-3600", brand: "Kingston", name: "Fury Beast 32 Go DDR4-3600", generation: 3600, type: "DDR4", gb: 32, score: 7.8, price: 79 },
+    { id: "ram-crucial-48-ddr5-5600", brand: "Crucial", name: "Pro 48 Go DDR5-5600", generation: 5600, type: "DDR5", gb: 48, score: 8.8, price: 169 },
+    { id: "ram-team-32-ddr5-7200", brand: "TeamGroup", name: "T-Force Delta 32 Go DDR5-7200", generation: 7200, type: "DDR5", gb: 32, score: 9.4, price: 229 },
+    { id: "ram-corsair-128-ddr5-5600", brand: "Corsair", name: "Vengeance 128 Go DDR5-5600", generation: 5600, type: "DDR5", gb: 128, score: 9.8, price: 689 },
+    { id: "ram-adata-64-ddr4-3600", brand: "ADATA", name: "XPG Spectrix 64 Go DDR4-3600", generation: 3600, type: "DDR4", gb: 64, score: 8.2, price: 159 },
+    { id: "ram-kingston-32-ddr5-6400", brand: "Kingston", name: "Fury Renegade 32 Go DDR5-6400", generation: 6400, type: "DDR5", gb: 32, score: 9.2, price: 159 }
+  ],
+  gpu: [
+    { id: "gpu-nv-4060s", brand: "NVIDIA", name: "GeForce RTX 4060 SUPER 8 Go", generation: 4000, vram: 8, tdp: 135, length: 255, rank: 6.9, score: 8.4, price: 419 },
+    { id: "gpu-nv-4070s-oc", brand: "NVIDIA", name: "GeForce RTX 4070 SUPER OC 12 Go", generation: 4000, vram: 12, tdp: 220, length: 312, rank: 8.3, score: 9.2, price: 739 },
+    { id: "gpu-nv-4080s-oc", brand: "NVIDIA", name: "GeForce RTX 4080 SUPER OC 16 Go", generation: 4000, vram: 16, tdp: 330, length: 340, rank: 9.2, score: 9.7, price: 1349 },
+    { id: "gpu-nv-5070ti-oc", brand: "NVIDIA", name: "GeForce RTX 5070 Ti OC 16 Go", generation: 5000, vram: 16, tdp: 310, length: 334, rank: 9.3, score: 9.7, price: 999 },
+    { id: "gpu-nv-5080-oc", brand: "NVIDIA", name: "GeForce RTX 5080 OC 16 Go", generation: 5000, vram: 16, tdp: 360, length: 345, rank: 9.6, score: 9.9, price: 1649 },
+    { id: "gpu-amd-rx7600-xt-oc", brand: "AMD", name: "Radeon RX 7600 XT OC 16 Go", generation: 7000, vram: 16, tdp: 195, length: 285, rank: 7.0, score: 8.4, price: 399 },
+    { id: "gpu-amd-rx7900xt-oc", brand: "AMD", name: "Radeon RX 7900 XT OC 20 Go", generation: 7000, vram: 20, tdp: 320, length: 338, rank: 9.0, score: 9.5, price: 969 },
+    { id: "gpu-amd-rx9070xt-oc", brand: "AMD", name: "Radeon RX 9070 XT OC 16 Go", generation: 9000, vram: 16, tdp: 320, length: 334, rank: 9.2, score: 9.7, price: 829 },
+    { id: "gpu-intel-b770-oc", brand: "Intel", name: "Arc B770 OC 16 Go", generation: 700, vram: 16, tdp: 245, length: 295, rank: 7.4, score: 8.9, price: 449 }
+  ],
+  storage: [
+    { id: "sto-sam-990evo-plus-1", brand: "Samsung", name: "990 EVO Plus 1 To", generation: 4, tb: 1, score: 8.8, price: 99 },
+    { id: "sto-sam-990evo-plus-2", brand: "Samsung", name: "990 EVO Plus 2 To", generation: 4, tb: 2, score: 9.0, price: 159 },
+    { id: "sto-crucial-t705-4", brand: "Crucial", name: "T705 PCIe 5.0 4 To", generation: 5, tb: 4, score: 9.9, price: 619 },
+    { id: "sto-lexar-nm1090-4", brand: "Lexar", name: "NM1090 PCIe 5.0 4 To", generation: 5, tb: 4, score: 9.8, price: 569 },
+    { id: "sto-seagate-firecuda-4", brand: "Seagate", name: "FireCuda 530 4 To", generation: 4, tb: 4, score: 9.4, price: 349 },
+    { id: "sto-wd-sn770-4", brand: "WD", name: "Black SN770 4 To", generation: 4, tb: 4, score: 8.9, price: 259 },
+    { id: "sto-kioxia-exceria-4", brand: "Kioxia", name: "Exceria Pro 4 To", generation: 4, tb: 4, score: 8.8, price: 269 },
+    { id: "sto-atelier-4plus8", brand: "Atelier", name: "NVMe 4 To + HDD 8 To Pro", generation: 4, tb: 12, score: 9.2, price: 469 }
+  ],
+  psu: [
+    { id: "psu-corsair-rm850x", brand: "Corsair", name: "RM850x Gold", generation: 850, watts: 850, score: 9.0, price: 179 },
+    { id: "psu-corsair-rm1200x-shift", brand: "Corsair", name: "RM1200x Shift", generation: 1200, watts: 1200, score: 9.4, price: 319 },
+    { id: "psu-msi-a850g", brand: "MSI", name: "MAG A850G PCIE5", generation: 850, watts: 850, score: 8.9, price: 169 },
+    { id: "psu-gigabyte-ud1000gm", brand: "Gigabyte", name: "UD1000GM PG5", generation: 1000, watts: 1000, score: 8.9, price: 199 },
+    { id: "psu-seasonic-vertex-1000", brand: "Seasonic", name: "Vertex GX-1000", generation: 1000, watts: 1000, score: 9.3, price: 239 },
+    { id: "psu-bequiet-pure-1000", brand: "be quiet!", name: "Pure Power 12 M 1000W", generation: 1000, watts: 1000, score: 9.1, price: 209 },
+    { id: "psu-asus-thor-1200", brand: "ASUS", name: "ROG Thor 1200P2", generation: 1200, watts: 1200, score: 9.7, price: 449 },
+    { id: "psu-coolermaster-gx850", brand: "Cooler Master", name: "GX III Gold 850W", generation: 850, watts: 850, score: 8.8, price: 159 }
+  ],
+  case: [
+    { id: "case-lianli-o11d-evo-rgb", brand: "Lian Li", name: "O11D EVO RGB", generation: 11, maxGpu: 455, maxRad: 420, score: 9.4, price: 219 },
+    { id: "case-nzxt-h9-elite", brand: "NZXT", name: "H9 Elite", generation: 9, maxGpu: 435, maxRad: 360, score: 9.2, price: 259 },
+    { id: "case-corsair-5000x", brand: "Corsair", name: "iCUE 5000X RGB", generation: 5000, maxGpu: 400, maxRad: 360, score: 8.9, price: 199 },
+    { id: "case-fractal-north-xl-charcoal", brand: "Fractal", name: "North XL Charcoal", generation: 2, maxGpu: 413, maxRad: 420, score: 9.3, price: 219 },
+    { id: "case-phanteks-g500a-drgb", brand: "Phanteks", name: "G500A DRGB", generation: 500, maxGpu: 435, maxRad: 420, score: 9.3, price: 189 },
+    { id: "case-bequiet-shadow-base-800fx", brand: "be quiet!", name: "Shadow Base 800 FX", generation: 800, maxGpu: 430, maxRad: 420, score: 9.1, price: 189 },
+    { id: "case-montech-king95-ultra", brand: "Montech", name: "King 95 Ultra", generation: 95, maxGpu: 420, maxRad: 420, score: 9.0, price: 179 },
+    { id: "case-msi-pano-m100r", brand: "MSI", name: "MAG PANO M100R", generation: 100, maxGpu: 390, maxRad: 360, score: 8.7, price: 139 },
+    { id: "case-hyte-y60", brand: "HYTE", name: "Y60", generation: 60, maxGpu: 375, maxRad: 360, score: 8.8, price: 209 },
+    { id: "case-thermaltake-view-380", brand: "Thermaltake", name: "View 380 TG", generation: 380, maxGpu: 410, maxRad: 360, score: 8.7, price: 149 }
+  ],
+  watercooling: [
+    { id: "cool-aio-240-lianli-ga2", brand: "Lian Li", name: "Galahad II 240", type: "aio", radiator: 240, score: 8.9, price: 149 },
+    { id: "cool-aio-360-nzxt-kraken-elite", brand: "NZXT", name: "Kraken Elite 360", type: "aio", radiator: 360, score: 9.5, price: 299 },
+    { id: "cool-aio-360-corsair-link-lcd", brand: "Corsair", name: "iCUE Link H150i LCD", type: "aio", radiator: 360, score: 9.5, price: 309 },
+    { id: "cool-aio-420-arctic-pro", brand: "Arctic", name: "Liquid Freezer III 420 Pro", type: "aio", radiator: 420, score: 9.7, price: 239 },
+    { id: "cool-air-noctua-u14s", brand: "Noctua", name: "NH-U14S", type: "air", radiator: 0, score: 8.8, price: 99 },
+    { id: "cool-air-bequiet-drp5", brand: "be quiet!", name: "Dark Rock Pro 5", type: "air", radiator: 0, score: 9.2, price: 109 },
+    { id: "cool-air-thermalright-ps120se", brand: "Thermalright", name: "Phantom Spirit 120 SE", type: "air", radiator: 0, score: 8.9, price: 59 },
+    { id: "cool-aio-280-asus-tuf", brand: "ASUS", name: "TUF LC II 280 ARGB", type: "aio", radiator: 280, score: 9.0, price: 179 }
+  ],
+  customCables: [
+    { id: "cab-mobo-cablemod-cseries", brand: "CableMod", category: "Carte mère (24-pin)", name: "C-Series PRO 24-pin", score: 9.2, price: 74 },
+    { id: "cab-mobo-lianli-strimer-v3-white", brand: "Lian Li", category: "Carte mère (24-pin)", name: "Strimer V3 24-pin White", score: 9.4, price: 109 },
+    { id: "cab-gpu-cablemod-2x8-pro", brand: "CableMod", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU 2x8 Pro ModMesh", score: 9.0, price: 63, requiredPcie8: 2 },
+    { id: "cab-gpu-cablemod-3x8-pro-v2", brand: "CableMod", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU 3x8 Pro ModMesh V2", score: 9.2, price: 79, requiredPcie8: 3 },
+    { id: "cab-gpu-lianli-12vhpwr-v3-white", brand: "Lian Li", category: "Carte graphique (PCIe/12VHPWR)", name: "Strimer V3 12VHPWR White", score: 9.5, price: 119, requires12vhpwr: true },
+    { id: "cab-gpu-corsair-12vhpwr-prem", brand: "Corsair", category: "Carte graphique (PCIe/12VHPWR)", name: "12V-2x6 Premium Sleeved", score: 9.3, price: 99, requires12vhpwr: true },
+    { id: "cab-cpu-cablemod-2eps-pro-v2", brand: "CableMod", category: "CPU (EPS 8-pin)", name: "CPU 2xEPS Pro V2", score: 9.2, price: 66, requiredEps8: 2 },
+    { id: "cab-cpu-corsair-2eps-elite", brand: "Corsair", category: "CPU (EPS 8-pin)", name: "CPU 2xEPS Elite", score: 8.9, price: 52, requiredEps8: 2 },
+    { id: "cab-cpu-lianli-eps-rgb-v3", brand: "Lian Li", category: "CPU (EPS 8-pin)", name: "EPS RGB V3", score: 8.8, price: 58, requiredEps8: 1 },
+    { id: "cab-oth-lianli-unifan-v3", brand: "Lian Li", category: "Autres (SATA/ARGB/FAN)", name: "UNI FAN routing V3", score: 9.2, price: 82 },
+    { id: "cab-oth-corsair-link-routing-max", brand: "Corsair", category: "Autres (SATA/ARGB/FAN)", name: "iCUE LINK Routing Max", score: 9.1, price: 76 },
+    { id: "cab-oth-phanteks-d30-plus", brand: "Phanteks", category: "Autres (SATA/ARGB/FAN)", name: "D30 Routing Plus", score: 8.8, price: 49 }
+  ]
+};
+
+const CATALOG_EXPANSION_MAX = {
+  cpu: [
+    { id: "cpu-amd-r9-5900xt", brand: "AMD", name: "Ryzen 9 5900XT", generation: 5000, socket: "AM4", tdp: 105, rank: 7.4, score: 8.7, price: 339 },
+    { id: "cpu-amd-r7-7700x3d", brand: "AMD", name: "Ryzen 7 7700X3D", generation: 7000, socket: "AM5", tdp: 120, rank: 8.6, score: 9.3, price: 479 },
+    { id: "cpu-amd-r5-9500x", brand: "AMD", name: "Ryzen 5 9500X", generation: 9000, socket: "AM5", tdp: 65, rank: 6.9, score: 8.5, price: 229 },
+    { id: "cpu-intel-i7-14700kf-special", brand: "Intel", name: "Core i7-14700KF", generation: 14000, socket: "1700", tdp: 125, rank: 8.4, score: 9.3, price: 389 },
+    { id: "cpu-intel-u5-245f", brand: "Intel", name: "Core Ultra 5 245F", generation: 20000, socket: "1851", tdp: 65, rank: 7.5, score: 9.0, price: 279 }
+  ],
+  mobo: [
+    { id: "mb-asus-b550m-plus", brand: "ASUS", name: "TUF B550M-PLUS", generation: 550, socket: "AM4", ramType: "DDR4", tier: 2, score: 7.9, price: 139 },
+    { id: "mb-msi-x670e-ace", brand: "MSI", name: "MEG X670E ACE", generation: 670, socket: "AM5", ramType: "DDR5", tier: 4, score: 9.6, price: 699 },
+    { id: "mb-giga-b650e-master", brand: "Gigabyte", name: "B650E Aorus Master", generation: 650, socket: "AM5", ramType: "DDR5", tier: 4, score: 9.2, price: 389 },
+    { id: "mb-asrock-z890-taichi", brand: "ASRock", name: "Z890 Taichi", generation: 890, socket: "1851", ramType: "DDR5", tier: 4, score: 9.4, price: 549 }
+  ],
+  ram: [
+    { id: "ram-gskill-32-ddr5-6000-cl30", brand: "G.Skill", name: "Trident Z5 32 Go DDR5-6000 CL30", generation: 6000, type: "DDR5", gb: 32, score: 9.3, price: 149 },
+    { id: "ram-corsair-32-ddr5-6400-cl32", brand: "Corsair", name: "Vengeance RGB 32 Go DDR5-6400 CL32", generation: 6400, type: "DDR5", gb: 32, score: 9.3, price: 179 },
+    { id: "ram-team-64-ddr5-6000", brand: "TeamGroup", name: "T-Force Delta 64 Go DDR5-6000", generation: 6000, type: "DDR5", gb: 64, score: 9.2, price: 249 },
+    { id: "ram-crucial-64-ddr4-3600", brand: "Crucial", name: "Pro 64 Go DDR4-3600", generation: 3600, type: "DDR4", gb: 64, score: 8.1, price: 149 }
+  ],
+  gpu: [
+    { id: "gpu-nv-4060ti-16", brand: "NVIDIA", name: "GeForce RTX 4060 Ti 16 Go", generation: 4000, vram: 16, tdp: 165, length: 285, rank: 7.4, score: 8.7, price: 529 },
+    { id: "gpu-nv-5070", brand: "NVIDIA", name: "GeForce RTX 5070 12 Go", generation: 5000, vram: 12, tdp: 250, length: 310, rank: 8.8, score: 9.4, price: 739 },
+    { id: "gpu-amd-rx7700xt", brand: "AMD", name: "Radeon RX 7700 XT 12 Go", generation: 7000, vram: 12, tdp: 245, length: 300, rank: 7.9, score: 8.9, price: 499 },
+    { id: "gpu-amd-rx7900gre", brand: "AMD", name: "Radeon RX 7900 GRE 16 Go", generation: 7000, vram: 16, tdp: 260, length: 320, rank: 8.7, score: 9.2, price: 619 }
+  ],
+  storage: [
+    { id: "sto-wd-sn850x-4", brand: "WD", name: "Black SN850X 4 To", generation: 4, tb: 4, score: 9.5, price: 349 },
+    { id: "sto-sam-990pro-4", brand: "Samsung", name: "990 PRO 4 To", generation: 4, tb: 4, score: 9.6, price: 389 },
+    { id: "sto-sabrent-rocket5-2", brand: "Sabrent", name: "Rocket 5 PCIe 5.0 2 To", generation: 5, tb: 2, score: 9.7, price: 339 }
+  ],
+  psu: [
+    { id: "psu-corsair-rm1000x-shift", brand: "Corsair", name: "RM1000x Shift", generation: 1000, watts: 1000, score: 9.2, price: 239 },
+    { id: "psu-seasonic-focus-850", brand: "Seasonic", name: "Focus GX-850", generation: 850, watts: 850, score: 8.9, price: 169 },
+    { id: "psu-fsp-hydro-1000", brand: "FSP", name: "Hydro PTM Pro 1000W", generation: 1000, watts: 1000, score: 9.1, price: 219 }
+  ],
+  case: [
+    { id: "case-corsair-5000d-airflow", brand: "Corsair", name: "5000D Airflow", generation: 5000, maxGpu: 400, maxRad: 360, score: 9.1, price: 189 },
+    { id: "case-lianli-lancool-216", brand: "Lian Li", name: "LANCOOL 216", generation: 216, maxGpu: 392, maxRad: 360, score: 8.9, price: 109 },
+    { id: "case-phanteks-nv5", brand: "Phanteks", name: "NV5", generation: 5, maxGpu: 440, maxRad: 420, score: 9.2, price: 199 },
+    { id: "case-hyte-y70", brand: "HYTE", name: "Y70 Touch", generation: 70, maxGpu: 422, maxRad: 360, score: 9.1, price: 349 }
+  ],
+  watercooling: [
+    { id: "cool-aio-360-arctic-lf3", brand: "Arctic", name: "Liquid Freezer III 360", type: "aio", radiator: 360, score: 9.4, price: 149 },
+    { id: "cool-aio-360-deepcool-ls720", brand: "DeepCool", name: "LS720", type: "aio", radiator: 360, score: 9.1, price: 139 },
+    { id: "cool-air-noctua-d15-g2", brand: "Noctua", name: "NH-D15 G2", type: "air", radiator: 0, score: 9.5, price: 149 },
+    { id: "cool-air-deepcool-assassin4", brand: "DeepCool", name: "Assassin IV", type: "air", radiator: 0, score: 9.1, price: 99 }
+  ],
+  customCables: [
+    { id: "cab-mobo-lianli-strimer-v3-black", brand: "Lian Li", category: "Carte mère (24-pin)", name: "Strimer V3 24-pin Black", score: 9.4, price: 109 },
+    { id: "cab-mobo-corsair-24-rgb-pro", brand: "Corsair", category: "Carte mère (24-pin)", name: "24-pin RGB Pro", score: 8.8, price: 69 },
+    { id: "cab-gpu-lianli-12vhpwr-v3-black", brand: "Lian Li", category: "Carte graphique (PCIe/12VHPWR)", name: "Strimer V3 12VHPWR Black", score: 9.5, price: 119, requires12vhpwr: true },
+    { id: "cab-gpu-cablemod-4x8-ultra", brand: "CableMod", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU 4x8 Ultra ModMesh", score: 9.3, price: 94, requiredPcie8: 4 },
+    { id: "cab-cpu-cablemod-2eps-stealth", brand: "CableMod", category: "CPU (EPS 8-pin)", name: "CPU 2xEPS Stealth", score: 9.0, price: 59, requiredEps8: 2 },
+    { id: "cab-oth-lianli-control-hub", brand: "Lian Li", category: "Autres (SATA/ARGB/FAN)", name: "Hub controle RGB/FAN premium", score: 9.0, price: 59 }
+  ]
+};
+
+const CATALOG_EXPANSION_INFINITY = {
+  cpu: [
+    { id: "cpu-amd-r7-5700x-eco", brand: "AMD", name: "Ryzen 7 5700X (Eco)", generation: 5000, socket: "AM4", tdp: 65, rank: 6.1, score: 7.8, price: 189 },
+    { id: "cpu-amd-r9-7900", brand: "AMD", name: "Ryzen 9 7900", generation: 7000, socket: "AM5", tdp: 65, rank: 8.1, score: 9.0, price: 389 },
+    { id: "cpu-intel-i5-14500f", brand: "Intel", name: "Core i5-14500F", generation: 14000, socket: "1700", tdp: 65, rank: 6.9, score: 8.6, price: 249 },
+    { id: "cpu-intel-i9-13900kf", brand: "Intel", name: "Core i9-13900KF", generation: 13000, socket: "1700", tdp: 125, rank: 8.7, score: 9.4, price: 499 }
+  ],
+  mobo: [
+    { id: "mb-msi-pro-b550m-pgen3", brand: "MSI", name: "PRO B550M-P GEN3", generation: 550, socket: "AM4", ramType: "DDR4", tier: 1, score: 7.0, price: 99 },
+    { id: "mb-asus-prime-b760m-a-d4", brand: "ASUS", name: "Prime B760M-A D4", generation: 760, socket: "1700", ramType: "DDR4", tier: 2, score: 7.9, price: 149 },
+    { id: "mb-giga-b650m-ds3h", brand: "Gigabyte", name: "B650M DS3H", generation: 650, socket: "AM5", ramType: "DDR5", tier: 1, score: 7.7, price: 159 },
+    { id: "mb-msi-z790-tomahawk-max", brand: "MSI", name: "MAG Z790 Tomahawk MAX WiFi", generation: 790, socket: "1700", ramType: "DDR5", tier: 3, score: 9.0, price: 339 }
+  ],
+  ram: [
+    { id: "ram-corsair-16-ddr4-3200", brand: "Corsair", name: "Vengeance 16 Go DDR4-3200", generation: 3200, type: "DDR4", gb: 16, score: 7.0, price: 49 },
+    { id: "ram-kingston-16-ddr4-3200", brand: "Kingston", name: "Fury Beast 16 Go DDR4-3200", generation: 3200, type: "DDR4", gb: 16, score: 7.1, price: 45 },
+    { id: "ram-crucial-32-ddr5-5600", brand: "Crucial", name: "Pro 32 Go DDR5-5600", generation: 5600, type: "DDR5", gb: 32, score: 8.7, price: 119 },
+    { id: "ram-gskill-32-ddr5-7200", brand: "G.Skill", name: "Trident Z5 32 Go DDR5-7200", generation: 7200, type: "DDR5", gb: 32, score: 9.5, price: 239 }
+  ],
+  gpu: [
+    { id: "gpu-nv-3060-12", brand: "NVIDIA", name: "GeForce RTX 3060 12 Go", generation: 3000, vram: 12, tdp: 170, length: 250, rank: 6.5, score: 7.9, price: 319 },
+    { id: "gpu-nv-3060ti", brand: "NVIDIA", name: "GeForce RTX 3060 Ti 8 Go", generation: 3000, vram: 8, tdp: 200, length: 270, rank: 6.9, score: 8.3, price: 369 },
+    { id: "gpu-amd-rx7600", brand: "AMD", name: "Radeon RX 7600 8 Go", generation: 7000, vram: 8, tdp: 165, length: 265, rank: 6.6, score: 8.0, price: 309 },
+    { id: "gpu-intel-a770-16", brand: "Intel", name: "Arc A770 16 Go", generation: 700, vram: 16, tdp: 225, length: 280, rank: 7.1, score: 8.4, price: 359 }
+  ],
+  storage: [
+    { id: "sto-king-nv2-2", brand: "Kingston", name: "NV2 2 To", generation: 4, tb: 2, score: 8.2, price: 109 },
+    { id: "sto-crucial-p3plus-2", brand: "Crucial", name: "P3 Plus 2 To", generation: 4, tb: 2, score: 8.3, price: 109 },
+    { id: "sto-wd-sn850x-2", brand: "WD", name: "Black SN850X 2 To", generation: 4, tb: 2, score: 9.4, price: 199 },
+    { id: "sto-sam-980pro-2", brand: "Samsung", name: "980 PRO 2 To", generation: 4, tb: 2, score: 9.2, price: 179 }
+  ],
+  psu: [
+    { id: "psu-corsair-cx650", brand: "Corsair", name: "CX650 Bronze", generation: 650, watts: 650, score: 7.8, price: 89 },
+    { id: "psu-bequiet-pure-850", brand: "be quiet!", name: "Pure Power 12 M 850W", generation: 850, watts: 850, score: 8.9, price: 149 },
+    { id: "psu-msi-a750gl", brand: "MSI", name: "MAG A750GL PCIE5", generation: 750, watts: 750, score: 8.5, price: 129 },
+    { id: "psu-seasonic-focus-1000", brand: "Seasonic", name: "Focus GX-1000", generation: 1000, watts: 1000, score: 9.2, price: 219 }
+  ],
+  case: [
+    { id: "case-msi-mag-forge-100r", brand: "MSI", name: "MAG Forge 100R", generation: 100, maxGpu: 330, maxRad: 240, score: 7.4, price: 89 },
+    { id: "case-corsair-3000d-airflow", brand: "Corsair", name: "3000D Airflow", generation: 3000, maxGpu: 360, maxRad: 360, score: 8.3, price: 99 },
+    { id: "case-fractal-pop-air", brand: "Fractal", name: "Pop Air", generation: 1, maxGpu: 405, maxRad: 280, score: 8.5, price: 109 },
+    { id: "case-montech-air-903-max", brand: "Montech", name: "Air 903 MAX", generation: 903, maxGpu: 400, maxRad: 360, score: 8.8, price: 99 }
+  ],
+  watercooling: [
+    { id: "cool-air-thermalright-peerless", brand: "Thermalright", name: "Peerless Assassin 120", type: "air", radiator: 0, score: 8.8, price: 49 },
+    { id: "cool-aio-240-deepcool-lt520", brand: "DeepCool", name: "LT520", type: "aio", radiator: 240, score: 8.9, price: 109 },
+    { id: "cool-aio-360-coolermaster-ml360", brand: "Cooler Master", name: "MasterLiquid ML360", type: "aio", radiator: 360, score: 9.0, price: 139 }
+  ],
+  customCables: [
+    { id: "cab-mobo-asiahorse-24", brand: "AsiaHorse", category: "Carte mère (24-pin)", name: "24-pin extension premium", score: 8.3, price: 29 },
+    { id: "cab-gpu-2x8-asiahorse", brand: "AsiaHorse", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU 2x8 extension", score: 8.2, price: 27, requiredPcie8: 2 },
+    { id: "cab-gpu-12vhpwr-thermaltake-v3", brand: "Thermaltake", category: "Carte graphique (PCIe/12VHPWR)", name: "12VHPWR premium V3", score: 9.0, price: 79, requires12vhpwr: true },
+    { id: "cab-cpu-1eps-cablemod", brand: "CableMod", category: "CPU (EPS 8-pin)", name: "CPU 1xEPS ModMesh", score: 8.8, price: 39, requiredEps8: 1 },
+    { id: "cab-oth-corsair-rgb-hub-pro", brand: "Corsair", category: "Autres (SATA/ARGB/FAN)", name: "Hub RGB/FAN Pro", score: 8.9, price: 49 }
+  ]
+};
+
+const CATALOG_EXPANSION_HYPER = {
+  cpu: [
+    { id: "cpu-amd-r3-4100", brand: "AMD", name: "Ryzen 3 4100", generation: 4000, socket: "AM4", tdp: 65, rank: 4.5, score: 6.2, price: 79 },
+    { id: "cpu-amd-r5-4500", brand: "AMD", name: "Ryzen 5 4500", generation: 4000, socket: "AM4", tdp: 65, rank: 5.0, score: 6.8, price: 95 },
+    { id: "cpu-amd-r7-5700x-pro", brand: "AMD", name: "Ryzen 7 5700X", generation: 5000, socket: "AM4", tdp: 65, rank: 6.1, score: 7.8, price: 179 },
+    { id: "cpu-amd-r9-7900x-pro", brand: "AMD", name: "Ryzen 9 7900X", generation: 7000, socket: "AM5", tdp: 170, rank: 8.4, score: 9.1, price: 399 },
+    { id: "cpu-intel-i5-12400", brand: "Intel", name: "Core i5-12400", generation: 12000, socket: "1700", tdp: 65, rank: 5.9, score: 7.5, price: 169 },
+    { id: "cpu-intel-i5-13600kf", brand: "Intel", name: "Core i5-13600KF", generation: 13000, socket: "1700", tdp: 125, rank: 7.2, score: 8.8, price: 279 },
+    { id: "cpu-intel-i7-12700kf", brand: "Intel", name: "Core i7-12700KF", generation: 12000, socket: "1700", tdp: 125, rank: 7.4, score: 8.8, price: 299 },
+    { id: "cpu-intel-i9-12900kf", brand: "Intel", name: "Core i9-12900KF", generation: 12000, socket: "1700", tdp: 125, rank: 8.2, score: 9.1, price: 389 }
+  ],
+  mobo: [
+    { id: "mb-giga-h610m-s2h", brand: "Gigabyte", name: "H610M S2H", generation: 610, socket: "1700", ramType: "DDR4", tier: 1, score: 6.9, price: 89 },
+    { id: "mb-msi-b660m-a-ddr4", brand: "MSI", name: "PRO B660M-A DDR4", generation: 660, socket: "1700", ramType: "DDR4", tier: 2, score: 7.7, price: 129 },
+    { id: "mb-asus-z690-p-d4", brand: "ASUS", name: "Prime Z690-P D4", generation: 690, socket: "1700", ramType: "DDR4", tier: 3, score: 8.4, price: 229 },
+    { id: "mb-asrock-b660m-pro-rs", brand: "ASRock", name: "B660M Pro RS", generation: 660, socket: "1700", ramType: "DDR4", tier: 2, score: 7.6, price: 119 },
+    { id: "mb-msi-b760m-gaming-plus-wifi", brand: "MSI", name: "B760M Gaming Plus WiFi", generation: 760, socket: "1700", ramType: "DDR5", tier: 2, score: 8.3, price: 199 },
+    { id: "mb-giga-z690-aorus-elite", brand: "Gigabyte", name: "Z690 Aorus Elite", generation: 690, socket: "1700", ramType: "DDR5", tier: 3, score: 8.8, price: 269 },
+    { id: "mb-asus-a620m-k", brand: "ASUS", name: "Prime A620M-K", generation: 620, socket: "AM5", ramType: "DDR5", tier: 1, score: 7.2, price: 119 },
+    { id: "mb-msi-pro-a620m-e", brand: "MSI", name: "PRO A620M-E", generation: 620, socket: "AM5", ramType: "DDR5", tier: 1, score: 7.1, price: 109 },
+    { id: "mb-giga-b650m-k", brand: "Gigabyte", name: "B650M K", generation: 650, socket: "AM5", ramType: "DDR5", tier: 1, score: 7.7, price: 149 },
+    { id: "mb-asrock-a620m-hdv", brand: "ASRock", name: "A620M-HDV/M.2", generation: 620, socket: "AM5", ramType: "DDR5", tier: 1, score: 7.0, price: 99 },
+    { id: "mb-msi-b450m-pro-vdh", brand: "MSI", name: "B450M PRO-VDH MAX", generation: 450, socket: "AM4", ramType: "DDR4", tier: 1, score: 6.8, price: 89 },
+    { id: "mb-asus-b450-plus-ii", brand: "ASUS", name: "TUF B450-PLUS II", generation: 450, socket: "AM4", ramType: "DDR4", tier: 1, score: 7.1, price: 109 },
+    { id: "mb-giga-a520m-ds3h", brand: "Gigabyte", name: "A520M DS3H", generation: 520, socket: "AM4", ramType: "DDR4", tier: 1, score: 6.9, price: 79 },
+    { id: "mb-asrock-b550m-pro4-2", brand: "ASRock", name: "B550M Pro4", generation: 550, socket: "AM4", ramType: "DDR4", tier: 2, score: 7.7, price: 109 },
+    { id: "mb-msi-pro-z890-s", brand: "MSI", name: "PRO Z890-S WiFi", generation: 890, socket: "1851", ramType: "DDR5", tier: 3, score: 8.8, price: 329 }
+  ],
+  ram: [
+    { id: "ram-pny-16-ddr4-3200", brand: "PNY", name: "XLR8 16 Go DDR4-3200", generation: 3200, type: "DDR4", gb: 16, score: 6.9, price: 45 },
+    { id: "ram-team-16-ddr4-3200", brand: "TeamGroup", name: "T-Create 16 Go DDR4-3200", generation: 3200, type: "DDR4", gb: 16, score: 6.9, price: 43 },
+    { id: "ram-adata-32-ddr4-3600", brand: "ADATA", name: "XPG D35 32 Go DDR4-3600", generation: 3600, type: "DDR4", gb: 32, score: 7.8, price: 79 },
+    { id: "ram-lexar-32-ddr5-5600", brand: "Lexar", name: "Ares 32 Go DDR5-5600", generation: 5600, type: "DDR5", gb: 32, score: 8.5, price: 109 },
+    { id: "ram-patriot-32-ddr5-6000", brand: "Patriot", name: "Viper Venom 32 Go DDR5-6000", generation: 6000, type: "DDR5", gb: 32, score: 9.0, price: 139 },
+    { id: "ram-kingbank-32-ddr5-6400", brand: "KingBank", name: "32 Go DDR5-6400", generation: 6400, type: "DDR5", gb: 32, score: 8.8, price: 129 },
+    { id: "ram-crucial-16-ddr5-5600", brand: "Crucial", name: "Pro 16 Go DDR5-5600", generation: 5600, type: "DDR5", gb: 16, score: 8.1, price: 69 },
+    { id: "ram-gskill-64-ddr5-6000", brand: "G.Skill", name: "Flare X5 64 Go DDR5-6000", generation: 6000, type: "DDR5", gb: 64, score: 9.3, price: 229 }
+  ],
+  gpu: [
+    { id: "gpu-nv-3050-8", brand: "NVIDIA", name: "GeForce RTX 3050 8 Go", generation: 3000, vram: 8, tdp: 130, length: 240, rank: 5.9, score: 7.4, price: 249 },
+    { id: "gpu-nv-3070-8", brand: "NVIDIA", name: "GeForce RTX 3070 8 Go", generation: 3000, vram: 8, tdp: 220, length: 295, rank: 7.8, score: 8.9, price: 529 },
+    { id: "gpu-nv-3080-10", brand: "NVIDIA", name: "GeForce RTX 3080 10 Go", generation: 3000, vram: 10, tdp: 320, length: 320, rank: 8.6, score: 9.3, price: 739 },
+    { id: "gpu-nv-4070-12", brand: "NVIDIA", name: "GeForce RTX 4070 12 Go", generation: 4000, vram: 12, tdp: 200, length: 300, rank: 8.1, score: 9.0, price: 629 },
+    { id: "gpu-nv-4070ti-super-16", brand: "NVIDIA", name: "GeForce RTX 4070 Ti SUPER 16 Go", generation: 4000, vram: 16, tdp: 285, length: 325, rank: 8.9, score: 9.5, price: 939 },
+    { id: "gpu-amd-rx6600-8", brand: "AMD", name: "Radeon RX 6600 8 Go", generation: 6000, vram: 8, tdp: 132, length: 250, rank: 6.0, score: 7.5, price: 239 },
+    { id: "gpu-amd-rx6650xt-8", brand: "AMD", name: "Radeon RX 6650 XT 8 Go", generation: 6000, vram: 8, tdp: 180, length: 285, rank: 6.7, score: 8.1, price: 289 },
+    { id: "gpu-amd-rx6700xt-12", brand: "AMD", name: "Radeon RX 6700 XT 12 Go", generation: 6000, vram: 12, tdp: 230, length: 305, rank: 7.4, score: 8.7, price: 399 },
+    { id: "gpu-amd-rx6750xt-12", brand: "AMD", name: "Radeon RX 6750 XT 12 Go", generation: 6000, vram: 12, tdp: 250, length: 310, rank: 7.6, score: 8.8, price: 439 },
+    { id: "gpu-amd-rx6800-16", brand: "AMD", name: "Radeon RX 6800 16 Go", generation: 6000, vram: 16, tdp: 250, length: 320, rank: 8.0, score: 9.1, price: 549 },
+    { id: "gpu-amd-rx6900xt-16", brand: "AMD", name: "Radeon RX 6900 XT 16 Go", generation: 6000, vram: 16, tdp: 300, length: 330, rank: 8.5, score: 9.3, price: 699 },
+    { id: "gpu-intel-a750-8", brand: "Intel", name: "Arc A750 8 Go", generation: 700, vram: 8, tdp: 225, length: 280, rank: 6.8, score: 8.1, price: 279 }
+  ],
+  storage: [
+    { id: "sto-wd-sn580-1", brand: "WD", name: "Blue SN580 1 To", generation: 4, tb: 1, score: 8.4, price: 79 },
+    { id: "sto-wd-sn580-2", brand: "WD", name: "Blue SN580 2 To", generation: 4, tb: 2, score: 8.6, price: 129 },
+    { id: "sto-lexar-nm790-1", brand: "Lexar", name: "NM790 1 To", generation: 4, tb: 1, score: 8.9, price: 89 },
+    { id: "sto-lexar-nm790-2", brand: "Lexar", name: "NM790 2 To", generation: 4, tb: 2, score: 9.1, price: 139 },
+    { id: "sto-siliconpower-xs70-2", brand: "Silicon Power", name: "XS70 2 To", generation: 4, tb: 2, score: 8.9, price: 149 },
+    { id: "sto-pny-cs3140-2", brand: "PNY", name: "XLR8 CS3140 2 To", generation: 4, tb: 2, score: 9.2, price: 169 },
+    { id: "sto-crucial-p3-1", brand: "Crucial", name: "P3 1 To", generation: 3, tb: 1, score: 7.7, price: 69 },
+    { id: "sto-crucial-p3-2", brand: "Crucial", name: "P3 2 To", generation: 3, tb: 2, score: 7.9, price: 109 }
+  ],
+  psu: [
+    { id: "psu-thermaltake-gf-a3-750", brand: "Thermaltake", name: "Toughpower GF A3 750W", generation: 750, watts: 750, score: 8.6, price: 119 },
+    { id: "psu-thermaltake-gf-a3-850", brand: "Thermaltake", name: "Toughpower GF A3 850W", generation: 850, watts: 850, score: 8.8, price: 139 },
+    { id: "psu-xpg-core-reactor-850", brand: "XPG", name: "Core Reactor 850W", generation: 850, watts: 850, score: 9.0, price: 149 },
+    { id: "psu-xpg-core-reactor-1000", brand: "XPG", name: "Core Reactor 1000W", generation: 1000, watts: 1000, score: 9.1, price: 189 },
+    { id: "psu-silverstone-da850r", brand: "SilverStone", name: "DA850R Gold", generation: 850, watts: 850, score: 8.7, price: 129 },
+    { id: "psu-silverstone-da1000r", brand: "SilverStone", name: "DA1000R Gold", generation: 1000, watts: 1000, score: 8.9, price: 169 },
+    { id: "psu-fsp-hydro-g-pro-850", brand: "FSP", name: "Hydro G PRO 850W", generation: 850, watts: 850, score: 8.8, price: 139 },
+    { id: "psu-enermax-revolution-850", brand: "Enermax", name: "Revolution D.F. 850W", generation: 850, watts: 850, score: 8.7, price: 129 }
+  ],
+  case: [
+    { id: "case-coolermaster-td500-v2", brand: "Cooler Master", name: "MasterBox TD500 Mesh V2", generation: 500, maxGpu: 410, maxRad: 360, score: 8.8, price: 119 },
+    { id: "case-coolermaster-h500", brand: "Cooler Master", name: "MasterCase H500", generation: 500, maxGpu: 410, maxRad: 360, score: 8.8, price: 129 },
+    { id: "case-antec-c8", brand: "Antec", name: "C8", generation: 8, maxGpu: 430, maxRad: 360, score: 8.9, price: 109 },
+    { id: "case-antec-nx410", brand: "Antec", name: "NX410", generation: 410, maxGpu: 335, maxRad: 360, score: 7.7, price: 79 },
+    { id: "case-deepcool-ch560", brand: "DeepCool", name: "CH560", generation: 560, maxGpu: 380, maxRad: 360, score: 8.7, price: 109 },
+    { id: "case-deepcool-ck560", brand: "DeepCool", name: "CK560", generation: 560, maxGpu: 380, maxRad: 360, score: 8.6, price: 99 },
+    { id: "case-sharkoon-rebel-c70g", brand: "Sharkoon", name: "REBEL C70G", generation: 70, maxGpu: 400, maxRad: 360, score: 8.3, price: 99 },
+    { id: "case-kolink-observatory-hf", brand: "Kolink", name: "Observatory HF Mesh", generation: 1, maxGpu: 360, maxRad: 360, score: 8.0, price: 89 },
+    { id: "case-silverstone-fara-r1-pro", brand: "SilverStone", name: "FARA R1 PRO", generation: 1, maxGpu: 322, maxRad: 240, score: 7.6, price: 69 },
+    { id: "case-thermaltake-ceres-300", brand: "Thermaltake", name: "Ceres 300 TG ARGB", generation: 300, maxGpu: 370, maxRad: 360, score: 8.5, price: 109 }
+  ],
+  watercooling: [
+    { id: "cool-air-idcooling-se-226", brand: "ID-Cooling", name: "SE-226-XT", type: "air", radiator: 0, score: 8.3, price: 49 },
+    { id: "cool-air-scythe-fuma-3", brand: "Scythe", name: "Fuma 3", type: "air", radiator: 0, score: 8.9, price: 69 },
+    { id: "cool-air-deepcool-ak400", brand: "DeepCool", name: "AK400", type: "air", radiator: 0, score: 8.1, price: 39 },
+    { id: "cool-air-deepcool-ak620", brand: "DeepCool", name: "AK620", type: "air", radiator: 0, score: 9.0, price: 69 },
+    { id: "cool-aio-240-msi-mag-coreliquid", brand: "MSI", name: "MAG CoreLiquid 240R V2", type: "aio", radiator: 240, score: 8.8, price: 109 },
+    { id: "cool-aio-360-msi-mag-coreliquid", brand: "MSI", name: "MAG CoreLiquid 360R V2", type: "aio", radiator: 360, score: 9.0, price: 139 },
+    { id: "cool-aio-240-nzxt-kraken", brand: "NZXT", name: "Kraken 240", type: "aio", radiator: 240, score: 9.1, price: 159 },
+    { id: "cool-aio-360-nzxt-kraken", brand: "NZXT", name: "Kraken 360", type: "aio", radiator: 360, score: 9.3, price: 219 },
+    { id: "cool-aio-240-enermax-liqmax", brand: "Enermax", name: "LIQMAX III 240", type: "aio", radiator: 240, score: 8.4, price: 99 },
+    { id: "cool-aio-360-idcooling-zoomflow", brand: "ID-Cooling", name: "Zoomflow 360 XT", type: "aio", radiator: 360, score: 8.6, price: 119 }
+  ],
+  customCables: [
+    { id: "cab-mobo-ezdiyfab-24", brand: "EZDIY-FAB", category: "Carte mère (24-pin)", name: "24-pin extension", score: 8.0, price: 23 },
+    { id: "cab-mobo-moddiy-24", brand: "MODDIY", category: "Carte mère (24-pin)", name: "24-pin premium sleeved", score: 8.6, price: 45 },
+    { id: "cab-mobo-phanteks-24", brand: "Phanteks", category: "Carte mère (24-pin)", name: "24-pin extension set", score: 8.2, price: 29 },
+    { id: "cab-gpu-ezdiyfab-2x8", brand: "EZDIY-FAB", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU 2x8 extension", score: 7.9, price: 21, requiredPcie8: 2 },
+    { id: "cab-gpu-ezdiyfab-3x8", brand: "EZDIY-FAB", category: "Carte graphique (PCIe/12VHPWR)", name: "GPU 3x8 extension", score: 8.0, price: 29, requiredPcie8: 3 },
+    { id: "cab-gpu-moddiy-12vhpwr", brand: "MODDIY", category: "Carte graphique (PCIe/12VHPWR)", name: "12VHPWR ultra-flex", score: 9.0, price: 69, requires12vhpwr: true },
+    { id: "cab-gpu-antec-12vhpwr", brand: "Antec", category: "Carte graphique (PCIe/12VHPWR)", name: "12VHPWR sleeved", score: 8.5, price: 54, requires12vhpwr: true },
+    { id: "cab-cpu-ezdiyfab-1eps", brand: "EZDIY-FAB", category: "CPU (EPS 8-pin)", name: "CPU 1xEPS extension", score: 7.8, price: 17, requiredEps8: 1 },
+    { id: "cab-cpu-ezdiyfab-2eps", brand: "EZDIY-FAB", category: "CPU (EPS 8-pin)", name: "CPU 2xEPS extension", score: 7.9, price: 25, requiredEps8: 2 },
+    { id: "cab-cpu-moddiy-2eps", brand: "MODDIY", category: "CPU (EPS 8-pin)", name: "CPU 2xEPS premium", score: 8.8, price: 43, requiredEps8: 2 },
+    { id: "cab-oth-thermaltake-argb-hub", brand: "Thermaltake", category: "Autres (SATA/ARGB/FAN)", name: "ARGB hub + routing", score: 8.4, price: 35 },
+    { id: "cab-oth-antec-fan-hub", brand: "Antec", category: "Autres (SATA/ARGB/FAN)", name: "Fan hub routing set", score: 8.1, price: 29 }
+  ]
+};
+
+function mergeCatalogExpansion(...expansions) {
+  expansions.forEach((expansion) => {
+    if (!expansion || typeof expansion !== "object") return;
+    Object.entries(expansion).forEach(([key, list]) => {
+      if (!Array.isArray(CATALOG[key]) || !Array.isArray(list)) return;
+      const known = new Set(CATALOG[key].map((item) => item.id));
+      list.forEach((item) => {
+        if (!item?.id || known.has(item.id)) return;
+        CATALOG[key].push(item);
+        known.add(item.id);
+      });
     });
   });
 }
 
-mergeCatalogExpansion();
+mergeCatalogExpansion(
+  CATALOG_EXPANSION,
+  CATALOG_EXPANSION_PLUS,
+  CATALOG_EXPANSION_MAX,
+  CATALOG_EXPANSION_INFINITY,
+  CATALOG_EXPANSION_HYPER
+);
 
 const MARKET_PRICE_PROFILE = {
-  cpu: { multiplier: 1.04, shipping: 6, min: 99 },
-  mobo: { multiplier: 1.03, shipping: 7, min: 109 },
-  ram: { multiplier: 1.02, shipping: 3, min: 39 },
-  gpu: { multiplier: 1.02, shipping: 9, min: 199 },
-  storage: { multiplier: 1.02, shipping: 4, min: 45 },
-  psu: { multiplier: 1.03, shipping: 8, min: 79 },
-  case: { multiplier: 1.02, shipping: 18, min: 89 },
-  watercooling: { multiplier: 1.03, shipping: 7, min: 49 },
-  customCables: { multiplier: 1.02, shipping: 4, min: 19 }
+  cpu: { multiplier: 1.03, shipping: 5, min: 109, deliveryPct: 0.008 },
+  mobo: { multiplier: 1.03, shipping: 7, min: 119, deliveryPct: 0.01 },
+  ram: { multiplier: 1.02, shipping: 3, min: 39, deliveryPct: 0.006 },
+  gpu: { multiplier: 1.02, shipping: 11, min: 219, deliveryPct: 0.012 },
+  storage: { multiplier: 1.02, shipping: 4, min: 49, deliveryPct: 0.007 },
+  psu: { multiplier: 1.03, shipping: 8, min: 89, deliveryPct: 0.01 },
+  case: { multiplier: 1.02, shipping: 24, min: 89, deliveryPct: 0.013 },
+  watercooling: { multiplier: 1.03, shipping: 7, min: 49, deliveryPct: 0.01 },
+  customCables: { multiplier: 1.02, shipping: 4, min: 19, deliveryPct: 0.008 }
 };
 
 const MARKET_PRICE_OVERRIDES = {
-  "cpu-amd-r7-3800x": 160
+  "cpu-amd-r7-3800x": 164,
+  "cpu-amd-r5-5600": 124,
+  "cpu-amd-r7-7800x3d": 419,
+  "cpu-intel-i5-14600k": 289,
+  "gpu-nv-2060": 259,
+  "gpu-nv-4060": 329,
+  "gpu-nv-4070s": 699,
+  "gpu-amd-rx7800xt": 609,
+  "gpu-amd-rx9070xt": 799,
+  "gpu-nv-4060s": 449,
+  "gpu-nv-5070": 779,
+  "gpu-amd-rx7700xt": 519,
+  "gpu-amd-rx7900gre": 639,
+  "sto-king-1": 69,
+  "sto-wd-sn770-1": 89,
+  "sto-sam-990pro-2": 199,
+  "sto-sam-990pro-4": 409,
+  "psu-cx550": 79,
+  "psu-rm850e": 149,
+  "psu-corsair-rm1000x-shift": 259,
+  "case-msi-100r": 89,
+  "case-corsair-4000d": 104,
+  "case-corsair-5000d-airflow": 199
 };
 
 function roundMoney(value) {
@@ -800,7 +1158,11 @@ function applyMarketDeliveredPricing() {
         return;
       }
 
-      let adjusted = (base * profile.multiplier) + profile.shipping;
+      const variableShipping =
+        (base >= 1200 ? 19 : base >= 700 ? 14 : base >= 350 ? 9 : base >= 140 ? 6 : 4)
+        + (key === "case" ? 12 : 0);
+      const insurance = base * Number(profile.deliveryPct || 0);
+      let adjusted = (base * profile.multiplier) + Number(profile.shipping || 0) + variableShipping + insurance;
       adjusted = Math.max(adjusted, harmonizedFloor(key, item));
       if (profile.min) adjusted = Math.max(adjusted, profile.min);
       item.price = roundMoney(adjusted);
@@ -825,12 +1187,12 @@ const CATEGORY_CONFIG = {
 };
 
 const USAGE_PROFILE = {
-  "Jeu compétitif (1080p)": { minCpu: 6.5, minGpu: 6.8, minRam: 16, minVram: 8, minStorage: 1, ratioLow: 0.88, ratioHigh: 1.3 },
+  "Jeu compétitif (1080p)": { minCpu: 5.8, minGpu: 6.2, minRam: 16, minVram: 8, minStorage: 1, ratioLow: 0.84, ratioHigh: 1.32 },
   "Jeu AAA (1440p / ultrawide)": { minCpu: 7.2, minGpu: 8.0, minRam: 32, minVram: 12, minStorage: 2, ratioLow: 0.85, ratioHigh: 1.25 },
   "Jeu (4K)": { minCpu: 8.0, minGpu: 9.0, minRam: 32, minVram: 16, minStorage: 2, ratioLow: 0.82, ratioHigh: 1.2 },
   "Création (montage / 3D / IA)": { minCpu: 8.7, minGpu: 8.5, minRam: 64, minVram: 16, minStorage: 2, ratioLow: 0.95, ratioHigh: 1.35 },
   "Streaming + multitâche": { minCpu: 8.0, minGpu: 7.5, minRam: 32, minVram: 12, minStorage: 2, ratioLow: 0.95, ratioHigh: 1.35 },
-  "Bureautique / étude": { minCpu: 5.6, minGpu: 5.0, minRam: 16, minVram: 0, minStorage: 1, ratioLow: 0.7, ratioHigh: 1.6 }
+  "Bureautique / étude": { minCpu: 5.0, minGpu: 4.6, minRam: 16, minVram: 0, minStorage: 1, ratioLow: 0.7, ratioHigh: 1.6 }
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -910,9 +1272,313 @@ function themedConfirm(message, {
   });
 }
 
+function themedPrompt(message, {
+  title = "Saisie",
+  confirmText = "Valider",
+  cancelText = "Annuler",
+  placeholder = "",
+  value = "",
+  inputType = "text"
+} = {}) {
+  return new Promise((resolve) => {
+    const root = document.createElement("div");
+    root.className = "confirm-modal";
+    root.innerHTML = `
+      <div class="confirm-modal__backdrop"></div>
+      <div class="confirm-modal__card" role="dialog" aria-modal="true" aria-label="${title}">
+        <div class="confirm-modal__title">${title}</div>
+        <div class="confirm-modal__text">${message}</div>
+        <div class="confirm-modal__field">
+          <input class="confirm-modal__input" type="${inputType}" value="${String(value).replace(/"/g, "&quot;")}" placeholder="${String(placeholder).replace(/"/g, "&quot;")}" />
+        </div>
+        <div class="confirm-modal__actions">
+          <button type="button" class="btn btn--ghost confirm-modal__btn" data-action="cancel">${cancelText}</button>
+          <button type="button" class="btn btn--primary confirm-modal__btn" data-action="confirm">${confirmText}</button>
+        </div>
+      </div>
+    `;
+
+    const inputEl = root.querySelector(".confirm-modal__input");
+    let settled = false;
+    const close = (result) => {
+      if (settled) return;
+      settled = true;
+      document.body.classList.remove("is-modal-open");
+      document.removeEventListener("keydown", onKeyDown);
+      root.remove();
+      if (!result) {
+        resolve("");
+        return;
+      }
+      resolve(String(inputEl?.value || "").trim());
+    };
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") close(false);
+      if (e.key === "Enter") close(true);
+    };
+
+    root.addEventListener("click", (e) => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (target.classList.contains("confirm-modal__backdrop")) close(false);
+      const action = target.dataset.action;
+      if (action === "confirm") close(true);
+      if (action === "cancel") close(false);
+    });
+
+    document.body.classList.add("is-modal-open");
+    document.addEventListener("keydown", onKeyDown);
+    document.body.appendChild(root);
+
+    if (inputEl instanceof HTMLElement) {
+      inputEl.focus();
+      inputEl.select?.();
+    }
+  });
+}
+
 function setStatus(id, text) {
   const el = document.getElementById(id);
   if (el) el.textContent = text || "";
+}
+
+const THEME_STORAGE_KEY = "ae_theme_v1";
+const THEME_PRESETS = {
+  atelier: {
+    bg: "#05070c", panel: "#1a2635", text: "#f3f7ff",
+    accent: "#3cd7ff", accent2: "#35f3b4", accent3: "#63a3ff", accentWarm: "#ffba66",
+    btnPrimary: "#3cd7ff", btnSecondary: "#35f3b4"
+  },
+  acier: {
+    bg: "#0a0f16", panel: "#222f40", text: "#ecf3ff",
+    accent: "#7aa2ff", accent2: "#74e6ff", accent3: "#9d8bff", accentWarm: "#ffd198",
+    btnPrimary: "#7aa2ff", btnSecondary: "#74e6ff"
+  },
+  sunset: {
+    bg: "#130b12", panel: "#3a1f2b", text: "#fff0ea",
+    accent: "#ff8a5c", accent2: "#ff5da8", accent3: "#ffb36e", accentWarm: "#ffd27c",
+    btnPrimary: "#ff8a5c", btnSecondary: "#ff5da8"
+  },
+  emerald: {
+    bg: "#06110d", panel: "#1a352b", text: "#e9fff6",
+    accent: "#44f3c7", accent2: "#5bc1ff", accent3: "#7cf0ff", accentWarm: "#ffd181",
+    btnPrimary: "#44f3c7", btnSecondary: "#5bc1ff"
+  }
+};
+
+function normalizeHexColor(value, fallback = "#3cd7ff") {
+  const hex = String(value || "").trim();
+  if (/^#[0-9a-f]{6}$/i.test(hex)) return hex.toLowerCase();
+  if (/^#[0-9a-f]{3}$/i.test(hex)) {
+    const clean = hex.slice(1).toLowerCase();
+    return `#${clean[0]}${clean[0]}${clean[1]}${clean[1]}${clean[2]}${clean[2]}`;
+  }
+  return fallback;
+}
+
+function hexToRgb(hex) {
+  const clean = normalizeHexColor(hex).slice(1);
+  const n = Number.parseInt(clean, 16);
+  return {
+    r: (n >> 16) & 255,
+    g: (n >> 8) & 255,
+    b: n & 255
+  };
+}
+
+function rgbToHex(r, g, b) {
+  const clamp = (n) => Math.max(0, Math.min(255, Math.round(n)));
+  const to2 = (n) => clamp(n).toString(16).padStart(2, "0");
+  return `#${to2(r)}${to2(g)}${to2(b)}`;
+}
+
+function rgba(hex, alpha) {
+  const rgb = hexToRgb(hex);
+  const a = Math.max(0, Math.min(1, Number(alpha || 0)));
+  return `rgba(${rgb.r},${rgb.g},${rgb.b},${a})`;
+}
+
+function isColorLight(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+  return brightness >= 155;
+}
+
+function mixHex(a, b, ratio = 0.5) {
+  const t = Math.max(0, Math.min(1, Number(ratio || 0)));
+  const ca = hexToRgb(a);
+  const cb = hexToRgb(b);
+  return rgbToHex(
+    ca.r + ((cb.r - ca.r) * t),
+    ca.g + ((cb.g - ca.g) * t),
+    ca.b + ((cb.b - ca.b) * t)
+  );
+}
+
+function markThemePreset(name = "") {
+  document.querySelectorAll("[data-theme-preset]").forEach((btn) => {
+    btn.classList.toggle("is-active", btn.dataset.themePreset === name);
+  });
+}
+
+function applyThemePalette(palette, { persist = true, presetName = "" } = {}) {
+  if (!palette || typeof palette !== "object") return;
+  const resolved = {
+    bg: normalizeHexColor(palette.bg, THEME_PRESETS.atelier.bg),
+    panel: normalizeHexColor(palette.panel, THEME_PRESETS.atelier.panel),
+    text: normalizeHexColor(palette.text, THEME_PRESETS.atelier.text),
+    accent: normalizeHexColor(palette.accent, THEME_PRESETS.atelier.accent),
+    accent2: normalizeHexColor(palette.accent2, THEME_PRESETS.atelier.accent2),
+    accent3: normalizeHexColor(
+      palette.accent3,
+      mixHex(normalizeHexColor(palette.accent, THEME_PRESETS.atelier.accent), "#8eb5ff", 0.35)
+    ),
+    accentWarm: normalizeHexColor(
+      palette.accentWarm,
+      mixHex(normalizeHexColor(palette.accent2, THEME_PRESETS.atelier.accent2), "#ffba66", 0.5)
+    ),
+    btnPrimary: normalizeHexColor(palette.btnPrimary, normalizeHexColor(palette.accent, THEME_PRESETS.atelier.accent)),
+    btnSecondary: normalizeHexColor(palette.btnSecondary, normalizeHexColor(palette.accent2, THEME_PRESETS.atelier.accent2))
+  };
+
+  const root = document.documentElement;
+  root.style.setProperty("--bg", resolved.bg);
+  root.style.setProperty("--text", rgba(resolved.text, 0.92));
+  root.style.setProperty("--muted", rgba(resolved.text, 0.68));
+  root.style.setProperty("--muted2", rgba(resolved.text, 0.52));
+  root.style.setProperty("--stroke", rgba(resolved.text, 0.14));
+  root.style.setProperty("--panel", rgba(resolved.panel, 0.12));
+  root.style.setProperty("--panel2", rgba(resolved.panel, 0.18));
+  root.style.setProperty("--accent", resolved.accent);
+  root.style.setProperty("--accent2", resolved.accent2);
+  root.style.setProperty("--accent3", resolved.accent3);
+  root.style.setProperty("--accentWarm", resolved.accentWarm);
+  root.style.setProperty("--ui-panel-top", rgba(resolved.panel, 0.46));
+  root.style.setProperty("--ui-panel-bottom", rgba(resolved.panel, 0.24));
+  root.style.setProperty("--ui-input-bg", rgba(resolved.panel, 0.22));
+  root.style.setProperty("--ui-input-border", rgba(resolved.text, 0.18));
+  root.style.setProperty("--ui-input-focus", rgba(resolved.btnPrimary, 0.78));
+  root.style.setProperty("--ui-btn-border", rgba(resolved.text, 0.22));
+  root.style.setProperty("--ui-btn-bg", rgba(resolved.panel, 0.22));
+  root.style.setProperty("--ui-btn-hover-bg", rgba(resolved.panel, 0.35));
+  root.style.setProperty("--ui-btn-ghost-bg", rgba(resolved.panel, 0.16));
+  root.style.setProperty("--ui-btn-ghost-border", rgba(resolved.text, 0.22));
+  root.style.setProperty("--ui-btn-primary-from", resolved.btnPrimary);
+  root.style.setProperty("--ui-btn-primary-to", resolved.btnSecondary);
+  root.style.setProperty("--ui-btn-primary-text", isColorLight(mixHex(resolved.btnPrimary, resolved.btnSecondary, 0.5)) ? "#081019" : "#f7fbff");
+
+  const accentInput = document.getElementById("themeAccentInput");
+  const accent2Input = document.getElementById("themeAccent2Input");
+  const bgInput = document.getElementById("themeBgInput");
+  const panelInput = document.getElementById("themePanelInput");
+  const textInput = document.getElementById("themeTextInput");
+  const btnPrimaryInput = document.getElementById("themeBtnPrimaryInput");
+  const btnSecondaryInput = document.getElementById("themeBtnSecondaryInput");
+  if (accentInput) accentInput.value = resolved.accent;
+  if (accent2Input) accent2Input.value = resolved.accent2;
+  if (bgInput) bgInput.value = resolved.bg;
+  if (panelInput) panelInput.value = resolved.panel;
+  if (textInput) textInput.value = resolved.text;
+  if (btnPrimaryInput) btnPrimaryInput.value = resolved.btnPrimary;
+  if (btnSecondaryInput) btnSecondaryInput.value = resolved.btnSecondary;
+
+  markThemePreset(presetName);
+  if (persist) {
+    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify({ ...resolved, presetName: presetName || "custom" }));
+  }
+}
+
+function initThemeCustomizer() {
+  const root = document.getElementById("themeLab");
+  const toggle = document.getElementById("themeLabToggle");
+  const closeBtn = document.getElementById("themeLabClose");
+  const panel = document.getElementById("themeLabPanel");
+  const accentInput = document.getElementById("themeAccentInput");
+  const accent2Input = document.getElementById("themeAccent2Input");
+  const bgInput = document.getElementById("themeBgInput");
+  const panelInput = document.getElementById("themePanelInput");
+  const textInput = document.getElementById("themeTextInput");
+  const btnPrimaryInput = document.getElementById("themeBtnPrimaryInput");
+  const btnSecondaryInput = document.getElementById("themeBtnSecondaryInput");
+  const resetBtn = document.getElementById("themeLabReset");
+  if (!root || !toggle || !panel) return;
+
+  const open = () => {
+    root.classList.add("is-open");
+    toggle.setAttribute("aria-expanded", "true");
+    panel.setAttribute("aria-hidden", "false");
+  };
+  const close = () => {
+    root.classList.remove("is-open");
+    toggle.setAttribute("aria-expanded", "false");
+    panel.setAttribute("aria-hidden", "true");
+  };
+
+  toggle.addEventListener("click", () => {
+    if (root.classList.contains("is-open")) close();
+    else open();
+  });
+  closeBtn?.addEventListener("click", close);
+
+  document.addEventListener("click", (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (!root.contains(target)) close();
+  });
+
+  document.querySelectorAll("[data-theme-preset]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const presetName = btn.dataset.themePreset || "atelier";
+      const preset = THEME_PRESETS[presetName] || THEME_PRESETS.atelier;
+      applyThemePalette(preset, { persist: true, presetName });
+    });
+  });
+
+  const applyCustomFromInputs = () => {
+    const accent = normalizeHexColor(accentInput?.value || THEME_PRESETS.atelier.accent, THEME_PRESETS.atelier.accent);
+    const accent2 = normalizeHexColor(accent2Input?.value || THEME_PRESETS.atelier.accent2, THEME_PRESETS.atelier.accent2);
+    const bg = normalizeHexColor(bgInput?.value || THEME_PRESETS.atelier.bg, THEME_PRESETS.atelier.bg);
+    const panelColor = normalizeHexColor(panelInput?.value || THEME_PRESETS.atelier.panel, THEME_PRESETS.atelier.panel);
+    const textColor = normalizeHexColor(textInput?.value || THEME_PRESETS.atelier.text, THEME_PRESETS.atelier.text);
+    const btnPrimary = normalizeHexColor(btnPrimaryInput?.value || accent, accent);
+    const btnSecondary = normalizeHexColor(btnSecondaryInput?.value || accent2, accent2);
+    applyThemePalette({
+      bg,
+      panel: panelColor,
+      text: textColor,
+      accent,
+      accent2,
+      accent3: mixHex(accent, "#9ec1ff", 0.34),
+      accentWarm: mixHex(accent2, "#ffbc70", 0.52),
+      btnPrimary,
+      btnSecondary
+    }, { persist: true, presetName: "custom" });
+  };
+
+  accentInput?.addEventListener("input", applyCustomFromInputs);
+  accent2Input?.addEventListener("input", applyCustomFromInputs);
+  bgInput?.addEventListener("input", applyCustomFromInputs);
+  panelInput?.addEventListener("input", applyCustomFromInputs);
+  textInput?.addEventListener("input", applyCustomFromInputs);
+  btnPrimaryInput?.addEventListener("input", applyCustomFromInputs);
+  btnSecondaryInput?.addEventListener("input", applyCustomFromInputs);
+
+  resetBtn?.addEventListener("click", () => {
+    applyThemePalette(THEME_PRESETS.atelier, { persist: true, presetName: "atelier" });
+  });
+
+  let stored = null;
+  try {
+    stored = JSON.parse(localStorage.getItem(THEME_STORAGE_KEY) || "null");
+  } catch {
+    stored = null;
+  }
+  if (stored && typeof stored === "object") {
+    applyThemePalette(stored, { persist: false, presetName: stored.presetName || "custom" });
+  } else {
+    applyThemePalette(THEME_PRESETS.atelier, { persist: false, presetName: "atelier" });
+  }
 }
 
 function sortByBrandGenerationScore(items) {
@@ -1481,11 +2147,29 @@ function cpuMoboGenerationCompatible(cpu, mobo) {
   if (!cpu || !mobo) return true;
   if (cpu.socket !== mobo.socket) return false;
 
-  if (cpu.socket === "AM4") return [550, 570].includes(mobo.generation);
-  if (cpu.socket === "AM5") return [650, 670, 870].includes(mobo.generation);
-  if (cpu.socket === "1700") return [760, 790].includes(mobo.generation);
-  if (cpu.socket === "1851") return [860, 890].includes(mobo.generation);
+  if (cpu.socket === "AM4") return [450, 520, 550, 570].includes(mobo.generation);
+  if (cpu.socket === "AM5") return [620, 650, 670, 870].includes(mobo.generation);
+  if (cpu.socket === "1700") return [610, 660, 670, 690, 760, 790].includes(mobo.generation);
+  if (cpu.socket === "1851") return [810, 860, 890].includes(mobo.generation);
   return true;
+}
+
+function radiatorGpuPenalty(cooling) {
+  if (!cooling) return 0;
+  if (cooling.type !== "aio" && cooling.type !== "custom") return 0;
+  const rad = Number(cooling.radiator || 0);
+  if (rad >= 420) return 40;
+  if (rad >= 360) return 35;
+  if (rad >= 280) return 28;
+  if (rad >= 240) return 24;
+  return 20;
+}
+
+function effectiveCaseGpuLimit(casev, cooling) {
+  if (!casev) return 0;
+  const base = Number(casev.maxGpu || 0);
+  const penalty = radiatorGpuPenalty(cooling);
+  return Math.max(0, base - penalty);
 }
 
 function optionAvailability(key, item, ctx = getCableContext()) {
@@ -1601,6 +2285,37 @@ function economyDeliveryOption() {
   return CATALOG.delivery.find((item) => item.mode === "economy") || CATALOG.delivery[0] || null;
 }
 
+function minimumBoardTierForCpu(cpu) {
+  const rank = Number(cpu?.rank || 0);
+  if (rank >= 9.1) return 4;
+  if (rank >= 8.0) return 3;
+  if (rank >= 6.8) return 2;
+  return 1;
+}
+
+function cpuGpuRatio(cpu, gpu) {
+  const cpuRank = Number(cpu?.rank || 0);
+  const gpuRank = Number(gpu?.rank || 0);
+  if (!cpuRank || !gpuRank) return 1;
+  return cpuRank / Math.max(0.01, gpuRank);
+}
+
+function usageBalanceDelta(cpu, gpu, usageProfile) {
+  if (!usageProfile) return 0;
+  const ratio = cpuGpuRatio(cpu, gpu);
+  if (ratio < usageProfile.ratioLow) return usageProfile.ratioLow - ratio;
+  if (ratio > usageProfile.ratioHigh) return ratio - usageProfile.ratioHigh;
+  return 0;
+}
+
+function isUsageBalanced(cpu, gpu, usageProfile, slack = 0.18) {
+  if (!usageProfile) return true;
+  const ratio = cpuGpuRatio(cpu, gpu);
+  const minRatio = Math.max(0.01, usageProfile.ratioLow - slack);
+  const maxRatio = usageProfile.ratioHigh + slack;
+  return ratio >= minRatio && ratio <= maxRatio;
+}
+
 function computeUsageMinimumOffer(usageValue) {
   if (USAGE_MIN_CACHE[usageValue]) return USAGE_MIN_CACHE[usageValue];
   const usageProfile = USAGE_PROFILE[usageValue];
@@ -1626,8 +2341,9 @@ function computeUsageMinimumOffer(usageValue) {
   let best = null;
 
   cpuCandidates.forEach((cpu) => {
+    const minTier = minimumBoardTierForCpu(cpu);
     const moboCandidates = sortByBrandGenerationScore(CATALOG.mobo)
-      .filter((mobo) => mobo.socket === cpu.socket && cpuMoboGenerationCompatible(cpu, mobo))
+      .filter((mobo) => mobo.socket === cpu.socket && cpuMoboGenerationCompatible(cpu, mobo) && Number(mobo.tier || 1) >= minTier)
       .sort((a, b) => a.price - b.price)
       .slice(0, 12);
 
@@ -1636,12 +2352,15 @@ function computeUsageMinimumOffer(usageValue) {
       if (!ram) return;
 
       gpuCandidates.forEach((gpu) => {
+        if (!isUsageBalanced(cpu, gpu, usageProfile, 0.22)) return;
         const casev = cheapest(CATALOG.case, (item) => item.maxGpu >= gpu.length);
         if (!casev) return;
 
         const cooling = cheapest(
           CATALOG.watercooling,
-          (item) => !item.estimateOnly && ((item.type === "air" || item.type === "none") || item.radiator <= casev.maxRad)
+          (item) => !item.estimateOnly
+            && ((item.type === "air" || item.type === "none") || item.radiator <= casev.maxRad)
+            && (cpu.tdp < 120 || Number(item.score || 0) >= 8.6)
         );
         if (!cooling) return;
 
@@ -1663,11 +2382,24 @@ function computeUsageMinimumOffer(usageValue) {
           cableMgmt
         }, delivery);
         const total = BASE_PRICE + partsTotal + cooling.price + cableMgmt.price + processingFee;
+        const qualityScore =
+          (cpu.rank * 2.2) +
+          (gpu.rank * 2.6) +
+          (ram.score || 0) +
+          (mobo.score || 0) +
+          (psu.score || 0) +
+          (casev.score || 0) +
+          (cooling.score || 0);
+        const balancePenalty = usageBalanceDelta(cpu, gpu, usageProfile) * 14;
+        const finalScore = qualityScore - balancePenalty;
 
-        if (!best || total < best.total) {
+        if (!best
+          || (total < best.total - 15)
+          || (Math.abs(total - best.total) <= 15 && finalScore > best.score)) {
           best = {
             total: Math.round(total * 100) / 100,
             delivery,
+            score: finalScore,
             parts: { cpu, mobo, ram, gpu, storage, psu, case: casev, cooling, cableMgmt }
           };
         }
@@ -1738,6 +2470,7 @@ function computeUsageBalancedOffer(usageValue) {
   const floor = Math.max(usageMinimum, inputBudgetMin || 0);
   let cap = inputBudgetMax || Math.max(floor + 900, usageMinimum + 1000);
   if (cap < floor) cap = floor;
+  const softCap = Math.max(cap, roundBudgetStep(cap * 1.18));
 
   let target = inputBudgetMin && inputBudgetMax
     ? roundBudgetStep((inputBudgetMin + inputBudgetMax) / 2)
@@ -1773,11 +2506,16 @@ function computeUsageBalancedOffer(usageValue) {
   if (!cpuCandidates.length || !gpuCandidates.length || !storageCandidates.length) return null;
 
   let best = null;
+  let bestOverCap = null;
   const minBalancedTotal = floor + 120;
 
   cpuCandidates.forEach((cpu) => {
     const moboCandidates = candidateMix(
-      sortByBrandGenerationScore(CATALOG.mobo).filter((mobo) => mobo.socket === cpu.socket && cpuMoboGenerationCompatible(cpu, mobo)),
+      sortByBrandGenerationScore(CATALOG.mobo).filter((mobo) =>
+        mobo.socket === cpu.socket
+        && cpuMoboGenerationCompatible(cpu, mobo)
+        && Number(mobo.tier || 1) >= minimumBoardTierForCpu(cpu)
+      ),
       "tier",
       4
     );
@@ -1791,6 +2529,7 @@ function computeUsageBalancedOffer(usageValue) {
       if (!ramCandidates.length) return;
 
       gpuCandidates.forEach((gpu) => {
+        if (!isUsageBalanced(cpu, gpu, usageProfile, 0.12)) return;
         const caseCandidates = candidateMix(
           sortByBrandGenerationScore(CATALOG.case).filter((casev) => casev.maxGpu >= gpu.length),
           "score",
@@ -1821,7 +2560,7 @@ function computeUsageBalancedOffer(usageValue) {
                   deliveryCandidates.forEach((delivery) => {
                     const parts = { cpu, mobo, ram, gpu, storage, psu, case: casev, cooling };
                     const total = Math.round(presetTotal(parts, delivery, customCable, cableMgmt) * 100) / 100;
-                    if (total < floor || total > cap) return;
+                    if (total < floor || total > softCap) return;
 
                     const quality =
                       (cpu.rank * 3.0) +
@@ -1834,11 +2573,16 @@ function computeUsageBalancedOffer(usageValue) {
                       (psu.score || 0) +
                       (delivery.mode === "normal" ? 0.3 : 0);
                     const distance = Math.abs(total - target) / Math.max(1, target);
+                    const balancePenalty = usageBalanceDelta(cpu, gpu, usageProfile) * 12;
                     const underPenalty = total < minBalancedTotal ? 0.35 : 0;
-                    const score = quality - (distance * 8.2) - underPenalty;
+                    const score = quality - (distance * 8.2) - underPenalty - balancePenalty;
 
-                    if (!best || score > best.score || (Math.abs(total - target) < Math.abs(best.total - target) && score >= best.score - 0.25)) {
-                      best = { score, total, delivery, parts };
+                    if (total <= cap) {
+                      if (!best || score > best.score || (Math.abs(total - target) < Math.abs(best.total - target) && score >= best.score - 0.25)) {
+                        best = { score, total, delivery, parts };
+                      }
+                    } else if (!bestOverCap || score > bestOverCap.score || total < bestOverCap.total) {
+                      bestOverCap = { score, total, delivery, parts };
                     }
                   });
                 });
@@ -1850,7 +2594,7 @@ function computeUsageBalancedOffer(usageValue) {
     });
   });
 
-  return best || null;
+  return best || bestOverCap || null;
 }
 
 function optionBadge(key, item, availability) {
@@ -1951,7 +2695,7 @@ function availabilityForCategory(key, item, cableCtx) {
     return { available: false, reason: `Socket ${selectedMobo.socket} requis` };
   }
   if (key === "cpu" && selectedMobo && !cpuMoboGenerationCompatible(item, selectedMobo)) {
-    return { available: false, reason: "Chipset carte mère non adapté Ã  cette génération CPU" };
+    return { available: false, reason: "Chipset carte mère non adapté à cette génération CPU" };
   }
   if (key === "mobo") {
     if (isPendingExternal(selectedCpu) || isPendingExternal(selectedRam)) return { available: true, reason: "" };
@@ -1969,23 +2713,48 @@ function availabilityForCategory(key, item, cableCtx) {
   if (key === "ram" && selectedMobo && item.type !== selectedMobo.ramType) {
     return { available: false, reason: `${selectedMobo.ramType} requis` };
   }
+  if (key === "ram" && selectedMobo && selectedMobo.ramType === "DDR4" && Number(item.generation || 0) > 4000) {
+    return { available: false, reason: "DDR4 > 4000 MT/s peu stable sur cette plateforme" };
+  }
+  if (key === "ram" && selectedMobo && selectedMobo.ramType === "DDR5" && Number(item.generation || 0) >= 7600 && Number(selectedMobo.tier || 1) < 3) {
+    return { available: false, reason: "DDR5 tres haute frequence: carte mere tier 3+ conseillee" };
+  }
   if (key === "gpu" && isPendingExternal(selectedCase)) return { available: true, reason: "" };
-  if (key === "gpu" && selectedCase && item.length > selectedCase.maxGpu) {
-    return { available: false, reason: `BoÃ®tier max ${selectedCase.maxGpu} mm` };
+  if (key === "gpu" && selectedCase && item.length > effectiveCaseGpuLimit(selectedCase, selectedCooling)) {
+    const limit = effectiveCaseGpuLimit(selectedCase, selectedCooling);
+    return { available: false, reason: `Boitier max ${limit} mm avec refroidissement actuel` };
   }
   if (key === "case" && isPendingExternal(selectedGpu)) return { available: true, reason: "" };
-  if (key === "case" && selectedGpu && item.maxGpu < selectedGpu.length) {
-    return { available: false, reason: `GPU ${selectedGpu.length} mm non supporté` };
+  if (key === "case" && selectedGpu && effectiveCaseGpuLimit(item, selectedCooling) < selectedGpu.length) {
+    return { available: false, reason: `GPU ${selectedGpu.length} mm non supporte avec ce refroidissement` };
+  }
+  if (key === "case" && selectedCooling && (selectedCooling.type === "aio" || selectedCooling.type === "custom") && item.maxRad < Number(selectedCooling.radiator || 0)) {
+    return { available: false, reason: `Radiateur ${selectedCooling.radiator} mm non supporte` };
   }
   if (key === "watercooling" && isPendingExternal(selectedCase)) return { available: true, reason: "" };
   if (key === "watercooling" && selectedCase && (item.type === "aio" || item.type === "custom") && item.radiator > selectedCase.maxRad) {
     return { available: false, reason: `Radiateur max ${selectedCase.maxRad} mm` };
+  }
+  if (key === "watercooling" && selectedCase && selectedGpu && (item.type === "aio" || item.type === "custom")) {
+    const limit = effectiveCaseGpuLimit(selectedCase, item);
+    if (selectedGpu.length > limit) {
+      return { available: false, reason: `GPU ${selectedGpu.length} mm > clearance ${limit} mm avec ce radiateur` };
+    }
+  }
+  if (key === "watercooling" && selectedCpu && item.type === "none" && selectedCpu.tdp >= 105) {
+    return { available: false, reason: "CPU energivore: refroidissement dedie requis" };
+  }
+  if (key === "watercooling" && selectedCpu && item.type === "air" && selectedCpu.tdp >= 170 && Number(item.score || 0) < 9.1) {
+    return { available: false, reason: "CPU tres energivore: aircooling premium/AIO requis" };
   }
   if (key === "psu" && (isPendingExternal(selectedCpu) || isPendingExternal(selectedGpu))) return { available: true, reason: "" };
   if (key === "psu" && selectedCpu && selectedGpu) {
     const recommended = Math.ceil((consumptionEstimate(selectedCpu, selectedGpu, selectedCooling) * 1.35) / 50) * 50;
     if (item.watts < Math.max(550, recommended - 120)) {
       return { available: false, reason: `Puissance mini ${Math.max(550, recommended - 120)}W` };
+    }
+    if (selectedGpu.tdp >= 350 && item.watts < 900) {
+      return { available: false, reason: "GPU haut de gamme: alim 900W+ recommandee" };
     }
   }
 
@@ -2204,7 +2973,7 @@ function renderComboMenu(key, items) {
 		    if (typed && !unknown?.confirmed && !NO_EXTERNAL_REFERENCE_KEYS.has(key)) {
 	      const ask = document.createElement("div");
 	      ask.className = "combo-empty";
-	      ask.textContent = `Référence inconnue "${typed}". Es-tu sÃ»r qu'elle existe ?`;
+      ask.textContent = `Référence inconnue "${typed}". Es-tu sûr qu'elle existe ?`;
 	      menuEl.appendChild(ask);
 
       const actions = document.createElement("div");
@@ -2406,7 +3175,7 @@ function renderCategory(key) {
   selectEl.innerHTML = "";
   const placeholder = document.createElement("option");
   placeholder.value = "";
-  placeholder.textContent = config.required ? "Choisir a ¦" : "Choisir (optionnel)€¦";
+  placeholder.textContent = config.required ? "Choisir…" : "Choisir (optionnel)…";
   placeholder.selected = true;
   selectEl.appendChild(placeholder);
 
@@ -2425,7 +3194,7 @@ function renderCategory(key) {
     const availability = availabilityForCategory(key, item, ctx);
     const isCurrentSelection = selectedValue && item.id === selectedValue;
     const badge = optionBadge(key, item, availability);
-    option.textContent = `${badge ? `${badge} ` : ""}${optionLabel(key, item)}${availability.available ? "" : ` €” Indisponible (${availability.reason})`}`;
+    option.textContent = `${badge ? `${badge} ` : ""}${optionLabel(key, item)}${availability.available ? "" : ` — Indisponible (${availability.reason})`}`;
     option.disabled = !availability.available && !isCurrentSelection;
     groups.get(groupKey).appendChild(option);
   });
@@ -2582,9 +3351,21 @@ function renderBreakdown(rows) {
     const line = document.createElement("div");
     line.className = "breakdown__row";
     if (idx === rows.length - 1) {
-      line.innerHTML = `<strong>${row.name}</strong><strong>${row.value}</strong>`;
+      const left = document.createElement("strong");
+      left.textContent = String(row.name || "");
+      const right = document.createElement("strong");
+      right.textContent = String(row.value || "");
+      line.appendChild(left);
+      line.appendChild(right);
     } else {
-      line.innerHTML = `<span class="breakdown__name">${row.name}</span><span class="breakdown__value">${row.value}</span>`;
+      const left = document.createElement("span");
+      left.className = "breakdown__name";
+      left.textContent = String(row.name || "");
+      const right = document.createElement("span");
+      right.className = "breakdown__value";
+      right.textContent = String(row.value || "");
+      line.appendChild(left);
+      line.appendChild(right);
     }
     breakdownEl.appendChild(line);
   });
@@ -2622,9 +3403,18 @@ function compute() {
     requiredCategoryKeys().every((key) => Boolean(getSelected(key)))
   );
   if (!requiredReady) {
-    if (priceEl) priceEl.textContent = "€”";
+    if (priceEl) priceEl.textContent = "—";
     renderBreakdown([{ name: "Estimation", value: "Complète la configuration" }]);
-    alertBox("warn", "Renseigne tous les composants, l'usage et le niveau de traitement atelier pour obtenir un résultat fiable.");
+    if (isNoviceMode) {
+      const missingCore = CORE_CATEGORY_KEYS.filter((key) => !getSelected(key));
+      if (missingCore.length) {
+        alertBox("warn", "Mode non connaisseur actif: decris ton besoin puis clique sur \"Generer une configuration automatiquement\".");
+      } else {
+        alertBox("warn", "Finalise l'usage et le traitement atelier pour obtenir une estimation fiable.");
+      }
+    } else {
+      alertBox("warn", "Renseigne tous les composants, l'usage et le niveau de traitement atelier pour obtenir un résultat fiable.");
+    }
     const notReadyState = {
       ready: false,
       canCheckout: false,
@@ -2665,7 +3455,7 @@ function compute() {
   }
 
   if (!isPendingExternal(cpu) && !isPendingExternal(mobo) && cpu.socket === mobo.socket && !cpuMoboGenerationCompatible(cpu, mobo)) {
-    blocking.push("Chipset carte mère non adapté Ã  cette génération de CPU.");
+    blocking.push("Chipset carte mère non adapté à cette génération de CPU.");
     alertBox("bad", "Chipset carte mère non recommandé pour ce CPU.");
     const altBoardGen = sortByBrandGenerationScore(CATALOG.mobo)
       .filter((item) => item.socket === cpu.socket && item.ramType === ram.type && cpuMoboGenerationCompatible(cpu, item))
@@ -2685,30 +3475,75 @@ function compute() {
     alertBox("good", "Compatibilité RAM / carte mère: OK.");
   }
 
-  if (!isPendingExternal(gpu) && !isPendingExternal(casev) && gpu.length > casev.maxGpu) {
-    blocking.push("Carte graphique trop longue pour le boÃ®tier.");
-    alertBox("bad", `GPU ${gpu.length} mm > boÃ®tier ${casev.maxGpu} mm.`);
+  const gpuLimitWithCooling = effectiveCaseGpuLimit(casev, cooling);
+
+  if (!isPendingExternal(gpu) && !isPendingExternal(casev) && gpu.length > gpuLimitWithCooling) {
+    blocking.push("Carte graphique trop longue pour le boîtier.");
+    alertBox("bad", `GPU ${gpu.length} mm > clearance boitier ${gpuLimitWithCooling} mm (avec refroidissement).`);
 
     const altCase = sortByBrandGenerationScore(CATALOG.case)
-      .filter((item) => item.maxGpu >= gpu.length)
+      .filter((item) => effectiveCaseGpuLimit(item, cooling) >= gpu.length)
       .sort((a, b) => a.price - b.price)[0];
-    if (altCase) suggestions.push(`BoÃ®tier compatible proposé: ${altCase.brand} ${altCase.name} (${euro(altCase.price)}).`);
+    if (altCase) suggestions.push(`Boîtier compatible proposé: ${altCase.brand} ${altCase.name} (${euro(altCase.price)}).`);
   } else if (!isPendingExternal(gpu) && !isPendingExternal(casev)) {
-    alertBox("good", "Longueur GPU / boÃ®tier: OK.");
+    alertBox("good", "Longueur GPU / boîtier: OK.");
   }
 
   if (!isPendingExternal(cooling) && (cooling.type === "aio" || cooling.type === "custom")) {
     if (cooling.radiator > casev.maxRad) {
-      blocking.push("Radiateur du refroidissement incompatible avec le boÃ®tier.");
-      alertBox("bad", `Radiateur ${cooling.radiator} mm > support boÃ®tier ${casev.maxRad} mm.`);
+      blocking.push("Radiateur du refroidissement incompatible avec le boîtier.");
+      alertBox("bad", `Radiateur ${cooling.radiator} mm > support boîtier ${casev.maxRad} mm.`);
 
       const altCooling = sortByBrandGenerationScore(CATALOG.watercooling)
         .filter((item) => !item.estimateOnly && item.radiator <= casev.maxRad)
         .sort((a, b) => b.score - a.score)[0];
       if (altCooling) suggestions.push(`Refroidissement compatible conseillé: ${altCooling.brand} ${altCooling.name} (${euro(altCooling.price)}).`);
     } else {
-      alertBox("good", "Compatibilité refroidissement / boÃ®tier: OK.");
+      alertBox("good", "Compatibilité refroidissement / boîtier: OK.");
     }
+
+    if (!isPendingExternal(gpu) && gpu.length > gpuLimitWithCooling) {
+      blocking.push("Collision probable GPU / radiateur selon dimensions.");
+      alertBox("bad", `GPU ${gpu.length} mm ne passe pas avec radiateur ${cooling.radiator} mm (clearance ${gpuLimitWithCooling} mm).`);
+    }
+  }
+
+  if (!isPendingExternal(gpu) && !isPendingExternal(casev)) {
+    const margin = Number(gpuLimitWithCooling || 0) - Number(gpu.length || 0);
+    if (margin >= 0 && margin < 12) {
+      warnings.push("Marge GPU/boitier tres serree.");
+      alertBox("warn", `Marge GPU/boitier faible (${margin} mm). Le montage peut devenir critique.`);
+    }
+  }
+
+  if (!isPendingExternal(cpu) && !isPendingExternal(cooling)) {
+    if (cooling.type === "none" && cpu.tdp >= 105) {
+      blocking.push("CPU energivore sans refroidissement dedie.");
+      alertBox("bad", "Un refroidissement dedie (air premium ou AIO) est requis pour ce CPU.");
+    } else if (cooling.type === "none" && cpu.tdp >= 80) {
+      warnings.push("Refroidissement de base limite pour ce CPU.");
+      alertBox("warn", "Le refroidissement inclus de base risque d'etre limite avec ce CPU.");
+    }
+  }
+
+  if (!isPendingExternal(gpu) && !isPendingExternal(casev) && gpu.tdp >= 350 && casev.maxRad < 360) {
+    warnings.push("Boitier potentiellement limite pour la dissipation d'un GPU tres energivore.");
+    alertBox("warn", "GPU tres energivore: boitier avec airflow/radiateur 360+ recommande.");
+  }
+
+  if (!isPendingExternal(storage) && !isPendingExternal(mobo) && Number(storage.generation || 0) >= 5 && Number(mobo.tier || 1) <= 1) {
+    warnings.push("SSD Gen5 sur carte mere entree de gamme.");
+    alertBox("warn", "SSD PCIe Gen5: une carte mere tier 2+ est conseillee pour des performances stables.");
+  }
+
+  if (!isPendingExternal(ram) && !isPendingExternal(mobo) && mobo.ramType === "DDR5" && ram.generation >= 7600 && Number(mobo.tier || 1) < 3) {
+    warnings.push("DDR5 tres rapide sur carte mere tier bas.");
+    alertBox("warn", "DDR5 7600+ sur carte mere tier 1/2: stabilite XMP/EXPO incertaine.");
+  }
+
+  if (!isPendingExternal(gpu) && !isPendingExternal(mobo) && gpu.rank >= 9.1 && Number(mobo.tier || 1) < 3) {
+    warnings.push("Carte mere un peu legere pour un GPU tres haut de gamme.");
+    alertBox("warn", "Pour un GPU tres haut de gamme, une carte mere tier 3+ est recommandee.");
   }
 
   const customCableCheck = optionAvailability("customCables", customCable, cableCtx);
@@ -2719,12 +3554,20 @@ function compute() {
 
   if (delivery.mode === "priority" && cooling.type === "custom") {
     warnings.push("Traitement prioritaire + boucle custom: délai ajusté selon validation atelier.");
-    alertBox("warn", "Le watercooling 100% custom nécessite validation manuelle, mÃªme en traitement prioritaire.");
+    alertBox("warn", "Le watercooling 100% custom nécessite validation manuelle, même en traitement prioritaire.");
   }
 
   if (!isPendingExternal(gpu) && !isPendingExternal(psu) && cableCtx.gpuNeeds.need12vhpwr && !cableCtx.psuPins.has12vhpwr) {
     blocking.push("GPU 12VHPWR/12V-2x6 sans alimentation compatible.");
     alertBox("bad", "La carte graphique nécessite un connecteur 12VHPWR/12V-2x6 compatible.");
+  }
+
+  if (!isPendingExternal(gpu) && !isPendingExternal(psu) && cableCtx.gpuNeeds.need12vhpwr) {
+    const hardMin = gpu.tdp >= 500 ? 1200 : gpu.tdp >= 420 ? 1000 : 850;
+    if (psu.watts < hardMin) {
+      blocking.push("Alimentation trop faible pour GPU haut de gamme en 12VHPWR.");
+      alertBox("bad", `Pour cette carte graphique, une alimentation ${hardMin}W minimum est requise.`);
+    }
   }
 
   if (!isPendingExternal(gpu) && !isPendingExternal(psu) && !cableCtx.gpuNeeds.need12vhpwr && cableCtx.psuPins.pcie8 < cableCtx.gpuNeeds.pcie8) {
@@ -2733,7 +3576,7 @@ function compute() {
   }
 
   if (!isPendingExternal(cpu) && !isPendingExternal(psu) && cableCtx.psuPins.eps8 < cableCtx.cpuEpsNeed) {
-    blocking.push("Connectique EPS CPU insuffisante cÃ´té alimentation.");
+    blocking.push("Connectique EPS CPU insuffisante côté alimentation.");
     alertBox("bad", `Le CPU conseillé demande ${cableCtx.cpuEpsNeed} x EPS 8-pin.`);
   }
 
@@ -2935,7 +3778,7 @@ function compute() {
     { name: `${psu.brand} ${psu.name}`, value: euro(psu.price) },
     { name: `${casev.brand} ${casev.name}`, value: euro(casev.price) },
     { name: `${cooling.brand} ${cooling.name}`, value: cooling.estimateOnly ? "Sur devis" : euro(cooling.price) },
-    { name: `${customCable.category || customCable.brand} €” ${customCable.name}`, value: customCableCheck.available ? euro(customCablePrice) : "Indisponible" },
+    { name: `${customCable.category || customCable.brand} — ${customCable.name}`, value: customCableCheck.available ? euro(customCablePrice) : "Indisponible" },
     { name: `${cableMgmt.brand} ${cableMgmt.name}`, value: euro(cableMgmt.price) },
     { name: `${delivery.name} (${delivery.prepWindow})`, value: euro(processingFee) }
   ];
@@ -2975,6 +3818,8 @@ function compute() {
       cpu, mobo, ram, gpu, storage, psu, case: casev, cooling,
       customCable, cableMgmt, delivery,
       usage: usageValue,
+      noviceMode: isNoviceMode,
+      noviceBrief: (noviceBriefEl?.value || "").trim(),
       budgetMin,
       budgetMax,
       usageMinimum
@@ -3056,12 +3901,12 @@ async function sendEmail({ subject, from_name, reply_to, message, statusElId }) 
       to_email: TO_EMAIL
     });
     setStatus(statusElId, "Envoyé. Réponse dès que possible.");
-    toast("Demande envoyée aœ…");
+    toast("Demande envoyée.");
     return true;
   } catch (err) {
     console.error(err);
     setStatus(statusElId, "Erreur d'envoi. Réessaie.");
-    toast("Erreur d'envoi aŒ");
+    toast("Erreur d'envoi.");
     return false;
   }
 }
@@ -3104,7 +3949,7 @@ if (formContact) {
     ].join("\n");
 
     const ok = await sendEmail({
-      subject: `Service client €” ${fd.get("topic")}${quoteCode ? ` (${quoteCode})` : ""}`,
+      subject: `Service client — ${fd.get("topic")}${quoteCode ? ` (${quoteCode})` : ""}`,
       from_name: fd.get("from_name"),
       reply_to: fd.get("reply_to"),
       message: msg,
@@ -3124,10 +3969,26 @@ const budgetMaxEl = document.getElementById("budgetMax");
 const budgetMinRangeEl = document.getElementById("budgetMinRange");
 const budgetMaxRangeEl = document.getElementById("budgetMaxRange");
 const budgetUsageHintEl = document.getElementById("budgetUsageHint");
+const budgetFieldEl = document.getElementById("budgetField");
 const quoteCodeValueEl = document.getElementById("quoteCodeValue");
 const quoteCodeMetaEl = document.getElementById("quoteCodeMeta");
 const quoteLookupEl = document.getElementById("quoteLookup");
 const contactQuoteCodeEl = document.getElementById("contactQuoteCode");
+const noviceModeToggleEl = document.getElementById("noviceModeToggle");
+const noviceBriefBlockEl = document.getElementById("noviceBriefBlock");
+const noviceBriefEl = document.getElementById("noviceBrief");
+const noviceAutoBuildBtn = document.getElementById("noviceAutoBuild");
+
+const quoteModifyRow = document.getElementById("quoteModifyRow");
+const quoteClientRow = document.getElementById("quoteClientRow");
+
+const requestModifyBtn = document.getElementById("requestModifyQuote");
+const confirmModifyBtn = document.getElementById("confirmModifyQuote");
+const clientGetModifyBtn = document.getElementById("clientGetModifyCode");
+
+let isAdmin = false;
+let adminSessionKey = "";
+let lastAdminAuthError = "";
 
 const BUDGET_DEFAULT_MIN = 400;
 const BUDGET_DEFAULT_MAX = 3000;
@@ -3141,10 +4002,38 @@ let minimalPresetLocked = false;
 let minimalPresetSnapshot = {};
 let optimizedPresetLocked = false;
 let optimizedPresetSnapshot = {};
+let isNoviceMode = false;
+const CORE_CATEGORY_KEYS = ["cpu", "mobo", "ram", "gpu", "storage", "psu", "case"];
+
+function updateModifyActionVisibility() {
+  const hasCode = Boolean(currentQuoteCode);
+  if (quoteModifyRow) quoteModifyRow.style.display = (isAdmin && hasCode) ? "flex" : "none";
+  if (quoteClientRow) quoteClientRow.style.display = (!isAdmin && hasCode) ? "flex" : "none";
+
+  if (requestModifyBtn) {
+    requestModifyBtn.hidden = !(isAdmin && hasCode);
+    requestModifyBtn.disabled = !(isAdmin && hasCode);
+  }
+  if (confirmModifyBtn) {
+    confirmModifyBtn.hidden = !(isAdmin && hasCode);
+    confirmModifyBtn.disabled = !(isAdmin && hasCode);
+  }
+  if (clientGetModifyBtn) {
+    clientGetModifyBtn.hidden = !!isAdmin || !hasCode;
+    clientGetModifyBtn.disabled = !!isAdmin || !hasCode;
+  }
+}
+
+function applyAdminUI() {
+  updateModifyActionVisibility();
+}
+
+applyAdminUI();
 
 function setQuoteCodeUI(code, meta) {
   if (quoteCodeValueEl) quoteCodeValueEl.textContent = code || "Non généré";
   if (quoteCodeMetaEl) quoteCodeMetaEl.textContent = meta || "Génère un code devis pour retrouver ta simulation.";
+  updateModifyActionVisibility();
 }
 
 function roundBudgetStep(value) {
@@ -3215,6 +4104,103 @@ function normalizeBudgetControls(changed = "") {
 
   updateBudgetHint(usageValue, usageMinimum);
   updateBudgetSliderFill(minValue, maxValue, minBound, maxBound);
+}
+
+function inferUsageFromNoviceBrief(brief) {
+  const t = normalizeText(brief);
+  if (!t) return "";
+  if (/\b(120|144|165|240|360)\s*fps\b/.test(t) && /(fortnite|valorant|cs2|warzone|apex|esport|competitif|jouer|gaming|jeu)/.test(t)) {
+    return "Jeu compétitif (1080p)";
+  }
+  if (/4k|uhd|ray tracing|max settings|ultra/.test(t)) return "Jeu (4K)";
+  if (/ultrawide|1440|aaa|solo|story|open world/.test(t)) return "Jeu AAA (1440p / ultrawide)";
+  if (/1080|esport|competitif|cs2|valorant|fortnite|rocket league/.test(t)) return "Jeu compétitif (1080p)";
+  if (/(jouer|gaming|jeu)/.test(t)) return "Jeu compétitif (1080p)";
+  if (/blender|3d|montage|video|premiere|davinci|after effects|ia|machine learning|stable diffusion/.test(t)) {
+    return "Création (montage / 3D / IA)";
+  }
+  if (/stream|obs|discord|multitache|multi tache/.test(t)) return "Streaming + multitâche";
+  if (/etude|bureautique|office|web|cours|mail/.test(t)) return "Bureautique / étude";
+  return "";
+}
+
+function inferBuildModeFromNoviceBrief(brief) {
+  const t = normalizeText(brief);
+  if (!t) return "equilibre";
+  if (/minimum|pas cher|budget|economique|entry|fps|fortnite|valorant|cs2/.test(t)) return "minimum";
+  if (/milieu|equilibre|polyvalent|rapport qualite prix/.test(t)) return "equilibre";
+  if (/ultra|maximum|haut de gamme|no compromise|sans limite/.test(t)) return "equilibre";
+  return "equilibre";
+}
+
+function inferBudgetFromNoviceBrief(brief) {
+  const t = normalizeText(brief);
+  if (!t) return 0;
+  const matches = [...t.matchAll(/(?:budget|max|maximum|environ|a|de)?\s*(\d{3,5})\s*(?:e|euros?)?/g)];
+  const values = matches
+    .map((m) => Number(m[1] || 0))
+    .filter((v) => Number.isFinite(v) && v >= 300 && v <= BUDGET_CAP);
+  if (!values.length) return 0;
+  return Math.max(...values);
+}
+
+function applyBudgetFromGuide(targetBudget) {
+  const budget = Math.max(BUDGET_DEFAULT_MIN, Math.min(BUDGET_CAP, roundBudgetStep(targetBudget)));
+  const minGuess = Math.max(BUDGET_DEFAULT_MIN, roundBudgetStep(budget * 0.72));
+  if (budgetMinEl) budgetMinEl.value = String(minGuess);
+  if (budgetMaxEl) budgetMaxEl.value = String(budget);
+  normalizeBudgetControls("max");
+}
+
+function setNoviceMode(enabled, { silent = false } = {}) {
+  isNoviceMode = Boolean(enabled);
+  formCustom?.classList.toggle("is-novice-mode", isNoviceMode);
+  CORE_CATEGORY_KEYS.forEach((key) => {
+    const cfg = CATEGORY_CONFIG[key];
+    const selectEl = cfg ? document.getElementById(cfg.selectId) : null;
+    if (selectEl) selectEl.required = !isNoviceMode;
+  });
+  if (noviceBriefBlockEl) noviceBriefBlockEl.style.display = isNoviceMode ? "block" : "none";
+  if (noviceModeToggleEl) {
+    noviceModeToggleEl.classList.toggle("is-active", isNoviceMode);
+    noviceModeToggleEl.textContent = isNoviceMode
+      ? "Mode guidé activé - revenir au mode composants"
+      : "Aucune idée / pas de budget précis";
+  }
+  if (isNoviceMode) closeAllComboMenus("");
+  if (!silent) compute();
+}
+
+function applyNoviceHintsAfterPreset(brief) {
+  const text = normalizeText(brief);
+  if (!text) return;
+
+  if (/rgb|led|arc en ciel|couleur/.test(text)) {
+    const rgbMgmt = (CATALOG.cableMgmt || []).find((item) => item.id === "mgmt-rgb-sync");
+    const selectEl = document.getElementById(CATEGORY_CONFIG.cableMgmt.selectId);
+    if (rgbMgmt && selectEl) selectEl.value = rgbMgmt.id;
+  }
+
+  if (/silence|silencieux|quiet/.test(text)) {
+    const cpu = getSelected("cpu");
+    const casev = getSelected("case");
+    const cooling = sortByBrandGenerationScore(CATALOG.watercooling)
+      .filter((item) => !item.estimateOnly && item.type === "air" && Number(item.score || 0) >= 9.0)
+      .sort((a, b) => a.price - b.price)[0];
+    if (cooling && (!cpu || cpu.tdp <= 170) && (!casev || cooling.radiator <= casev.maxRad)) {
+      const selectEl = document.getElementById(CATEGORY_CONFIG.watercooling.selectId);
+      if (selectEl) selectEl.value = cooling.id;
+    }
+  }
+
+  if (/rapid|vite|deadline|urgent/.test(text)) {
+    const deliverySelect = document.getElementById(CATEGORY_CONFIG.delivery.selectId);
+    const normal = CATALOG.delivery.find((item) => item.mode === "normal");
+    if (deliverySelect && normal) deliverySelect.value = normal.id;
+  }
+
+  refreshDependentPersonalizationOptions();
+  Object.keys(CATEGORY_CONFIG).forEach((key) => updateFilterInputFromSelection(key));
 }
 
 function readCurrentSelectValues() {
@@ -3375,6 +4361,8 @@ function signature() {
   payload.usage = document.getElementById("usage")?.value || "";
   payload.budgetMin = parseBudgetValue("budgetMin");
   payload.budgetMax = parseBudgetValue("budgetMax");
+  payload.noviceMode = isNoviceMode;
+  payload.noviceBrief = (noviceBriefEl?.value || "").trim();
   payload.details = quoteDetailsEl?.value?.trim() || "";
   return JSON.stringify(payload);
 }
@@ -3382,6 +4370,10 @@ function signature() {
 function collectConfig(state) {
   return {
     usage: state.selection.usage,
+    novice: {
+      enabled: Boolean(state.selection.noviceMode),
+      brief: state.selection.noviceBrief || ""
+    },
     budget: {
       min: state.selection.budgetMin || 0,
       max: state.selection.budgetMax || 0,
@@ -3407,26 +4399,26 @@ function collectConfig(state) {
   };
 }
 
-function saveQuote(state, forcedCode = "") {
-  const store = readQuoteStore();
-  const newSignature = signature();
-  let code = forcedCode || currentQuoteCode;
-
-  if (!code || currentQuoteSignature !== newSignature) {
-    code = createQuoteCode();
-  }
-
-  const record = {
+function buildQuoteRecord(state, code, {
+  createdAt = new Date().toISOString(),
+  signatureValue = signature(),
+  previewState = (typeof window.AE3D?.exportSerializableState === "function"
+    ? window.AE3D.exportSerializableState()
+    : null)
+} = {}) {
+  return {
     code,
-    createdAt: new Date().toISOString(),
+    createdAt,
     requester: {
       name: quoteNameEl?.value?.trim() || "",
       email: quoteEmailEl?.value?.trim() || "",
       details: quoteDetailsEl?.value?.trim() || "",
+      noviceMode: Boolean(isNoviceMode),
+      noviceBrief: (noviceBriefEl?.value || "").trim(),
       budgetMin: parseBudgetValue("budgetMin"),
       budgetMax: parseBudgetValue("budgetMax")
     },
-    signature: newSignature,
+    signature: signatureValue,
     selects: Object.fromEntries(
       Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => [key, document.getElementById(cfg.selectId)?.value || ""])
     ),
@@ -3437,10 +4429,152 @@ function saveQuote(state, forcedCode = "") {
     ),
     usage: document.getElementById("usage")?.value || "",
     config: collectConfig(state),
-    preview3d: typeof window.AE3D?.exportSerializableState === "function"
-      ? window.AE3D.exportSerializableState()
-      : null
+    preview3d: previewState
   };
+}
+
+async function getQuoteRecordByCode(code) {
+  const normalized = String(code || "").trim().toUpperCase();
+  if (!normalized) return null;
+  const store = readQuoteStore();
+  if (store[normalized]) return store[normalized];
+  const remote = await fetchQuoteFromDatabase(normalized);
+  if (!remote) return null;
+  store[normalized] = remote;
+  writeQuoteStore(store);
+  return remote;
+}
+
+function optionNameById(key, id) {
+  if (!id) return "Aucun";
+  const item = (CATALOG[key] || []).find((entry) => entry.id === id);
+  if (!item) return id;
+  return optionLabel(key, item);
+}
+
+function budgetLabel(value) {
+  const n = Number(value || 0);
+  if (!n) return "Non défini";
+  return euro(n);
+}
+
+function normalizedTextValue(value) {
+  return String(value || "").trim();
+}
+
+function buildModificationBatch(baseRecord, targetRecord) {
+  if (!baseRecord || !targetRecord) return [];
+  const labels = {
+    cpu: "Processeur",
+    mobo: "Carte mère",
+    ram: "RAM",
+    gpu: "Carte graphique",
+    storage: "Stockage",
+    psu: "Alimentation",
+    case: "Boîtier",
+    watercooling: "Refroidissement",
+    customCables: "Câbles personnalisés",
+    cableMgmt: "Câble management",
+    delivery: "Traitement atelier"
+  };
+
+  const changes = [];
+  Object.keys(CATEGORY_CONFIG).forEach((key) => {
+    const fromId = baseRecord?.selects?.[key] || "";
+    const toId = targetRecord?.selects?.[key] || "";
+    if (fromId === toId) return;
+    changes.push({
+      field: key,
+      label: labels[key] || key,
+      from: optionNameById(key, fromId),
+      to: optionNameById(key, toId)
+    });
+  });
+
+  const usageFrom = normalizedTextValue(baseRecord?.usage);
+  const usageTo = normalizedTextValue(targetRecord?.usage);
+  if (usageFrom !== usageTo) {
+    changes.push({ field: "usage", label: "Usage", from: usageFrom || "Aucun", to: usageTo || "Aucun" });
+  }
+
+  const budgetMinFrom = Number(baseRecord?.requester?.budgetMin || 0);
+  const budgetMinTo = Number(targetRecord?.requester?.budgetMin || 0);
+  if (budgetMinFrom !== budgetMinTo) {
+    changes.push({
+      field: "budgetMin",
+      label: "Budget minimum",
+      from: budgetLabel(budgetMinFrom),
+      to: budgetLabel(budgetMinTo)
+    });
+  }
+
+  const budgetMaxFrom = Number(baseRecord?.requester?.budgetMax || 0);
+  const budgetMaxTo = Number(targetRecord?.requester?.budgetMax || 0);
+  if (budgetMaxFrom !== budgetMaxTo) {
+    changes.push({
+      field: "budgetMax",
+      label: "Budget maximum",
+      from: budgetLabel(budgetMaxFrom),
+      to: budgetLabel(budgetMaxTo)
+    });
+  }
+
+  const detailsFrom = normalizedTextValue(baseRecord?.requester?.details);
+  const detailsTo = normalizedTextValue(targetRecord?.requester?.details);
+  if (detailsFrom !== detailsTo) {
+    changes.push({
+      field: "details",
+      label: "Brief technique",
+      from: detailsFrom || "Vide",
+      to: detailsTo || "Vide"
+    });
+  }
+
+  const noviceModeFrom = Boolean(baseRecord?.requester?.noviceMode);
+  const noviceModeTo = Boolean(targetRecord?.requester?.noviceMode);
+  if (noviceModeFrom !== noviceModeTo) {
+    changes.push({
+      field: "noviceMode",
+      label: "Mode guide",
+      from: noviceModeFrom ? "Active" : "Inactif",
+      to: noviceModeTo ? "Active" : "Inactif"
+    });
+  }
+
+  const noviceBriefFrom = normalizedTextValue(baseRecord?.requester?.noviceBrief);
+  const noviceBriefTo = normalizedTextValue(targetRecord?.requester?.noviceBrief);
+  if (noviceBriefFrom !== noviceBriefTo) {
+    changes.push({
+      field: "noviceBrief",
+      label: "Brief mode guide",
+      from: noviceBriefFrom || "Vide",
+      to: noviceBriefTo || "Vide"
+    });
+  }
+
+  return changes;
+}
+
+function modificationBatchText(changes) {
+  if (!Array.isArray(changes) || !changes.length) return "Aucune modification";
+  return changes.map((item) => `${item.label}: ${item.from} -> ${item.to}`).join(" | ");
+}
+
+function saveQuote(state, forcedCode = "") {
+  const store = readQuoteStore();
+  const newSignature = signature();
+  let code = forcedCode || currentQuoteCode;
+  const preserveForcedCode = Boolean(forcedCode);
+
+  if (!code || (!preserveForcedCode && currentQuoteSignature !== newSignature)) {
+    code = createQuoteCode();
+  }
+
+  const previousRecord = store[code] || null;
+  const record = buildQuoteRecord(state, code, {
+    createdAt: previousRecord?.createdAt || new Date().toISOString(),
+    signatureValue: newSignature
+  });
 
   store[code] = record;
   writeQuoteStore(store);
@@ -3492,6 +4626,8 @@ function loadQuote(code) {
   if (quoteNameEl && quote.requester?.name) quoteNameEl.value = quote.requester.name;
   if (quoteEmailEl && quote.requester?.email) quoteEmailEl.value = quote.requester.email;
   if (quoteDetailsEl && quote.requester?.details) quoteDetailsEl.value = quote.requester.details;
+  if (noviceBriefEl) noviceBriefEl.value = String(quote.requester?.noviceBrief || "").trim();
+  setNoviceMode(Boolean(quote.requester?.noviceMode), { silent: true });
   if (budgetMinEl) budgetMinEl.value = quote.requester?.budgetMin ? String(quote.requester.budgetMin) : "";
   if (budgetMaxEl) budgetMaxEl.value = quote.requester?.budgetMax ? String(quote.requester.budgetMax) : "";
   normalizeBudgetControls("usage");
@@ -3515,6 +4651,77 @@ async function loadQuoteAny(code) {
   return loadQuote(normalized);
 }
 
+function activeQuoteCode() {
+  return String(currentQuoteCode || "").trim().toUpperCase();
+}
+
+async function buildModifyContext(code) {
+  const normalized = String(code || "").trim().toUpperCase();
+  if (!normalized) return null;
+  const baseRecord = await getQuoteRecordByCode(normalized);
+  if (!baseRecord) return null;
+  const state = compute();
+  if (!state.ready) return { baseRecord, state, targetRecord: null, changes: [] };
+  const targetRecord = buildQuoteRecord(state, normalized, {
+    createdAt: baseRecord?.createdAt || new Date().toISOString()
+  });
+  const changes = buildModificationBatch(baseRecord, targetRecord);
+  return { baseRecord, state, targetRecord, changes };
+}
+
+async function apiRequestModify(payload) {
+  const res = await fetch("/api/request-modify-quote", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || "REQUEST_FAILED");
+  return data;
+}
+
+async function apiConfirmModify(payload) {
+  const res = await fetch("/api/confirm-modify-quote", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || "CONFIRM_FAILED");
+  return data;
+}
+
+async function apiReadModifyPending(code, adminKey = "") {
+  const params = new URLSearchParams({ code: String(code || "").trim().toUpperCase() });
+  if (adminKey) params.set("admin_key", adminKey);
+  const res = await fetch(`/api/get-modify-otp?${params.toString()}`, { method: "GET" });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || "PENDING_FAILED");
+  return data;
+}
+
+async function apiValidateAdminKey(adminKey) {
+  const key = String(adminKey || "").trim();
+  if (!key) return false;
+  lastAdminAuthError = "";
+  try {
+    const res = await fetch("/api/admin-auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ admin_key: key })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      lastAdminAuthError = String(data?.error || "");
+      return false;
+    }
+    return Boolean(res.ok && data?.ok === true);
+  } catch {
+    lastAdminAuthError = "NETWORK_OR_SERVER_ERROR";
+    return false;
+  }
+}
+
 function bindCustomBuilder() {
   if (!formCustom) return;
 
@@ -3530,6 +4737,7 @@ function bindCustomBuilder() {
   bindCatalogFiltersOnce();
   refreshDependentPersonalizationOptions();
   normalizeBudgetControls("usage");
+  setNoviceMode(false, { silent: true });
 
   [
     "cpu", "mobo", "ram", "gpu", "storage", "psu", "case",
@@ -3597,6 +4805,81 @@ function bindCustomBuilder() {
     });
   }
 
+  if (noviceModeToggleEl) {
+    noviceModeToggleEl.addEventListener("click", () => {
+      setNoviceMode(!isNoviceMode);
+      toast(isNoviceMode ? "Mode non connaisseur active" : "Mode composants classique active");
+    });
+  }
+
+  if (noviceBriefEl) {
+    noviceBriefEl.addEventListener("input", () => {
+      if (!isNoviceMode) return;
+      compute();
+    });
+  }
+
+  if (noviceAutoBuildBtn) {
+    noviceAutoBuildBtn.addEventListener("click", () => {
+      const brief = String(noviceBriefEl?.value || "").trim();
+      if (!brief) {
+        toast("Ajoute d'abord un brief de besoin.");
+        noviceBriefEl?.focus();
+        return;
+      }
+
+      const usageSelect = document.getElementById("usage");
+      let usageValue = usageSelect?.value || "";
+      const inferredUsage = inferUsageFromNoviceBrief(brief);
+      if (inferredUsage && usageSelect) {
+        usageSelect.value = inferredUsage;
+        usageValue = inferredUsage;
+      }
+      if (!usageValue) {
+        toast("Mode guide strict: indique clairement l'objectif (jeu 1080p, AAA 1440p, creation, etc.).");
+        return;
+      }
+
+      const budgetFromBrief = inferBudgetFromNoviceBrief(brief);
+      const existingBudgetMax = parseBudgetValue("budgetMax");
+      const guideBudget = budgetFromBrief || existingBudgetMax;
+      if (!guideBudget) {
+        toast("Mode guide strict: ajoute un budget (ex: 800 euros).");
+        return;
+      }
+      applyBudgetFromGuide(guideBudget);
+
+      const mode = inferBuildModeFromNoviceBrief(brief);
+      const forceMinimum = guideBudget <= 1400;
+      normalizeBudgetControls("usage");
+      const offer = (mode === "minimum" || forceMinimum)
+        ? computeUsageMinimumOffer(usageValue)
+        : computeUsageBalancedOffer(usageValue) || computeUsageMinimumOffer(usageValue);
+      if (!offer) {
+        toast("Impossible de generer une configuration automatiquement pour ce brief.");
+        return;
+      }
+
+      const chosenMode = (mode === "minimum" || forceMinimum) ? "minimum" : "équilibrée";
+      applyPresetToForm(offer, chosenMode);
+      applyNoviceHintsAfterPreset(brief);
+
+      if (guideBudget && offer.total > guideBudget) {
+        toast(`Budget de ${euro(guideBudget)} trop bas: proposition minimale la plus proche appliquee (${euro(offer.total)}).`);
+      }
+
+      const baseDetails = String(quoteDetailsEl?.value || "").trim();
+      const note = `Brief mode guide: ${brief}`;
+      if (quoteDetailsEl) {
+        quoteDetailsEl.value = baseDetails
+          ? (baseDetails.includes(note) ? baseDetails : `${baseDetails}\n${note}`)
+          : note;
+      }
+      compute();
+      toast(`Configuration guidee ${chosenMode} appliquee.`);
+    });
+  }
+
   if (budgetMinEl) {
     budgetMinEl.addEventListener("input", () => {
       normalizeBudgetControls("min");
@@ -3641,7 +4924,7 @@ function bindCustomBuilder() {
         return;
       }
       if (parseBudgetValue("budgetMax") && parseBudgetValue("budgetMax") < offer.total) {
-        toast(`Budget max trop bas: minimum usage estimé Ã  ${euro(offer.total)}.`);
+        toast(`Budget max trop bas : minimum usage estimé à ${euro(offer.total)}.`);
       }
       applyPresetToForm(offer, "minimum");
     });
@@ -3663,6 +4946,10 @@ function bindCustomBuilder() {
         toast("Aucune configuration équilibrée trouvée avec le budget actuel.");
         return;
       }
+      const budgetCap = parseBudgetValue("budgetMax");
+      if (budgetCap && offer.total > budgetCap) {
+        toast(`Budget max trop bas : config équilibrée viable à partir de ${euro(offer.total)}.`);
+      }
       applyPresetToForm(offer, "équilibrée");
     });
   }
@@ -3682,6 +4969,8 @@ function bindCustomBuilder() {
       refreshDependentPersonalizationOptions();
       Object.keys(CATEGORY_CONFIG).forEach((key) => updateFilterInputFromSelection(key));
       clearPresetGuards();
+      if (noviceBriefEl) noviceBriefEl.value = "";
+      setNoviceMode(false, { silent: true });
       normalizeBudgetControls("usage");
       compute();
       toast("Simulation réinitialisée");
@@ -3693,8 +4982,8 @@ function bindCustomBuilder() {
     openPreviewBtn.addEventListener("click", () => {
       const state = compute();
       if (!state.ready) {
-        toast("Complète toute la configuration avant l'aperÃ§u 3D.");
-        setStatus("customStatus", "AperÃ§u 3D indisponible: complète d'abord tous les composants obligatoires.");
+        toast("Complète toute la configuration avant l'aperçu 3D.");
+        setStatus("customStatus", "Aperçu 3D indisponible : complète d'abord tous les composants obligatoires.");
         return;
       }
       showView("preview");
@@ -3734,6 +5023,47 @@ function bindCustomBuilder() {
   const loadCodeBtn = document.getElementById("loadQuoteCode");
   if (loadCodeBtn) {
     loadCodeBtn.addEventListener("click", async () => {
+      const raw = String(quoteLookupEl?.value || "").trim();
+
+      if (raw.toLowerCase().startsWith("admin:")) {
+        const command = raw.slice("admin:".length).trim();
+        const turnOff = /\s+--off$/i.test(command);
+        const key = command.replace(/\s+--off$/i, "").trim();
+        if (!key) {
+          toast("Saisis la cle admin apres admin:");
+          return;
+        }
+        const valid = await apiValidateAdminKey(key);
+        if (valid) {
+          if (turnOff) {
+            isAdmin = false;
+            adminSessionKey = "";
+            applyAdminUI();
+            quoteLookupEl.value = "";
+            toast("Mode admin désactivé");
+            return;
+          }
+          isAdmin = true;
+          adminSessionKey = key;
+          quoteLookupEl.value = "";
+          applyAdminUI();
+          toast("Mode admin activé");
+        } else {
+          isAdmin = false;
+          adminSessionKey = "";
+          applyAdminUI();
+          if (lastAdminAuthError === "ADMIN_NOT_CONFIGURED") {
+            toast("Clé admin non configurée côté serveur (env ADMIN_MODIFY_KEY).");
+          } else if (lastAdminAuthError === "TOO_MANY_REQUESTS" || lastAdminAuthError === "AUTH_LOCKED_TEMPORARY") {
+            toast("Trop de tentatives admin, réessaie plus tard.");
+          } else if (lastAdminAuthError === "NETWORK_OR_SERVER_ERROR") {
+            toast("Impossible de joindre l'auth admin serveur.");
+          } else {
+            toast("Clé admin incorrecte");
+          }
+        }
+        return;
+      }
       const code = (quoteLookupEl?.value || "").trim().toUpperCase();
       if (!code) {
         toast("Entre un code devis");
@@ -3742,11 +5072,230 @@ function bindCustomBuilder() {
       const ok = await loadQuoteAny(code);
       if (!ok) {
         toast("Code devis introuvable");
-        setStatus("customStatus", "Aucun devis ne correspond Ã  ce code (local + base de données)." );
+        setStatus("customStatus", "Aucun devis ne correspond à ce code (local + base de données).");
         return;
       }
       setStatus("customStatus", `Devis ${code} rechargé.`);
-      toast("Devis chargé aœ…");
+      toast("Devis chargé.");
+    });
+  }
+
+  if (clientGetModifyBtn) {
+    clientGetModifyBtn.addEventListener("click", async () => {
+      const code = activeQuoteCode();
+      if (!code) {
+        toast("Charge d'abord un devis pour demander un code modification.");
+        return;
+      }
+
+      const context = await buildModifyContext(code);
+      if (!context?.baseRecord) {
+        toast("Code devis introuvable.");
+        return;
+      }
+      if (!context.state?.ready || !context.targetRecord) {
+        toast("Configuration incomplète : impossible de générer le lot de modifications.");
+        return;
+      }
+      if (!context.changes.length) {
+        toast("Aucune modification détectée par rapport au devis actuel.");
+        setStatus("customStatus", "Modifie un ou plusieurs champs puis redemande un code OTP.");
+        return;
+      }
+
+      const requesterEmail = String(quoteEmailEl?.value || context.baseRecord?.requester?.email || "").trim().toLowerCase();
+      if (!requesterEmail) {
+        toast("Email client requis pour demander un code OTP.");
+        return;
+      }
+
+      const requesterName = String(quoteNameEl?.value || context.baseRecord?.requester?.name || "").trim();
+
+      try {
+        const data = await apiRequestModify({
+          code,
+          email: requesterEmail,
+          requester: { name: requesterName, email: requesterEmail },
+          changes: context.changes,
+          requestedRecord: context.targetRecord
+        });
+        const otp = String(data?.otp || "").trim();
+        const expiresAt = data?.expiresAt || "";
+        const expiresText = expiresAt ? new Date(expiresAt).toLocaleString("fr-FR") : "dans 24h";
+        const summary = modificationBatchText(context.changes);
+        const transferText = `Code devis: ${code}\nCode OTP: ${otp}\nExpire le: ${expiresText}\nModifications: ${summary}`;
+        try {
+          await navigator.clipboard.writeText(transferText);
+        } catch {}
+
+        setStatus("customStatus", `Code OTP ${otp} généré. Expiration le ${expiresText}. Détails copiés, envoie-les à l'atelier.`);
+        toast(`Code OTP généré: ${otp}`);
+      } catch (err) {
+        console.error(err);
+        const msg = String(err?.message || "");
+        if (msg === "EMAIL_MISMATCH") {
+          toast("L'email saisi ne correspond pas au devis.");
+          setStatus("customStatus", "L'email doit être le même que celui utilisé lors du devis.");
+          return;
+        }
+        toast("Erreur lors de la demande de modification.");
+      }
+    });
+  }
+
+  if (requestModifyBtn) {
+    requestModifyBtn.addEventListener("click", async () => {
+      if (!isAdmin) {
+        toast("Action réservée au mode admin.");
+        return;
+      }
+
+      const code = activeQuoteCode();
+      if (!code) {
+        toast("Charge d'abord un devis.");
+        return;
+      }
+
+      try {
+        if (!adminSessionKey) {
+          toast("Mode admin non authentifie.");
+          return;
+        }
+        const pending = await apiReadModifyPending(code, adminSessionKey);
+        const expiresText = pending?.expiresAt ? new Date(pending.expiresAt).toLocaleString("fr-FR") : "dans 24h";
+        const changeText = Array.isArray(pending?.changes) && pending.changes.length
+          ? modificationBatchText(pending.changes)
+          : "Aucun détail";
+        setStatus("customStatus", `Demande en attente: OTP ${pending.otp || "******"} (exp. ${expiresText}) — ${changeText}`);
+        toast("Demande de modification déjà en attente.");
+        return;
+      } catch (err) {
+        if (String(err?.message || "") !== "NO_PENDING_MODIFICATION") {
+          console.error(err);
+          toast("Impossible de lire la demande en attente.");
+          return;
+        }
+      }
+
+      const context = await buildModifyContext(code);
+      if (!context?.baseRecord || !context.state?.ready || !context.targetRecord) {
+        toast("Charge un devis valide avant de créer une demande.");
+        return;
+      }
+      if (!context.changes.length) {
+        toast("Aucune modification détectée à envoyer.");
+        return;
+      }
+
+      try {
+        const data = await apiRequestModify({
+          code,
+          adminSecret: adminSessionKey,
+          forceRegenerate: true,
+          requester: {
+            name: String(quoteNameEl?.value || context.baseRecord?.requester?.name || "").trim(),
+            email: String(quoteEmailEl?.value || context.baseRecord?.requester?.email || "").trim().toLowerCase()
+          },
+          changes: context.changes,
+          requestedRecord: context.targetRecord
+        });
+        const expiresText = data?.expiresAt ? new Date(data.expiresAt).toLocaleString("fr-FR") : "dans 24h";
+        setStatus("customStatus", `OTP admin ${data.otp} généré (exp. ${expiresText}).`);
+        toast(`OTP admin généré: ${data.otp}`);
+      } catch (err) {
+        console.error(err);
+        const msg = String(err?.message || "");
+        if (msg === "ADMIN_KEY_INVALID" || msg === "ADMIN_NOT_CONFIGURED") {
+          isAdmin = false;
+          adminSessionKey = "";
+          applyAdminUI();
+          toast(msg === "ADMIN_NOT_CONFIGURED" ? "Admin non configure sur le serveur." : "Session admin invalide.");
+          return;
+        }
+        toast("Erreur lors de la génération OTP admin.");
+      }
+    });
+  }
+
+  if (confirmModifyBtn) {
+    confirmModifyBtn.addEventListener("click", async () => {
+      if (!isAdmin) {
+        toast("Action réservée au mode admin.");
+        return;
+      }
+      if (!adminSessionKey) {
+        toast("Mode admin non authentifie.");
+        return;
+      }
+
+      const code = activeQuoteCode();
+      if (!code) {
+        toast("Charge d'abord un devis.");
+        return;
+      }
+
+      const otp = await themedPrompt("Entre le code OTP client (valable 24h).", {
+        title: "Confirmer modification",
+        confirmText: "Valider OTP",
+        cancelText: "Annuler",
+        placeholder: "Ex: 123456",
+        inputType: "tel"
+      });
+      if (!otp) return;
+
+      const context = await buildModifyContext(code);
+      if (!context?.baseRecord) {
+        toast("Code devis introuvable.");
+        return;
+      }
+
+      const note = await themedPrompt("Note admin (optionnelle) pour l'historique de la modification :", {
+        title: "Note atelier",
+        confirmText: "Continuer",
+        cancelText: "Sans note",
+        placeholder: "Ex: validé après appel client",
+        value: ""
+      });
+
+      try {
+        const payload = {
+          code,
+          otp,
+          adminSecret: adminSessionKey,
+          adminNote: note || "",
+          recordUpdated: context?.targetRecord || undefined
+        };
+        await apiConfirmModify(payload);
+
+        const remote = await fetchQuoteFromDatabase(code);
+        if (remote) {
+          const store = readQuoteStore();
+          store[code] = remote;
+          writeQuoteStore(store);
+        }
+        await loadQuoteAny(code);
+        setStatus("customStatus", `Modification validée pour ${code}.`);
+        toast("Modification confirmée.");
+      } catch (err) {
+        console.error(err);
+        const msg = String(err?.message || "");
+        if (msg === "ADMIN_KEY_INVALID" || msg === "ADMIN_NOT_CONFIGURED") {
+          isAdmin = false;
+          adminSessionKey = "";
+          applyAdminUI();
+          toast(msg === "ADMIN_NOT_CONFIGURED" ? "Admin non configure sur le serveur." : "Session admin invalide.");
+          return;
+        }
+        if (msg === "OTP_INVALID") {
+          toast("OTP invalide.");
+          return;
+        }
+        if (msg === "OTP_EXPIRED_OR_MISSING") {
+          toast("OTP expiré ou absent.");
+          return;
+        }
+        toast("Erreur lors de la confirmation.");
+      }
     });
   }
 
@@ -3776,6 +5325,8 @@ function bindCustomBuilder() {
       `nom : ${fromName}`,
       `email : ${replyTo}`,
       `usage : ${state.selection.usage}`,
+      `mode_guide : ${state.selection.noviceMode ? "active" : "inactif"}`,
+      `brief_mode_guide : ${(state.selection.noviceBrief || "").trim() || "non renseigne"}`,
       `budget_min : ${state.selection.budgetMin ? euro(state.selection.budgetMin) : "non renseigne"}`,
       `budget_max : ${state.selection.budgetMax ? euro(state.selection.budgetMax) : "non renseigne"}`,
       `minimum_usage_recommande : ${state.selection.usageMinimum ? euro(state.selection.usageMinimum) : "non calcule"}`,
@@ -3800,7 +5351,7 @@ function bindCustomBuilder() {
     ].join("\n");
 
     const ok = await sendEmail({
-      subject: `Demande devis €” PC sur mesure (${code})`,
+      subject: `Demande devis — PC sur mesure (${code})`,
       from_name: fromName,
       reply_to: replyTo,
       message,
@@ -3850,7 +5401,7 @@ function bindCustomBuilder() {
 
       try {
         buyNowBtn.disabled = true;
-        buyNowBtn.textContent = "Redirection vers PayPal €¦";
+        buyNowBtn.textContent = "Redirection vers PayPal…";
 
         const res = await fetch("/api/paypal-create-order", {
           method: "POST",
@@ -3881,6 +5432,7 @@ function bindCustomBuilder() {
   compute();
 }
 
+initThemeCustomizer();
 bindCustomBuilder();
 
 (function tiltCards() {

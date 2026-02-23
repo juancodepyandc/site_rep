@@ -18,8 +18,12 @@ export default async function handler(req, res) {
     }
 
     const { orderID } = req.body || {};
-    if (!orderID) {
+    const order = String(orderID || "").trim();
+    if (!order) {
       return res.status(400).json({ error: "Missing orderID" });
+    }
+    if (!/^[A-Z0-9\-]{10,64}$/i.test(order)) {
+      return res.status(400).json({ error: "Invalid orderID" });
     }
 
     const auth = Buffer.from(`${clientId}:${secret}`).toString("base64");
@@ -35,11 +39,13 @@ export default async function handler(req, res) {
     });
 
     const tokenData = await tokenRes.json();
-    if (!tokenRes.ok) return res.status(500).json(tokenData);
+    if (!tokenRes.ok || !tokenData?.access_token) {
+      return res.status(502).json({ error: "PAYPAL_AUTH_FAILED" });
+    }
 
     // 2️⃣ Capture
     const captureRes = await fetch(
-      `${baseUrl}/v2/checkout/orders/${orderID}/capture`,
+      `${baseUrl}/v2/checkout/orders/${encodeURIComponent(order)}/capture`,
       {
         method: "POST",
         headers: {
@@ -50,7 +56,9 @@ export default async function handler(req, res) {
     );
 
     const captureData = await captureRes.json();
-    if (!captureRes.ok) return res.status(500).json(captureData);
+    if (!captureRes.ok || !captureData?.id) {
+      return res.status(502).json({ error: "PAYPAL_CAPTURE_FAILED" });
+    }
 
     res.status(200).json({
       ok: true,

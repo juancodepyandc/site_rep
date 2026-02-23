@@ -19,9 +19,13 @@ export default async function handler(req, res) {
 
     const { amount, currency = "EUR", summary } = req.body || {};
     const value = Number(amount);
+    const curr = String(currency || "EUR").trim().toUpperCase();
 
-    if (!value || value <= 0) {
+    if (!Number.isFinite(value) || value <= 0 || value > 50000) {
       return res.status(400).json({ error: "Invalid amount" });
+    }
+    if (!["EUR", "USD", "GBP"].includes(curr)) {
+      return res.status(400).json({ error: "Invalid currency" });
     }
 
     const proto = req.headers["x-forwarded-proto"] || "https";
@@ -43,10 +47,14 @@ export default async function handler(req, res) {
     });
 
     const tokenData = await tokenRes.json();
-    if (!tokenRes.ok) return res.status(500).json(tokenData);
+    if (!tokenRes.ok || !tokenData?.access_token) {
+      return res.status(502).json({ error: "PAYPAL_AUTH_FAILED" });
+    }
 
-    const description = summary
-      ? `PC sur mesure - ${summary.cpu} / ${summary.gpu} / ${summary.ram}${summary.quoteCode ? ` / ${summary.quoteCode}` : ""}`
+    const safeSummary = summary && typeof summary === "object" ? summary : null;
+    const clean = (v, max = 64) => String(v || "").replace(/\s+/g, " ").trim().slice(0, max);
+    const description = safeSummary
+      ? `PC sur mesure - ${clean(safeSummary.cpu)} / ${clean(safeSummary.gpu)} / ${clean(safeSummary.ram)}${clean(safeSummary.quoteCode, 24) ? ` / ${clean(safeSummary.quoteCode, 24)}` : ""}`
       : "PC sur mesure";
 
     // 2️⃣ Création commande
@@ -62,7 +70,7 @@ export default async function handler(req, res) {
           {
             description: description.slice(0, 127),
             amount: {
-              currency_code: currency,
+              currency_code: curr,
               value: value.toFixed(2)
             }
           }
@@ -76,7 +84,9 @@ export default async function handler(req, res) {
     });
 
     const orderData = await orderRes.json();
-    if (!orderRes.ok) return res.status(500).json(orderData);
+    if (!orderRes.ok || !orderData?.id) {
+      return res.status(502).json({ error: "PAYPAL_ORDER_CREATE_FAILED" });
+    }
 
     const approve = orderData.links.find(l => l.rel === "approve");
 

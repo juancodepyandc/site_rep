@@ -1,4 +1,5 @@
 const UA = "Mozilla/5.0 (compatible; AtelierPCBot/1.0; +https://vercel.com)";
+const ALLOWED_KEYS = new Set(["cpu", "mobo", "ram", "gpu", "storage", "psu", "case", "watercooling", "customCables", "cableMgmt", "delivery"]);
 
 function stripHtml(html = "") {
   return html
@@ -237,14 +238,22 @@ export default async function handler(req, res) {
     if (!key || !query) {
       return res.status(400).json({ ok: false, error: "Missing key or query" });
     }
+    const safeKey = String(key || "").trim();
+    if (!ALLOWED_KEYS.has(safeKey)) {
+      return res.status(400).json({ ok: false, error: "Invalid key" });
+    }
+    const safeQuery = String(query || "").trim().slice(0, 180);
+    if (!safeQuery) {
+      return res.status(400).json({ ok: false, error: "Invalid query" });
+    }
 
-    const searchQuery = `${query} ${key} specifications`;
+    const searchQuery = `${safeQuery} ${safeKey} specifications`;
     const [ddg, wiki] = await Promise.all([
       duckduckgoSnippets(searchQuery),
-      wikipediaText(query)
+      wikipediaText(safeQuery)
     ]);
     const webText = [ddg, wiki].filter(Boolean).join(" | ");
-    const parsed = inferByKey(key, query, webText, context || {});
+    const parsed = inferByKey(safeKey, safeQuery, webText, context || {});
     const source = webText ? "internet-heuristic" : "fallback-heuristic";
 
     return res.status(200).json({

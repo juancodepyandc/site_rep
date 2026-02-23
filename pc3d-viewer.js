@@ -140,7 +140,9 @@ class PC3DViewer {
       RIGHT: "KeyD",
       BOTTOM: "KeyS"
     };
-    this.controls.listenToKeyEvents(window);
+    canvasEl.setAttribute("tabindex", "0");
+    canvasEl.addEventListener("pointerdown", () => canvasEl.focus(), { passive: true });
+    this.controls.listenToKeyEvents(canvasEl);
     this.controls.target.set(0, 0.4, 0);
 
     this.root = new THREE.Group();

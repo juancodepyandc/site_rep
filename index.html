@@ -306,7 +306,7 @@
               <div class="form__grid">
                 <div class="field field--full">
                   <div class="market-note">
-                    Prix calibrés sur des références neuves (Amazon + grandes enseignes FR) avec livraison standard incluse, base de mise à jour au 17/02/2026. Sur les composants principaux: [BEST] recommandé, [OK] compatible, [LOW] moins adapté, [NO] incompatible (grisé). Référence absente de la liste: confirme "Oui" pour l'analyse automatique.
+                    Prix calibrés sur des références neuves (Amazon + grandes enseignes FR) avec livraison standard incluse, base de mise à jour au 23/02/2026. Sur les composants principaux: [BEST] recommandé, [OK] compatible, [LOW] moins adapté, [NO] incompatible (grisé). Référence absente de la liste: confirme "Oui" pour l'analyse automatique.
                   </div>
                 </div>
 
@@ -323,7 +323,28 @@
                   </select>
                 </div>
 
-                <div class="field field--budget">
+                <div class="field field--full">
+                  <button type="button" class="btn btn--ghost btn--tiny" id="noviceModeToggle">
+                    Aucune idée / pas de budget précis
+                  </button>
+                  <div class="novice-brief" id="noviceBriefBlock" style="display:none;">
+                    <label for="noviceBrief">
+                      Décris ton besoin (si tu ne connais pas les composants)
+                    </label>
+                    <textarea
+                      id="noviceBrief"
+                      rows="5"
+                      placeholder="Apporte un maximum de détails : jeux/applications, résolution écran, montage vidéo/3D/IA, nombre d'écrans, silence/performance, RGB, contraintes, questions, etc."
+                    ></textarea>
+                    <div class="novice-brief__actions">
+                      <button type="button" class="btn btn--ghost btn--tiny" id="noviceAutoBuild">
+                        Générer une configuration automatiquement
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="field field--budget" id="budgetField">
                   <label>Budget cible</label>
                   <div class="budget-compact">
                     <div class="budget-compact__sliders">
@@ -342,7 +363,7 @@
                   </div>
                 </div>
 
-                <div class="field component-field">
+                <div class="field component-field component-core">
                   <label>Processeur</label>
                   <div class="field-tools">
                     <input type="text" id="cpuFilter" placeholder="Processeur" />
@@ -352,7 +373,7 @@
                   </select>
                 </div>
 
-                <div class="field component-field">
+                <div class="field component-field component-core">
                   <label>Carte mère</label>
                   <div class="field-tools">
                     <input type="text" id="moboFilter" placeholder="Carte mère" />
@@ -362,7 +383,7 @@
                   </select>
                 </div>
 
-                <div class="field component-field">
+                <div class="field component-field component-core">
                   <label>RAM</label>
                   <div class="field-tools">
                     <input type="text" id="ramFilter" placeholder="RAM" />
@@ -372,7 +393,7 @@
                   </select>
                 </div>
 
-                <div class="field component-field">
+                <div class="field component-field component-core">
                   <label>Carte graphique</label>
                   <div class="field-tools">
                     <input type="text" id="gpuFilter" placeholder="Carte graphique" />
@@ -382,7 +403,7 @@
                   </select>
                 </div>
 
-                <div class="field component-field">
+                <div class="field component-field component-core">
                   <label>Stockage</label>
                   <div class="field-tools">
                     <input type="text" id="storageFilter" placeholder="Stockage" />
@@ -392,7 +413,7 @@
                   </select>
                 </div>
 
-                <div class="field component-field">
+                <div class="field component-field component-core">
                   <label>Alimentation</label>
                   <div class="field-tools">
                     <input type="text" id="psuFilter" placeholder="Alimentation" />
@@ -402,7 +423,7 @@
                   </select>
                 </div>
 
-                <div class="field component-field">
+                <div class="field component-field component-core">
                   <label>Boîtier</label>
                   <div class="field-tools">
                     <input type="text" id="caseFilter" placeholder="Boîtier" />
@@ -502,6 +523,14 @@
                     <input type="text" id="quoteLookup" placeholder="Entrer un code devis (ex: DV-9A2C4F)" />
                     <button class="btn btn--ghost" type="button" id="loadQuoteCode">Récupérer le devis</button>
                   </div>
+                  <div class="quote-code__lookup" id="quoteModifyRow" style="gap:10px;display:none;margin-top:10px">
+                    <button class="btn btn--ghost" type="button" id="requestModifyQuote">Demander modification</button>
+                    <button class="btn btn--ghost" type="button" id="confirmModifyQuote">Confirmer modification</button>
+                  </div>
+
+                  <div class="quote-code__lookup" id="quoteClientRow" style="gap:10px;display:none;margin-top:10px">
+                    <button class="btn btn--ghost" type="button" id="clientGetModifyCode">Obtenir code modification</button>
+                  </div>
                 </div>
 
                 <div class="quote__actions">
@@ -552,7 +581,7 @@
               <div class="side__title">Référentiel prix</div>
               <div class="side__muted">
                 Index construit sur comparateurs + revendeurs (prix TTC en EUR). Le calcul final applique un coût de traitement atelier (économique, normal, prioritaire) selon la complexité réelle de la config.
-                Mise à jour de référence : 17 février 2026.
+                Mise à jour de référence : 23 février 2026.
               </div>
             </div>
 
@@ -802,6 +831,36 @@
       </div>
     </div>
   </footer>
+
+  <div class="theme-lab" id="themeLab">
+    <button class="theme-lab__toggle" type="button" id="themeLabToggle" aria-expanded="false" aria-controls="themeLabPanel">
+      Palette
+    </button>
+    <aside class="theme-lab__panel" id="themeLabPanel" aria-hidden="true">
+      <div class="theme-lab__head">
+        <div class="theme-lab__title">Personnaliser le style</div>
+        <button class="theme-lab__close" type="button" id="themeLabClose" aria-label="Fermer le menu couleurs">×</button>
+      </div>
+      <div class="theme-lab__presets">
+        <button type="button" class="theme-chip" data-theme-preset="atelier">Atelier</button>
+        <button type="button" class="theme-chip" data-theme-preset="acier">Acier</button>
+        <button type="button" class="theme-chip" data-theme-preset="sunset">Sunset</button>
+        <button type="button" class="theme-chip" data-theme-preset="emerald">Emerald</button>
+      </div>
+      <div class="theme-lab__fields">
+        <label class="theme-field">Accent principal<input type="color" id="themeAccentInput" value="#3cd7ff"></label>
+        <label class="theme-field">Accent secondaire<input type="color" id="themeAccent2Input" value="#35f3b4"></label>
+        <label class="theme-field">Fond global<input type="color" id="themeBgInput" value="#05070c"></label>
+        <label class="theme-field">Panneaux<input type="color" id="themePanelInput" value="#1a2635"></label>
+        <label class="theme-field">Texte<input type="color" id="themeTextInput" value="#f3f7ff"></label>
+        <label class="theme-field">Bouton principal<input type="color" id="themeBtnPrimaryInput" value="#3cd7ff"></label>
+        <label class="theme-field">Bouton secondaire<input type="color" id="themeBtnSecondaryInput" value="#35f3b4"></label>
+      </div>
+      <div class="theme-lab__actions">
+        <button class="btn btn--ghost btn--tiny" type="button" id="themeLabReset">Réinitialiser</button>
+      </div>
+    </aside>
+  </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
