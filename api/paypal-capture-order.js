@@ -104,6 +104,14 @@ function extractPayPalDetails(captureData) {
   };
 }
 
+function extractAmountAndCurrency(captureData) {
+  const captureAmount = captureData?.purchase_units?.[0]?.payments?.captures?.[0]?.amount || {};
+  const unitAmount = captureData?.purchase_units?.[0]?.amount || {};
+  const value = Number(captureAmount?.value || unitAmount?.value || 0);
+  const currency = String(captureAmount?.currency_code || unitAmount?.currency_code || "EUR").trim().toUpperCase();
+  return { value, currency };
+}
+
 function normalizePayPalMode(value) {
   const mode = String(value || "").trim().toLowerCase();
   if (mode === "live" || mode === "sandbox") return mode;
@@ -233,8 +241,7 @@ function invoicePayload({ quoteCode, orderID, captureData, record }) {
     captureData?.id ||
     orderID
   ).trim();
-  const amount = Number(captureData?.purchase_units?.[0]?.amount?.value || 0);
-  const currency = String(captureData?.purchase_units?.[0]?.amount?.currency_code || "EUR").trim().toUpperCase();
+  const { value: amount, currency } = extractAmountAndCurrency(captureData);
   const requesterName = String(record?.requester?.name || "").trim();
   const requesterEmail = String(record?.requester?.email || "").trim().toLowerCase();
   const paypalDetails = extractPayPalDetails(captureData);
@@ -357,17 +364,49 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: "PAYPAL_CAPTURE_FAILED" });
     }
 
-    const quoteCode = pickQuoteCode(captureData);
+    let quoteCode = pickQuoteCode(captureData);
     let quoteRecord = null;
     let redis = null;
-    if (QUOTE_CODE_RE.test(quoteCode)) {
+    let orderLink = null;
+    try {
+      redis = await getRedisClient();
+    } catch {
+      redis = null;
+    }
+    if (redis) {
       try {
-        redis = await getRedisClient();
+        const rawLink = await redis.get(`paypal:order:${order}`);
+        if (rawLink) orderLink = JSON.parse(rawLink);
+      } catch {
+        orderLink = null;
+      }
+    }
+    if (!QUOTE_CODE_RE.test(quoteCode) && QUOTE_CODE_RE.test(orderLink?.quoteCode || "")) {
+      quoteCode = String(orderLink.quoteCode || "").trim().toUpperCase();
+    }
+    if (QUOTE_CODE_RE.test(quoteCode) && redis) {
+      try {
         const raw = await redis.get(`quote:${quoteCode}`);
         if (raw) quoteRecord = JSON.parse(raw);
       } catch {
         quoteRecord = null;
       }
+    }
+    if (!quoteRecord && orderLink?.summary && typeof orderLink.summary === "object") {
+      const summary = orderLink.summary;
+      const parts = {};
+      if (summary.cpu) parts.cpu = String(summary.cpu).trim();
+      if (summary.gpu) parts.gpu = String(summary.gpu).trim();
+      if (summary.ram) parts.ram = String(summary.ram).trim();
+      const fallbackTotal = Number(orderLink.amount || 0);
+      quoteRecord = {
+        requester: {},
+        config: {
+          total: Number.isFinite(fallbackTotal) && fallbackTotal > 0 ? fallbackTotal : 0,
+          parts
+        },
+        usage: ""
+      };
     }
 
     const invoice = invoicePayload({

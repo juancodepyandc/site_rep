@@ -1,8 +1,12 @@
+import { getRedisClient } from "./_redis.js";
+
 const PAYPAL_CLIENT_ID_LIVE = String(process.env.PAYPAL_CLIENT_ID || "").trim();
 const PAYPAL_CLIENT_SECRET_LIVE = String(process.env.PAYPAL_CLIENT_SECRET || "").trim();
 const PAYPAL_CLIENT_ID_SANDBOX = String(process.env.PAYPAL_SANDBOX_CLIENT_ID || process.env.PAYPAL_CLIENT_ID_SANDBOX || "").trim();
 const PAYPAL_CLIENT_SECRET_SANDBOX = String(process.env.PAYPAL_SANDBOX_CLIENT_SECRET || process.env.PAYPAL_CLIENT_SECRET_SANDBOX || "").trim();
 const PAYPAL_SANDBOX_ENABLED = String(process.env.PAYPAL_SANDBOX_ENABLED || "0").trim() === "1";
+const ATELIER_COMPANY_NAME = String(process.env.ATELIER_COMPANY_NAME || "Atelier Electronique").trim();
+const PAYPAL_ORDER_LINK_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 function normalizePayPalMode(value) {
   const mode = String(value || "").trim().toLowerCase();
@@ -38,6 +42,27 @@ function resolvePayPalConfig({ requestedMode }) {
     clientId: PAYPAL_CLIENT_ID_LIVE,
     secret: PAYPAL_CLIENT_SECRET_LIVE
   };
+}
+
+async function persistOrderQuoteLink({ orderID, quoteCode, summary, paypalMode, amount, currency }) {
+  if (!orderID || !quoteCode) return;
+  try {
+    const redis = await getRedisClient();
+    await redis.set(
+      `paypal:order:${orderID}`,
+      JSON.stringify({
+        quoteCode,
+        summary: summary && typeof summary === "object" ? summary : {},
+        paypalMode,
+        amount,
+        currency,
+        createdAt: new Date().toISOString()
+      }),
+      { EX: PAYPAL_ORDER_LINK_TTL_SECONDS }
+    );
+  } catch (err) {
+    console.error("Unable to persist PayPal order link:", err);
+  }
 }
 
 export default async function handler(req, res) {
@@ -122,7 +147,18 @@ export default async function handler(req, res) {
             }
           }
         ],
+        payment_source: {
+          paypal: {
+            experience_context: {
+              brand_name: ATELIER_COMPANY_NAME.slice(0, 127),
+              return_url: returnUrl.toString(),
+              cancel_url: cancelUrl.toString(),
+              user_action: "PAY_NOW"
+            }
+          }
+        },
         application_context: {
+          brand_name: ATELIER_COMPANY_NAME.slice(0, 127),
           return_url: returnUrl.toString(),
           cancel_url: cancelUrl.toString(),
           user_action: "PAY_NOW"
@@ -134,6 +170,14 @@ export default async function handler(req, res) {
     if (!orderRes.ok || !orderData?.id) {
       return res.status(502).json({ error: "PAYPAL_ORDER_CREATE_FAILED" });
     }
+    await persistOrderQuoteLink({
+      orderID: String(orderData.id || "").trim(),
+      quoteCode: quoteCodeOk ? quoteCode : "",
+      summary: safeSummary,
+      paypalMode: paypal.mode,
+      amount: value.toFixed(2),
+      currency: curr
+    });
 
     const approve = orderData.links.find(l => l.rel === "approve");
 
