@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 </head>
 
 <body>
@@ -41,6 +40,7 @@
           <a href="#reparation-pc" data-nav="pc" class="nav__link">Réparation PC</a>
           <a href="#reparation-mobile" data-nav="mobile" class="nav__link">Réparation Mobile</a>
           <a href="#pc-sur-mesure" data-nav="custom" class="nav__link">PC sur mesure</a>
+          <a href="#devis-admin" data-nav="admin" class="nav__link" id="adminNavLink" hidden>Devis admin</a>
           <a href="#contact" data-nav="contact" class="nav__link">Contact</a>
           <a href="#mentions-legales" data-nav="legal" class="nav__link">Mentions légales</a>
         </div>
@@ -526,6 +526,7 @@
                   <div class="quote-code__lookup" id="quoteModifyRow" style="gap:10px;display:none;margin-top:10px">
                     <button class="btn btn--ghost" type="button" id="requestModifyQuote">Demander modification</button>
                     <button class="btn btn--ghost" type="button" id="confirmModifyQuote">Confirmer modification</button>
+                    <button class="btn btn--ghost" type="button" id="sendTestReceipt">Facture test (mail)</button>
                   </div>
 
                   <div class="quote-code__lookup" id="quoteClientRow" style="gap:10px;display:none;margin-top:10px">
@@ -595,6 +596,29 @@
           </aside>
         </div>
 
+      </div>
+    </section>
+
+    <section class="view" id="view-admin" data-view="admin">
+      <div class="container section">
+        <div class="section__head reveal">
+          <h2 class="section__title">Devis admin</h2>
+          <p class="section__subtitle">
+            Liste des devis stockés, classés par priorité puis ancienneté (du plus vieux au plus récent).
+          </p>
+        </div>
+
+        <div class="panel reveal admin-quotes">
+          <div class="admin-quotes__top">
+            <div class="panel__title">Gestion des devis</div>
+            <div class="admin-quotes__actions">
+              <button class="btn btn--ghost btn--tiny" type="button" id="adminRefreshQuotes">Actualiser</button>
+            </div>
+          </div>
+          <div class="admin-quotes__meta" id="adminQuotesMeta">Mode admin requis.</div>
+          <div class="admin-quotes__status" id="adminQuotesStatus" aria-live="polite"></div>
+          <div class="admin-quotes__list" id="adminQuotesList"></div>
+        </div>
       </div>
     </section>
 

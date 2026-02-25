@@ -1,13 +1,3 @@
-(function initEmailJS() {
-  if (window.emailjs) {
-    window.emailjs.init("FNOmFW1q3gEntsR0J");
-  }
-})();
-
-const SERVICE_ID = "service_8r68jtk";
-const TEMPLATE_ID = "template_sd7paiv";
-const TO_EMAIL = "rabuteaujuandavid@gmail.com";
-
 const BASE_PRICE = 20;
 const QUOTE_STORAGE_KEY = "atelier_quotes_v2";
 
@@ -3857,6 +3847,9 @@ function revealInView() {
 }
 
 function showView(key) {
+  if (key === "admin" && !isAdmin) {
+    key = "custom";
+  }
   document.body.classList.toggle("is-preview3d", key === "preview");
   views.forEach((v) => v.classList.toggle("is-active", v.dataset.view === key));
   links.forEach((a) => a.classList.toggle("is-active", a.dataset.nav === key));
@@ -3868,6 +3861,9 @@ function showView(key) {
       window.AE3D?.resize?.();
       window.AE3D?.refreshFromLatest?.();
     }, 120);
+  }
+  if (key === "admin" && isAdmin) {
+    void refreshAdminQuotes({ silent: true });
   }
 }
 
@@ -3891,15 +3887,21 @@ revealInView();
 
 async function sendEmail({ subject, from_name, reply_to, message, statusElId }) {
   try {
-    if (!window.emailjs) throw new Error("EmailJS non chargé");
     setStatus(statusElId, "Envoi en cours…");
-    await window.emailjs.send(SERVICE_ID, TEMPLATE_ID, {
-      subject,
-      from_name,
-      reply_to,
-      message,
-      to_email: TO_EMAIL
+    const res = await fetch("/api/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subject,
+        from_name,
+        reply_to,
+        message
+      })
     });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.ok) {
+      throw new Error(String(data?.error || "EMAIL_SEND_FAILED"));
+    }
     setStatus(statusElId, "Envoyé. Réponse dès que possible.");
     toast("Demande envoyée.");
     return true;
@@ -3981,14 +3983,22 @@ const noviceAutoBuildBtn = document.getElementById("noviceAutoBuild");
 
 const quoteModifyRow = document.getElementById("quoteModifyRow");
 const quoteClientRow = document.getElementById("quoteClientRow");
+const adminNavLinkEl = document.getElementById("adminNavLink");
+const adminQuotesViewEl = document.getElementById("view-admin");
+const adminQuotesListEl = document.getElementById("adminQuotesList");
+const adminQuotesMetaEl = document.getElementById("adminQuotesMeta");
+const adminQuotesStatusEl = document.getElementById("adminQuotesStatus");
+const adminRefreshQuotesBtn = document.getElementById("adminRefreshQuotes");
 
 const requestModifyBtn = document.getElementById("requestModifyQuote");
 const confirmModifyBtn = document.getElementById("confirmModifyQuote");
+const sendTestReceiptBtn = document.getElementById("sendTestReceipt");
 const clientGetModifyBtn = document.getElementById("clientGetModifyCode");
 
 let isAdmin = false;
 let adminSessionKey = "";
 let lastAdminAuthError = "";
+let adminQuotesLoading = false;
 
 const BUDGET_DEFAULT_MIN = 400;
 const BUDGET_DEFAULT_MAX = 3000;
@@ -4018,6 +4028,10 @@ function updateModifyActionVisibility() {
     confirmModifyBtn.hidden = !(isAdmin && hasCode);
     confirmModifyBtn.disabled = !(isAdmin && hasCode);
   }
+  if (sendTestReceiptBtn) {
+    sendTestReceiptBtn.hidden = !(isAdmin && hasCode);
+    sendTestReceiptBtn.disabled = !(isAdmin && hasCode);
+  }
   if (clientGetModifyBtn) {
     clientGetModifyBtn.hidden = !!isAdmin || !hasCode;
     clientGetModifyBtn.disabled = !!isAdmin || !hasCode;
@@ -4026,6 +4040,11 @@ function updateModifyActionVisibility() {
 
 function applyAdminUI() {
   updateModifyActionVisibility();
+  if (adminNavLinkEl) adminNavLinkEl.hidden = !isAdmin;
+  if (!isAdmin && adminQuotesViewEl?.classList.contains("is-active")) {
+    showView("custom");
+  }
+  if (isAdmin) void refreshAdminQuotes({ silent: true });
 }
 
 applyAdminUI();
@@ -4722,6 +4741,251 @@ async function apiValidateAdminKey(adminKey) {
   }
 }
 
+async function apiSendTestReceipt(payload) {
+  const res = await fetch("/api/admin-test-receipt", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || "TEST_RECEIPT_FAILED");
+  return data;
+}
+
+function openTestReceiptPreview(preview, invoiceNumber = "") {
+  const html = String(preview?.html || "").trim();
+  if (!html) return false;
+  const subject = String(preview?.subject || "Facture test").trim();
+  const wrapped = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${subject}</title><style>body{margin:0;background:#0b0f17;color:#eef3ff;font-family:Manrope,Arial,sans-serif}.wrap{max-width:920px;margin:0 auto;padding:20px}.card{background:#fff;color:#152030;border-radius:12px;padding:22px;box-shadow:0 18px 36px rgba(0,0,0,.35)}.meta{color:#8ea2c1;font-size:12px;margin:0 0 12px 0}</style></head><body><div class="wrap"><p class="meta">Prévisualisation facture test ${invoiceNumber ? `• ${invoiceNumber}` : ""}</p><div class="card">${html}</div></div></body></html>`;
+  const w = window.open("", "_blank", "noopener,noreferrer");
+  if (!w) return false;
+  w.document.open();
+  w.document.write(wrapped);
+  w.document.close();
+  return true;
+}
+
+function formatDateTimeFr(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("fr-FR");
+}
+
+function clearNode(node) {
+  if (!node) return;
+  while (node.firstChild) node.removeChild(node.firstChild);
+}
+
+function setAdminQuotesStatus(text, tone = "") {
+  if (!adminQuotesStatusEl) return;
+  adminQuotesStatusEl.textContent = text || "";
+  adminQuotesStatusEl.style.color = tone === "bad"
+    ? "rgba(255,180,180,.95)"
+    : tone === "good"
+      ? "rgba(186,255,218,.96)"
+      : "var(--text)";
+}
+
+async function apiFetchAdminQuotes(adminKey) {
+  const params = new URLSearchParams({ admin_key: String(adminKey || "").trim() });
+  const res = await fetch(`/api/admin-quotes?${params.toString()}`, { method: "GET" });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || "ADMIN_QUOTES_FETCH_FAILED");
+  return data;
+}
+
+async function apiSetAdminQuoteStatus(code, status) {
+  const res = await fetch("/api/admin-quote-status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      code: String(code || "").trim().toUpperCase(),
+      status,
+      admin_key: adminSessionKey
+    })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || "ADMIN_QUOTE_STATUS_FAILED");
+  return data;
+}
+
+async function apiDeleteAdminQuote(code) {
+  const res = await fetch("/api/admin-quote-delete", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      code: String(code || "").trim().toUpperCase(),
+      admin_key: adminSessionKey
+    })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || "ADMIN_QUOTE_DELETE_FAILED");
+  return data;
+}
+
+function adminPriorityClass(level) {
+  if (level >= 3) return "admin-quote__badge admin-quote__badge--high";
+  if (level >= 2) return "admin-quote__badge admin-quote__badge--normal";
+  return "admin-quote__badge admin-quote__badge--low";
+}
+
+function renderAdminQuotesList(quotes) {
+  if (!adminQuotesListEl) return;
+  clearNode(adminQuotesListEl);
+
+  if (!Array.isArray(quotes) || !quotes.length) {
+    const empty = document.createElement("div");
+    empty.className = "admin-quote__value";
+    empty.textContent = "Aucun devis enregistré.";
+    adminQuotesListEl.appendChild(empty);
+    return;
+  }
+
+  quotes.forEach((quote) => {
+    const details = document.createElement("details");
+    details.className = "admin-quote";
+
+    const summary = document.createElement("summary");
+    summary.className = "admin-quote__summary";
+
+    const chevron = document.createElement("span");
+    chevron.className = "admin-quote__chevron";
+    chevron.textContent = "›";
+
+    const head = document.createElement("div");
+    head.className = "admin-quote__head";
+
+    const code = document.createElement("span");
+    code.className = "admin-quote__code";
+    code.textContent = `Devis ${quote.code || "—"}`;
+
+    const badge = document.createElement("span");
+    badge.className = adminPriorityClass(Number(quote.priorityLevel || 1));
+    badge.textContent = String(quote.priorityLabel || "normale");
+
+    const statusBadge = document.createElement("span");
+    statusBadge.className = "admin-quote__badge admin-quote__badge--normal";
+    statusBadge.textContent = quote.status === "settled" ? "réglé" : "ouvert";
+
+    const date = document.createElement("span");
+    date.className = "admin-quote__date";
+    date.textContent = formatDateTimeFr(quote.createdAt);
+
+    head.append(code, badge, statusBadge);
+    summary.append(chevron, head, date);
+
+    const body = document.createElement("div");
+    body.className = "admin-quote__body";
+
+    const grid = document.createElement("div");
+    grid.className = "admin-quote__grid";
+    const cards = [
+      { label: "Client", value: `${quote.requesterName || "—"}${quote.requesterEmail ? ` (${quote.requesterEmail})` : ""}` },
+      { label: "Usage", value: quote.usage || "—" },
+      { label: "Total estimé", value: quote.totalLabel || "—" },
+      { label: "Traitement", value: quote.deliveryName || "—" },
+      { label: "Créé le", value: formatDateTimeFr(quote.createdAt) },
+      { label: "MAJ", value: formatDateTimeFr(quote.updatedAt || quote.createdAt) },
+      { label: "OTP modification", value: quote.pendingModification ? `En attente (exp. ${formatDateTimeFr(quote.pendingExpiresAt)})` : "Aucun" },
+      { label: "Priorité", value: quote.priorityReason || "—" }
+    ];
+    cards.forEach((entry) => {
+      const cell = document.createElement("div");
+      cell.className = "admin-quote__cell";
+      const lbl = document.createElement("span");
+      lbl.className = "admin-quote__label";
+      lbl.textContent = entry.label;
+      const val = document.createElement("div");
+      val.className = "admin-quote__value";
+      val.textContent = entry.value;
+      cell.append(lbl, val);
+      grid.appendChild(cell);
+    });
+
+    const partsLabel = document.createElement("span");
+    partsLabel.className = "admin-quote__label";
+    partsLabel.textContent = "Configuration";
+    const partsList = document.createElement("ul");
+    partsList.className = "admin-quote__list";
+    const parts = Array.isArray(quote.partsSummary) ? quote.partsSummary : [];
+    if (!parts.length) {
+      const li = document.createElement("li");
+      li.textContent = "Composants non disponibles.";
+      partsList.appendChild(li);
+    } else {
+      parts.forEach((part) => {
+        const li = document.createElement("li");
+        li.textContent = part;
+        partsList.appendChild(li);
+      });
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "admin-quote__actions";
+
+    const settleBtn = document.createElement("button");
+    settleBtn.type = "button";
+    settleBtn.className = "btn btn--ghost btn--tiny";
+    settleBtn.dataset.adminAction = "toggle-status";
+    settleBtn.dataset.code = String(quote.code || "");
+    settleBtn.dataset.status = quote.status === "settled" ? "open" : "settled";
+    settleBtn.textContent = quote.status === "settled" ? "Marquer ouvert" : "Réglé";
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "btn btn--ghost btn--tiny";
+    deleteBtn.dataset.adminAction = "delete";
+    deleteBtn.dataset.code = String(quote.code || "");
+    deleteBtn.textContent = "Supprimer";
+
+    actions.append(settleBtn, deleteBtn);
+    body.append(grid, partsLabel, partsList, actions);
+    details.append(summary, body);
+    adminQuotesListEl.appendChild(details);
+  });
+}
+
+async function refreshAdminQuotes({ silent = false } = {}) {
+  if (!isAdmin || !adminSessionKey) {
+    if (adminQuotesMetaEl) adminQuotesMetaEl.textContent = "Mode admin requis.";
+    if (adminQuotesListEl) clearNode(adminQuotesListEl);
+    return;
+  }
+  if (adminQuotesLoading) return;
+
+  adminQuotesLoading = true;
+  if (!silent) setAdminQuotesStatus("Chargement des devis...");
+  try {
+    const data = await apiFetchAdminQuotes(adminSessionKey);
+    const quotes = Array.isArray(data?.quotes) ? data.quotes : [];
+    renderAdminQuotesList(quotes);
+    const openCount = Number(data?.stats?.open || 0);
+    const settledCount = Number(data?.stats?.settled || 0);
+    const pendingCount = Number(data?.stats?.pendingModification || 0);
+    if (adminQuotesMetaEl) {
+      adminQuotesMetaEl.textContent = `${quotes.length} devis • ouverts ${openCount} • réglés ${settledCount} • OTP en attente ${pendingCount}`;
+    }
+    setAdminQuotesStatus(`Liste mise à jour (${quotes.length} devis).`, "good");
+  } catch (err) {
+    console.error(err);
+    const msg = String(err?.message || "");
+    if (adminQuotesMetaEl) adminQuotesMetaEl.textContent = "Chargement impossible.";
+    if (msg === "ADMIN_NOT_CONFIGURED") {
+      setAdminQuotesStatus("ADMIN_MODIFY_KEY absent côté serveur.", "bad");
+    } else if (msg === "ADMIN_KEY_INVALID") {
+      isAdmin = false;
+      adminSessionKey = "";
+      applyAdminUI();
+      setAdminQuotesStatus("Session admin invalide. Réactive le mode admin.", "bad");
+    } else {
+      setAdminQuotesStatus("Erreur de lecture des devis.", "bad");
+    }
+  } finally {
+    adminQuotesLoading = false;
+  }
+}
+
 function bindCustomBuilder() {
   if (!formCustom) return;
 
@@ -5028,7 +5292,11 @@ function bindCustomBuilder() {
       if (raw.toLowerCase().startsWith("admin:")) {
         const command = raw.slice("admin:".length).trim();
         const turnOff = /\s+--off$/i.test(command);
-        const key = command.replace(/\s+--off$/i, "").trim();
+        const keyRaw = command.replace(/\s+--off$/i, "").trim();
+        const key = keyRaw
+          .replace(/^admin\s*:/i, "")
+          .replace(/^["']|["']$/g, "")
+          .trim();
         if (!key) {
           toast("Saisis la cle admin apres admin:");
           return;
@@ -5077,6 +5345,165 @@ function bindCustomBuilder() {
       }
       setStatus("customStatus", `Devis ${code} rechargé.`);
       toast("Devis chargé.");
+    });
+  }
+
+  if (adminRefreshQuotesBtn) {
+    adminRefreshQuotesBtn.addEventListener("click", () => {
+      if (!isAdmin || !adminSessionKey) {
+        toast("Active d'abord le mode admin.");
+        return;
+      }
+      void refreshAdminQuotes();
+    });
+  }
+
+  if (adminQuotesListEl) {
+    adminQuotesListEl.addEventListener("click", async (event) => {
+      const button = event.target instanceof HTMLElement ? event.target.closest("button[data-admin-action]") : null;
+      if (!button) return;
+      if (!isAdmin || !adminSessionKey) {
+        toast("Mode admin requis.");
+        return;
+      }
+
+      const action = button.dataset.adminAction || "";
+      const code = String(button.dataset.code || "").trim().toUpperCase();
+      if (!code) return;
+
+      if (action === "toggle-status") {
+        const targetStatus = String(button.dataset.status || "settled");
+        const ok = await themedConfirm(
+          targetStatus === "settled"
+            ? `Marquer ${code} comme réglé ?`
+            : `Remettre ${code} en statut ouvert ?`,
+          {
+            title: "Mise à jour devis",
+            confirmText: "Valider",
+            cancelText: "Annuler"
+          }
+        );
+        if (!ok) return;
+        try {
+          await apiSetAdminQuoteStatus(code, targetStatus);
+          setAdminQuotesStatus(`Statut ${code} mis à jour.`, "good");
+          await refreshAdminQuotes({ silent: true });
+        } catch (err) {
+          console.error(err);
+          setAdminQuotesStatus(`Échec de mise à jour pour ${code}.`, "bad");
+        }
+        return;
+      }
+
+      if (action === "delete") {
+        const ok = await themedConfirm(
+          `Supprimer définitivement ${code} (devis + demande OTP associée) ?`,
+          {
+            title: "Suppression devis",
+            confirmText: "Supprimer",
+            cancelText: "Annuler"
+          }
+        );
+        if (!ok) return;
+        try {
+          await apiDeleteAdminQuote(code);
+          setAdminQuotesStatus(`Devis ${code} supprimé.`, "good");
+          await refreshAdminQuotes({ silent: true });
+        } catch (err) {
+          console.error(err);
+          setAdminQuotesStatus(`Impossible de supprimer ${code}.`, "bad");
+        }
+      }
+    });
+  }
+
+  if (sendTestReceiptBtn) {
+    sendTestReceiptBtn.addEventListener("click", async () => {
+      if (!isAdmin || !adminSessionKey) {
+        toast("Mode admin requis.");
+        return;
+      }
+
+      const code = activeQuoteCode();
+      if (!code) {
+        toast("Charge d'abord un devis.");
+        return;
+      }
+
+      const loaded = await getQuoteRecordByCode(code);
+      const suggestedEmail = String(
+        quoteEmailEl?.value ||
+        loaded?.requester?.email ||
+        ""
+      ).trim().toLowerCase();
+
+      try {
+        const previewData = await apiSendTestReceipt({
+          admin_key: adminSessionKey,
+          code,
+          send_email: false
+        });
+        const invoiceNumber = String(previewData?.invoiceNumber || "").trim();
+        const opened = openTestReceiptPreview(previewData?.preview || {}, invoiceNumber);
+        setStatus("customStatus", `Aperçu facture test généré${invoiceNumber ? ` (${invoiceNumber})` : ""}.`);
+        toast(opened ? "Aperçu facture ouvert." : "Aperçu généré (popup bloquée).");
+
+        const sendMail = await themedConfirm(
+          "Envoyer aussi cette facture test par email ?",
+          {
+            title: "Facture test",
+            confirmText: "Oui, envoyer",
+            cancelText: "Non"
+          }
+        );
+        if (!sendMail) return;
+
+        const targetEmail = await themedPrompt(
+          "Email destinataire pour l'envoi test :",
+          {
+            title: "Envoi facture test",
+            confirmText: "Envoyer",
+            cancelText: "Annuler",
+            placeholder: "client@domaine.fr",
+            value: suggestedEmail,
+            inputType: "email"
+          }
+        );
+        if (!targetEmail) return;
+
+        const sentData = await apiSendTestReceipt({
+          admin_key: adminSessionKey,
+          code,
+          to_email: targetEmail,
+          send_email: true
+        });
+        if (sentData?.emailSent) {
+          setStatus("customStatus", `Facture test envoyée à ${targetEmail}${sentData?.invoiceNumber ? ` (${sentData.invoiceNumber})` : ""}.`);
+          toast("Facture test envoyée.");
+          return;
+        }
+        toast("Envoi test échoué côté EmailJS.");
+        setStatus("customStatus", `Envoi test non effectué: ${String(sentData?.sendError || "erreur inconnue")}`);
+      } catch (err) {
+        console.error(err);
+        const msg = String(err?.message || "");
+        if (msg === "ADMIN_KEY_INVALID" || msg === "ADMIN_NOT_CONFIGURED") {
+          isAdmin = false;
+          adminSessionKey = "";
+          applyAdminUI();
+          toast(msg === "ADMIN_NOT_CONFIGURED" ? "Admin non configuré côté serveur." : "Session admin invalide.");
+          return;
+        }
+        if (msg === "NOT_FOUND") {
+          toast("Devis introuvable en base.");
+          return;
+        }
+        if (msg === "INVALID_TARGET_EMAIL") {
+          toast("Email invalide.");
+          return;
+        }
+        toast("Erreur lors de l'envoi de la facture test.");
+      }
     });
   }
 

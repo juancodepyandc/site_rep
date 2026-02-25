@@ -52,10 +52,15 @@ export default async function handler(req, res) {
     }
 
     const safeSummary = summary && typeof summary === "object" ? summary : null;
+    const quoteCode = String(safeSummary?.quoteCode || "").trim().toUpperCase();
+    const quoteCodeOk = /^DV-[A-Z0-9]{6,14}$/.test(quoteCode);
     const clean = (v, max = 64) => String(v || "").replace(/\s+/g, " ").trim().slice(0, max);
     const description = safeSummary
       ? `PC sur mesure - ${clean(safeSummary.cpu)} / ${clean(safeSummary.gpu)} / ${clean(safeSummary.ram)}${clean(safeSummary.quoteCode, 24) ? ` / ${clean(safeSummary.quoteCode, 24)}` : ""}`
       : "PC sur mesure";
+    const invoiceId = quoteCodeOk
+      ? `AE-${quoteCode}-${Date.now().toString(36).toUpperCase().slice(-6)}`
+      : `AE-${Date.now().toString(36).toUpperCase().slice(-10)}`;
 
     // 2️⃣ Création commande
     const orderRes = await fetch(`${baseUrl}/v2/checkout/orders`, {
@@ -69,6 +74,8 @@ export default async function handler(req, res) {
         purchase_units: [
           {
             description: description.slice(0, 127),
+            custom_id: quoteCodeOk ? quoteCode : undefined,
+            invoice_id: invoiceId.slice(0, 127),
             amount: {
               currency_code: curr,
               value: value.toFixed(2)

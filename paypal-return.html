@@ -11,19 +11,37 @@
     <h1>Paiement confirmé</h1>
     <p>Merci pour ta commande. Le paiement a bien été validé.</p>
     <p>Tu recevras un email de confirmation rapidement.</p>
+    <p id="captureStatus" style="opacity:.85"></p>
     <button class="btn btn--primary btn--shine" onclick="finish()">Finaliser</button>
   </div>
 
 <script>
 async function finish(){
+  const statusEl = document.getElementById("captureStatus");
+  const btn = document.querySelector("button");
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.textContent = "Validation de la commande...";
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
   if(token){
-    await fetch("/api/paypal-capture-order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderID: token })
-    });
+    try{
+      const res = await fetch("/api/paypal-capture-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderID: token })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) {
+        const receipt = data?.receiptEmail?.sent
+          ? "Facture client envoyée."
+          : "Facture client non envoyée automatiquement (configuration email à vérifier).";
+        if (statusEl) statusEl.textContent = `${receipt} Redirection...`;
+      } else if (statusEl) {
+        statusEl.textContent = "Paiement capturé avec alerte technique. Vérifie le back-office.";
+      }
+    } catch {
+      if (statusEl) statusEl.textContent = "Capture impossible depuis cette page, vérifie l'API.";
+    }
   }
   window.location.href = "/";
 }

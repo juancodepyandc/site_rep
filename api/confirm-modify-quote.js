@@ -40,6 +40,16 @@ function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
 
+function sanitizeAdminStatus(status) {
+  if (!status || typeof status !== "object") return undefined;
+  const state = String(status.state || "").trim().toLowerCase();
+  if (!["open", "settled"].includes(state)) return undefined;
+  return {
+    state,
+    updatedAt: status.updatedAt || new Date().toISOString()
+  };
+}
+
 function sanitizeRecord(record, code, currentRecord) {
   if (!record || typeof record !== "object") return null;
   if (normalizeCode(record.code) !== code) return null;
@@ -80,7 +90,8 @@ function sanitizeRecord(record, code, currentRecord) {
     external,
     usage: String(record.usage || ""),
     config: record.config && typeof record.config === "object" ? record.config : null,
-    preview3d: record.preview3d && typeof record.preview3d === "object" ? record.preview3d : null
+    preview3d: record.preview3d && typeof record.preview3d === "object" ? record.preview3d : null,
+    adminStatus: sanitizeAdminStatus(record.adminStatus) || sanitizeAdminStatus(currentRecord?.adminStatus)
   };
 }
 

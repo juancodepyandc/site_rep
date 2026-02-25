@@ -9,7 +9,17 @@ function clampText(value, max = 5000) {
   return String(value || "").trim().slice(0, max);
 }
 
-function sanitizeRecord(record, code) {
+function sanitizeAdminStatus(status) {
+  if (!status || typeof status !== "object") return undefined;
+  const state = String(status.state || "").trim().toLowerCase();
+  if (!["open", "settled"].includes(state)) return undefined;
+  return {
+    state,
+    updatedAt: status.updatedAt || new Date().toISOString()
+  };
+}
+
+function sanitizeRecord(record, code, inheritedAdminStatus) {
   if (!record || typeof record !== "object") return null;
   const requester = record.requester && typeof record.requester === "object" ? record.requester : {};
   const email = clampText(requester.email || "", 200).toLowerCase();
@@ -46,6 +56,7 @@ function sanitizeRecord(record, code) {
     usage: clampText(record.usage || "", 200),
     config: record.config && typeof record.config === "object" ? record.config : null,
     preview3d: record.preview3d && typeof record.preview3d === "object" ? record.preview3d : null,
+    adminStatus: sanitizeAdminStatus(record.adminStatus) || sanitizeAdminStatus(inheritedAdminStatus),
     updatedAt: record.updatedAt || undefined,
     lastOtpModification: record.lastOtpModification && typeof record.lastOtpModification === "object" ? record.lastOtpModification : undefined,
     modificationHistory: Array.isArray(record.modificationHistory) ? record.modificationHistory.slice(-20) : undefined
@@ -72,7 +83,18 @@ export default async function handler(req, res) {
       return;
     }
 
-    const sanitized = sanitizeRecord(record, code);
+    let inheritedAdminStatus = undefined;
+    try {
+      const existingRaw = await client.get(`quote:${code}`);
+      if (existingRaw) {
+        const existing = JSON.parse(existingRaw);
+        inheritedAdminStatus = existing?.adminStatus;
+      }
+    } catch {
+      inheritedAdminStatus = undefined;
+    }
+
+    const sanitized = sanitizeRecord(record, code, inheritedAdminStatus);
     if (!sanitized) {
       res.status(400).json({ error: "INVALID_RECORD" });
       return;
