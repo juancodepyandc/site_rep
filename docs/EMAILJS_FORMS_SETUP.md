@@ -12,6 +12,15 @@ Les formulaires du site (`PC`, `Mobile`, `Contact`, `Devis`) passent par `/api/s
 - `RESEND_FROM_NAME` (ex: `Atelier Electronique`)
 - `EMAILJS_FORM_TO_EMAIL` (email qui recoit toutes les demandes)
 
+## Alternative sans domaine payant: Gmail SMTP
+
+Si Resend bloque (domaine non verifie), ajoute:
+
+- `GMAIL_USER`
+- `GMAIL_APP_PASSWORD`
+
+Le backend essaie automatiquement Resend puis Gmail SMTP.
+
 ## Fallback EmailJS (optionnel)
 
 - `EMAILJS_FORM_SERVICE_ID`

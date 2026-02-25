@@ -4841,6 +4841,11 @@ async function runTestReceiptFlow({ code, suggestedEmail = "" } = {}) {
     }
 
     const sendError = String(sentData?.sendError || "");
+    if (sendError.includes("domain is not verified") && sendError.includes("SMTP_NOT_CONFIGURED")) {
+      toast("Configure Gmail SMTP gratuit pour l'envoi.");
+      setStatus("customStatus", "Aperçu facture OK. Resend bloque (domaine non vérifié). Active GMAIL_USER + GMAIL_APP_PASSWORD sur Vercel.");
+      return;
+    }
     if (sendError.includes("domain is not verified")) {
       toast("Resend: domaine expéditeur non vérifié.");
       setStatus("customStatus", "Aperçu facture OK. Envoi bloqué: domaine expéditeur Resend non vérifié (RESEND_FROM_EMAIL).");

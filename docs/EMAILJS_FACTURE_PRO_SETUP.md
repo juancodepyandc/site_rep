@@ -17,6 +17,22 @@ Variables metier:
 
 Puis redeploie.
 
+## Alternative 100% gratuite sans domaine: Gmail SMTP (recommande si Resend bloque)
+
+Si tu ne veux pas verifier de domaine, configure:
+
+- `GMAIL_USER` (ton adresse Gmail)
+- `GMAIL_APP_PASSWORD` (mot de passe d'application Google 16 caracteres)
+
+Optionnel:
+
+- `SMTP_FROM_EMAIL` (sinon `GMAIL_USER` est utilise)
+
+Le backend tentera automatiquement:
+1. Resend
+2. Gmail SMTP
+3. EmailJS fallback
+
 Fallback EmailJS (optionnel):
 
 - `EMAILJS_RECEIPT_SERVICE_ID`
