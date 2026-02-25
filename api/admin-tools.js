@@ -21,6 +21,7 @@ const ATELIER_COMPANY_NAME = String(process.env.ATELIER_COMPANY_NAME || "Atelier
 const ATELIER_COMPANY_EMAIL = String(process.env.ATELIER_COMPANY_EMAIL || "rabuteaujuandavid@gmail.com").trim().toLowerCase();
 const ATELIER_COMPANY_PHONE = String(process.env.ATELIER_COMPANY_PHONE || "").trim();
 const ATELIER_COMPANY_ADDRESS = String(process.env.ATELIER_COMPANY_ADDRESS || "").trim();
+const ENABLE_TEST_RECEIPT = String(process.env.ENABLE_TEST_RECEIPT || "").trim() === "1";
 
 function normalizeCode(value) {
   return String(value || "").trim().toUpperCase();
@@ -585,7 +586,10 @@ export default async function handler(req, res) {
 
     if (action === "set-status") return handleSetStatus(body, res, client);
     if (action === "delete") return handleDelete(body, res, client);
-    if (action === "test-receipt") return handleTestReceipt(body, res, client);
+    if (action === "test-receipt") {
+      if (!ENABLE_TEST_RECEIPT) return res.status(403).json({ error: "TEST_RECEIPT_DISABLED" });
+      return handleTestReceipt(body, res, client);
+    }
 
     return res.status(400).json({ error: "INVALID_ACTION" });
   } catch (err) {

@@ -3994,7 +3994,6 @@ const openAdminQuotesViewBtn = document.getElementById("openAdminQuotesView");
 
 const requestModifyBtn = document.getElementById("requestModifyQuote");
 const confirmModifyBtn = document.getElementById("confirmModifyQuote");
-const sendTestReceiptBtn = document.getElementById("sendTestReceipt");
 const clientGetModifyBtn = document.getElementById("clientGetModifyCode");
 
 let isAdmin = false;
@@ -4030,10 +4029,6 @@ function updateModifyActionVisibility() {
   if (confirmModifyBtn) {
     confirmModifyBtn.hidden = !(isAdmin && hasCode);
     confirmModifyBtn.disabled = !(isAdmin && hasCode);
-  }
-  if (sendTestReceiptBtn) {
-    sendTestReceiptBtn.hidden = !isAdmin;
-    sendTestReceiptBtn.disabled = !isAdmin;
   }
   if (clientGetModifyBtn) {
     clientGetModifyBtn.hidden = !!isAdmin || !hasCode;
@@ -5069,15 +5064,7 @@ function renderAdminQuotesList(quotes) {
     deleteBtn.dataset.code = String(quote.code || "");
     deleteBtn.textContent = "Supprimer";
 
-    const testReceiptBtn = document.createElement("button");
-    testReceiptBtn.type = "button";
-    testReceiptBtn.className = "btn btn--ghost btn--tiny";
-    testReceiptBtn.dataset.adminAction = "test-receipt";
-    testReceiptBtn.dataset.code = String(quote.code || "");
-    testReceiptBtn.dataset.email = String(quote.requesterEmail || "");
-    testReceiptBtn.textContent = "Facture test";
-
-    actions.append(settleBtn, testReceiptBtn, deleteBtn);
+    actions.append(settleBtn, deleteBtn);
     body.append(grid, partsLabel, partsList, actions);
     details.append(summary, body);
     adminQuotesListEl.appendChild(details);
@@ -5563,24 +5550,6 @@ function bindCustomBuilder() {
         }
       }
 
-      if (action === "test-receipt") {
-        const suggestedEmail = String(button.dataset.email || "").trim().toLowerCase();
-        await runTestReceiptFlow({ code, suggestedEmail });
-      }
-    });
-  }
-
-  if (sendTestReceiptBtn) {
-    sendTestReceiptBtn.addEventListener("click", async () => {
-      const code = activeQuoteCode();
-
-      const loaded = await getQuoteRecordByCode(code);
-      const suggestedEmail = String(
-        quoteEmailEl?.value ||
-        loaded?.requester?.email ||
-        ""
-      ).trim().toLowerCase();
-      await runTestReceiptFlow({ code, suggestedEmail });
     });
   }
 
