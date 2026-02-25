@@ -3983,12 +3983,14 @@ const noviceAutoBuildBtn = document.getElementById("noviceAutoBuild");
 
 const quoteModifyRow = document.getElementById("quoteModifyRow");
 const quoteClientRow = document.getElementById("quoteClientRow");
+const quoteAdminRow = document.getElementById("quoteAdminRow");
 const adminNavLinkEl = document.getElementById("adminNavLink");
 const adminQuotesViewEl = document.getElementById("view-admin");
 const adminQuotesListEl = document.getElementById("adminQuotesList");
 const adminQuotesMetaEl = document.getElementById("adminQuotesMeta");
 const adminQuotesStatusEl = document.getElementById("adminQuotesStatus");
 const adminRefreshQuotesBtn = document.getElementById("adminRefreshQuotes");
+const openAdminQuotesViewBtn = document.getElementById("openAdminQuotesView");
 
 const requestModifyBtn = document.getElementById("requestModifyQuote");
 const confirmModifyBtn = document.getElementById("confirmModifyQuote");
@@ -4019,6 +4021,7 @@ function updateModifyActionVisibility() {
   const hasCode = Boolean(currentQuoteCode);
   if (quoteModifyRow) quoteModifyRow.style.display = (isAdmin && hasCode) ? "flex" : "none";
   if (quoteClientRow) quoteClientRow.style.display = (!isAdmin && hasCode) ? "flex" : "none";
+  if (quoteAdminRow) quoteAdminRow.style.display = isAdmin ? "flex" : "none";
 
   if (requestModifyBtn) {
     requestModifyBtn.hidden = !(isAdmin && hasCode);
@@ -4029,12 +4032,16 @@ function updateModifyActionVisibility() {
     confirmModifyBtn.disabled = !(isAdmin && hasCode);
   }
   if (sendTestReceiptBtn) {
-    sendTestReceiptBtn.hidden = !(isAdmin && hasCode);
-    sendTestReceiptBtn.disabled = !(isAdmin && hasCode);
+    sendTestReceiptBtn.hidden = !isAdmin;
+    sendTestReceiptBtn.disabled = !isAdmin;
   }
   if (clientGetModifyBtn) {
     clientGetModifyBtn.hidden = !!isAdmin || !hasCode;
     clientGetModifyBtn.disabled = !!isAdmin || !hasCode;
+  }
+  if (openAdminQuotesViewBtn) {
+    openAdminQuotesViewBtn.hidden = !isAdmin;
+    openAdminQuotesViewBtn.disabled = !isAdmin;
   }
 }
 
@@ -4742,10 +4749,13 @@ async function apiValidateAdminKey(adminKey) {
 }
 
 async function apiSendTestReceipt(payload) {
-  const res = await fetch("/api/admin-test-receipt", {
+  const body = payload && typeof payload === "object"
+    ? { ...payload, action: "test-receipt" }
+    : { action: "test-receipt" };
+  const res = await fetch("/api/admin-tools", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(body)
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error || "TEST_RECEIPT_FAILED");
@@ -4763,6 +4773,94 @@ function openTestReceiptPreview(preview, invoiceNumber = "") {
   w.document.write(wrapped);
   w.document.close();
   return true;
+}
+
+async function runTestReceiptFlow({ code, suggestedEmail = "" } = {}) {
+  if (!isAdmin || !adminSessionKey) {
+    toast("Mode admin requis.");
+    return;
+  }
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  if (!normalizedCode) {
+    toast("Charge d'abord un devis ou utilise l'onglet devis admin.");
+    return;
+  }
+
+  try {
+    const previewData = await apiSendTestReceipt({
+      admin_key: adminSessionKey,
+      code: normalizedCode,
+      send_email: false
+    });
+    const invoiceNumber = String(previewData?.invoiceNumber || "").trim();
+    const opened = openTestReceiptPreview(previewData?.preview || {}, invoiceNumber);
+    setStatus("customStatus", `Aperçu facture test généré${invoiceNumber ? ` (${invoiceNumber})` : ""}.`);
+    toast(opened ? "Aperçu facture ouvert." : "Aperçu généré (popup bloquée).");
+
+    const sendMail = await themedConfirm(
+      "Envoyer aussi cette facture test par email ?",
+      {
+        title: "Facture test",
+        confirmText: "Oui, envoyer",
+        cancelText: "Non"
+      }
+    );
+    if (!sendMail) return;
+
+    const fallbackEmail = String(suggestedEmail || "").trim().toLowerCase();
+    const targetEmail = await themedPrompt(
+      "Email destinataire pour l'envoi test :",
+      {
+        title: "Envoi facture test",
+        confirmText: "Envoyer",
+        cancelText: "Annuler",
+        placeholder: "client@domaine.fr",
+        value: fallbackEmail,
+        inputType: "email"
+      }
+    );
+    if (!targetEmail) return;
+
+    const sentData = await apiSendTestReceipt({
+      admin_key: adminSessionKey,
+      code: normalizedCode,
+      to_email: targetEmail,
+      send_email: true
+    });
+    if (sentData?.emailSent) {
+      setStatus("customStatus", `Facture test envoyée à ${targetEmail}${sentData?.invoiceNumber ? ` (${sentData.invoiceNumber})` : ""}.`);
+      toast("Facture test envoyée.");
+      return;
+    }
+
+    const sendError = String(sentData?.sendError || "");
+    if (sendError.includes("non-browser applications")) {
+      toast("Envoi serveur EmailJS bloqué par ton plan. Aperçu OK.");
+      setStatus("customStatus", "Aperçu facture OK. Envoi test bloqué par EmailJS (API serveur non autorisée).");
+      return;
+    }
+    toast("Envoi test échoué côté EmailJS.");
+    setStatus("customStatus", `Envoi test non effectué: ${sendError || "erreur inconnue"}`);
+  } catch (err) {
+    console.error(err);
+    const msg = String(err?.message || "");
+    if (msg === "ADMIN_KEY_INVALID" || msg === "ADMIN_NOT_CONFIGURED") {
+      isAdmin = false;
+      adminSessionKey = "";
+      applyAdminUI();
+      toast(msg === "ADMIN_NOT_CONFIGURED" ? "Admin non configuré côté serveur." : "Session admin invalide.");
+      return;
+    }
+    if (msg === "NOT_FOUND") {
+      toast("Devis introuvable en base.");
+      return;
+    }
+    if (msg === "INVALID_TARGET_EMAIL") {
+      toast("Email invalide.");
+      return;
+    }
+    toast("Erreur lors du test facture.");
+  }
 }
 
 function formatDateTimeFr(value) {
@@ -4788,18 +4886,22 @@ function setAdminQuotesStatus(text, tone = "") {
 }
 
 async function apiFetchAdminQuotes(adminKey) {
-  const params = new URLSearchParams({ admin_key: String(adminKey || "").trim() });
-  const res = await fetch(`/api/admin-quotes?${params.toString()}`, { method: "GET" });
+  const params = new URLSearchParams({
+    action: "list",
+    admin_key: String(adminKey || "").trim()
+  });
+  const res = await fetch(`/api/admin-tools?${params.toString()}`, { method: "GET" });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error || "ADMIN_QUOTES_FETCH_FAILED");
   return data;
 }
 
 async function apiSetAdminQuoteStatus(code, status) {
-  const res = await fetch("/api/admin-quote-status", {
+  const res = await fetch("/api/admin-tools", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      action: "set-status",
       code: String(code || "").trim().toUpperCase(),
       status,
       admin_key: adminSessionKey
@@ -4811,10 +4913,11 @@ async function apiSetAdminQuoteStatus(code, status) {
 }
 
 async function apiDeleteAdminQuote(code) {
-  const res = await fetch("/api/admin-quote-delete", {
-    method: "DELETE",
+  const res = await fetch("/api/admin-tools", {
+    method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      action: "delete",
       code: String(code || "").trim().toUpperCase(),
       admin_key: adminSessionKey
     })
@@ -4939,7 +5042,15 @@ function renderAdminQuotesList(quotes) {
     deleteBtn.dataset.code = String(quote.code || "");
     deleteBtn.textContent = "Supprimer";
 
-    actions.append(settleBtn, deleteBtn);
+    const testReceiptBtn = document.createElement("button");
+    testReceiptBtn.type = "button";
+    testReceiptBtn.className = "btn btn--ghost btn--tiny";
+    testReceiptBtn.dataset.adminAction = "test-receipt";
+    testReceiptBtn.dataset.code = String(quote.code || "");
+    testReceiptBtn.dataset.email = String(quote.requesterEmail || "");
+    testReceiptBtn.textContent = "Facture test";
+
+    actions.append(settleBtn, testReceiptBtn, deleteBtn);
     body.append(grid, partsLabel, partsList, actions);
     details.append(summary, body);
     adminQuotesListEl.appendChild(details);
@@ -5358,6 +5469,16 @@ function bindCustomBuilder() {
     });
   }
 
+  if (openAdminQuotesViewBtn) {
+    openAdminQuotesViewBtn.addEventListener("click", () => {
+      if (!isAdmin) {
+        toast("Active le mode admin.");
+        return;
+      }
+      showView("admin");
+    });
+  }
+
   if (adminQuotesListEl) {
     adminQuotesListEl.addEventListener("click", async (event) => {
       const button = event.target instanceof HTMLElement ? event.target.closest("button[data-admin-action]") : null;
@@ -5414,21 +5535,17 @@ function bindCustomBuilder() {
           setAdminQuotesStatus(`Impossible de supprimer ${code}.`, "bad");
         }
       }
+
+      if (action === "test-receipt") {
+        const suggestedEmail = String(button.dataset.email || "").trim().toLowerCase();
+        await runTestReceiptFlow({ code, suggestedEmail });
+      }
     });
   }
 
   if (sendTestReceiptBtn) {
     sendTestReceiptBtn.addEventListener("click", async () => {
-      if (!isAdmin || !adminSessionKey) {
-        toast("Mode admin requis.");
-        return;
-      }
-
       const code = activeQuoteCode();
-      if (!code) {
-        toast("Charge d'abord un devis.");
-        return;
-      }
 
       const loaded = await getQuoteRecordByCode(code);
       const suggestedEmail = String(
@@ -5436,74 +5553,7 @@ function bindCustomBuilder() {
         loaded?.requester?.email ||
         ""
       ).trim().toLowerCase();
-
-      try {
-        const previewData = await apiSendTestReceipt({
-          admin_key: adminSessionKey,
-          code,
-          send_email: false
-        });
-        const invoiceNumber = String(previewData?.invoiceNumber || "").trim();
-        const opened = openTestReceiptPreview(previewData?.preview || {}, invoiceNumber);
-        setStatus("customStatus", `Aperçu facture test généré${invoiceNumber ? ` (${invoiceNumber})` : ""}.`);
-        toast(opened ? "Aperçu facture ouvert." : "Aperçu généré (popup bloquée).");
-
-        const sendMail = await themedConfirm(
-          "Envoyer aussi cette facture test par email ?",
-          {
-            title: "Facture test",
-            confirmText: "Oui, envoyer",
-            cancelText: "Non"
-          }
-        );
-        if (!sendMail) return;
-
-        const targetEmail = await themedPrompt(
-          "Email destinataire pour l'envoi test :",
-          {
-            title: "Envoi facture test",
-            confirmText: "Envoyer",
-            cancelText: "Annuler",
-            placeholder: "client@domaine.fr",
-            value: suggestedEmail,
-            inputType: "email"
-          }
-        );
-        if (!targetEmail) return;
-
-        const sentData = await apiSendTestReceipt({
-          admin_key: adminSessionKey,
-          code,
-          to_email: targetEmail,
-          send_email: true
-        });
-        if (sentData?.emailSent) {
-          setStatus("customStatus", `Facture test envoyée à ${targetEmail}${sentData?.invoiceNumber ? ` (${sentData.invoiceNumber})` : ""}.`);
-          toast("Facture test envoyée.");
-          return;
-        }
-        toast("Envoi test échoué côté EmailJS.");
-        setStatus("customStatus", `Envoi test non effectué: ${String(sentData?.sendError || "erreur inconnue")}`);
-      } catch (err) {
-        console.error(err);
-        const msg = String(err?.message || "");
-        if (msg === "ADMIN_KEY_INVALID" || msg === "ADMIN_NOT_CONFIGURED") {
-          isAdmin = false;
-          adminSessionKey = "";
-          applyAdminUI();
-          toast(msg === "ADMIN_NOT_CONFIGURED" ? "Admin non configuré côté serveur." : "Session admin invalide.");
-          return;
-        }
-        if (msg === "NOT_FOUND") {
-          toast("Devis introuvable en base.");
-          return;
-        }
-        if (msg === "INVALID_TARGET_EMAIL") {
-          toast("Email invalide.");
-          return;
-        }
-        toast("Erreur lors de l'envoi de la facture test.");
-      }
+      await runTestReceiptFlow({ code, suggestedEmail });
     });
   }
 
