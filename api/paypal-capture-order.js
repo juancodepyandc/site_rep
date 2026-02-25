@@ -72,6 +72,38 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+function compactAddress(address) {
+  if (!address || typeof address !== "object") return "";
+  return [
+    address.address_line_1,
+    address.address_line_2,
+    [address.admin_area_2, address.admin_area_1].filter(Boolean).join(" "),
+    address.postal_code,
+    address.country_code
+  ]
+    .map((v) => String(v || "").trim())
+    .filter(Boolean)
+    .join(", ");
+}
+
+function extractPayPalDetails(captureData) {
+  const payer = captureData?.payer || {};
+  const shipping = captureData?.purchase_units?.[0]?.shipping || {};
+  const payerPhone =
+    payer?.phone?.phone_number?.national_number ||
+    payer?.phone?.phone_number?.international_number ||
+    captureData?.payment_source?.paypal?.phone?.phone_number?.national_number ||
+    captureData?.payment_source?.paypal?.phone?.phone_number?.international_number ||
+    "";
+  return {
+    payerName: [payer?.name?.given_name || "", payer?.name?.surname || ""].join(" ").trim(),
+    payerEmail: String(payer?.email_address || "").trim().toLowerCase(),
+    payerPhone: String(payerPhone || "").trim(),
+    shippingName: String(shipping?.name?.full_name || "").trim(),
+    shippingAddress: compactAddress(shipping?.address || {})
+  };
+}
+
 function normalizePayPalMode(value) {
   const mode = String(value || "").trim().toLowerCase();
   if (mode === "live" || mode === "sandbox") return mode;
@@ -136,6 +168,8 @@ function buildEmailHtml(invoice) {
     `<tr><td style="font-size:12px;color:#5a718f;width:33%;">Ref. devis</td><td style="font-size:13px;font-weight:700;color:#102743;">${escapeHtml(invoice.quoteCode)}</td></tr>`,
     `<tr><td style="font-size:12px;color:#5a718f;">Commande PayPal</td><td style="font-size:13px;font-weight:700;color:#102743;">${escapeHtml(invoice.orderID)}</td></tr>`,
     `<tr><td style="font-size:12px;color:#5a718f;">Capture</td><td style="font-size:13px;font-weight:700;color:#102743;">${escapeHtml(invoice.captureId)}</td></tr>`,
+    invoice.payerPhone ? `<tr><td style="font-size:12px;color:#5a718f;">Telephone</td><td style="font-size:13px;font-weight:700;color:#102743;">${escapeHtml(invoice.payerPhone)}</td></tr>` : "",
+    invoice.shippingAddress ? `<tr><td style="font-size:12px;color:#5a718f;">Adresse livraison</td><td style="font-size:13px;font-weight:700;color:#102743;">${escapeHtml(invoice.shippingAddress)}</td></tr>` : "",
     usageLine ? `<tr><td style="font-size:12px;color:#5a718f;">Usage</td><td style="font-size:13px;font-weight:700;color:#102743;">${escapeHtml(usageLine)}</td></tr>` : "",
     `</table>`,
     `<table role="presentation" width="100%" style="border-collapse:collapse;margin:0 0 16px 0;border:1px solid #d8e3f1;border-radius:12px;overflow:hidden;">`,
@@ -168,6 +202,8 @@ function buildEmailText(invoice) {
     `Ref devis: ${invoice.quoteCode}`,
     `Commande PayPal: ${invoice.orderID}`,
     `Capture: ${invoice.captureId}`,
+    `Telephone: ${invoice.payerPhone || "N/A"}`,
+    `Adresse livraison: ${invoice.shippingAddress || "N/A"}`,
     `Usage: ${invoice.usage || "N/A"}`,
     "",
     "MONTANTS",
@@ -201,11 +237,9 @@ function invoicePayload({ quoteCode, orderID, captureData, record }) {
   const currency = String(captureData?.purchase_units?.[0]?.amount?.currency_code || "EUR").trim().toUpperCase();
   const requesterName = String(record?.requester?.name || "").trim();
   const requesterEmail = String(record?.requester?.email || "").trim().toLowerCase();
-  const payerEmail = String(captureData?.payer?.email_address || "").trim().toLowerCase();
-  const buyerName = requesterName || [
-    captureData?.payer?.name?.given_name || "",
-    captureData?.payer?.name?.surname || ""
-  ].join(" ").trim();
+  const paypalDetails = extractPayPalDetails(captureData);
+  const payerEmail = String(paypalDetails.payerEmail || "").trim().toLowerCase();
+  const buyerName = requesterName || paypalDetails.payerName;
   const buyerEmail = requesterEmail || payerEmail;
   const invoiceNumber = quoteCode
     ? `FACT-${quoteCode}-${String(captureId).slice(-6).toUpperCase()}`
@@ -233,6 +267,9 @@ function invoicePayload({ quoteCode, orderID, captureData, record }) {
     orderID: String(orderID || "").trim(),
     captureId,
     invoiceNumber,
+    payerPhone: paypalDetails.payerPhone,
+    shippingAddress: paypalDetails.shippingAddress,
+    shippingName: paypalDetails.shippingName,
     amountLabel: Number.isFinite(amount) && amount > 0 ? formatMoney(amount, currency) : "N/A",
     subtotalLabel: Number.isFinite(subtotal) && subtotal > 0 ? formatMoney(subtotal, currency) : "N/A",
     vatLabel: Number.isFinite(vat) && vat > 0 ? formatMoney(vat, currency) : "N/A",
@@ -322,9 +359,10 @@ export default async function handler(req, res) {
 
     const quoteCode = pickQuoteCode(captureData);
     let quoteRecord = null;
+    let redis = null;
     if (QUOTE_CODE_RE.test(quoteCode)) {
       try {
-        const redis = await getRedisClient();
+        redis = await getRedisClient();
         const raw = await redis.get(`quote:${quoteCode}`);
         if (raw) quoteRecord = JSON.parse(raw);
       } catch {
@@ -358,6 +396,9 @@ export default async function handler(req, res) {
         amount_paid: invoice.amountLabel,
         amount_subtotal: invoice.subtotalLabel,
         amount_vat: invoice.vatLabel,
+        payer_phone: invoice.payerPhone || "",
+        shipping_name: invoice.shippingName || "",
+        shipping_address: invoice.shippingAddress || "",
         usage: invoice.usage,
         config_lines: invoice.parts.join(" | "),
         message_text: textBody,
@@ -373,8 +414,32 @@ export default async function handler(req, res) {
         await sendReceiptMail(
           payload,
           ATELIER_RECEIPT_COPY_EMAIL,
-          `[Copie atelier] ${invoice.invoiceNumber} - ${invoice.quoteCode}`
+          `[Commande ${paypal.mode === "sandbox" ? "SANDBOX" : "LIVE"}] ${invoice.invoiceNumber} - ${invoice.quoteCode}`
         );
+      }
+    }
+
+    // Marque automatiquement le devis comme regle apres capture reussie en live.
+    if (paypal.mode === "live" && redis && quoteRecord && QUOTE_CODE_RE.test(quoteCode)) {
+      try {
+        const nowIso = new Date().toISOString();
+        quoteRecord.adminStatus = { state: "settled", updatedAt: nowIso };
+        quoteRecord.updatedAt = nowIso;
+        quoteRecord.payment = {
+          provider: "paypal",
+          mode: "live",
+          orderID: invoice.orderID,
+          captureId: invoice.captureId,
+          amount: invoice.amountLabel,
+          payerEmail: invoice.buyerEmail,
+          payerPhone: invoice.payerPhone || "",
+          shippingName: invoice.shippingName || "",
+          shippingAddress: invoice.shippingAddress || "",
+          paidAt: nowIso
+        };
+        await redis.set(`quote:${quoteCode}`, JSON.stringify(quoteRecord), { EX: 30 * 24 * 60 * 60 });
+      } catch (err) {
+        console.error("Failed to persist settled status after PayPal capture:", err);
       }
     }
 
