@@ -21,7 +21,7 @@ const ATELIER_COMPANY_NAME = String(process.env.ATELIER_COMPANY_NAME || "Atelier
 const ATELIER_COMPANY_EMAIL = String(process.env.ATELIER_COMPANY_EMAIL || "rabuteaujuandavid@gmail.com").trim().toLowerCase();
 const ATELIER_COMPANY_PHONE = String(process.env.ATELIER_COMPANY_PHONE || "").trim();
 const ATELIER_COMPANY_ADDRESS = String(process.env.ATELIER_COMPANY_ADDRESS || "").trim();
-const ENABLE_TEST_RECEIPT = String(process.env.ENABLE_TEST_RECEIPT || "").trim() === "1";
+const ENABLE_TEST_RECEIPT = String(process.env.ENABLE_TEST_RECEIPT || "1").trim() !== "0";
 
 function normalizeCode(value) {
   return String(value || "").trim().toUpperCase();
@@ -84,6 +84,15 @@ function formatMoney(value, currency = "EUR") {
   } catch {
     return `${n.toFixed(2)} ${currency}`;
   }
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function normalizeSeed(value) {
@@ -319,18 +328,51 @@ function buildReceiptInvoice({ code, record, targetEmail }) {
 }
 
 function buildReceiptHtml(invoice) {
-  const listHtml = invoice.parts.map((line) => `<li style="margin-bottom:4px;">${line}</li>`).join("");
+  const partsRows = invoice.parts
+    .map((line) => {
+      const [left, ...rest] = String(line || "").split(":");
+      const right = rest.join(":").trim();
+      return `<tr>
+        <td style="padding:8px 10px;border-bottom:1px solid #e6edf7;color:#30415b;font-size:13px;width:38%;">${escapeHtml(left || "Composant")}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e6edf7;color:#0f1e35;font-size:13px;font-weight:600;">${escapeHtml(right || line)}</td>
+      </tr>`;
+    })
+    .join("");
   const companyLine = [ATELIER_COMPANY_ADDRESS, ATELIER_COMPANY_PHONE, ATELIER_COMPANY_EMAIL].filter(Boolean).join(" • ");
+  const usageLine = String(invoice.usage || "").trim();
   return [
-    `<div style="font-family:Arial,sans-serif;color:#152030;line-height:1.5">`,
-    `<h2 style="margin:0 0 10px;">${ATELIER_COMPANY_NAME} - Facture ${invoice.invoiceNumber}</h2>`,
-    `<p style="margin:0 0 12px;">Bonjour ${invoice.buyerName},<br>Ceci est une previsualisation de facture (test sans paiement PayPal).</p>`,
-    `<p style="margin:0 0 10px;"><strong>Code devis:</strong> ${invoice.quoteCode}<br><strong>Reference test:</strong> ${invoice.orderID}<br><strong>Date:</strong> ${invoice.createdAtFr}</p>`,
-    `<p style="margin:0 0 10px;"><strong>Montant TTC:</strong> ${invoice.amountLabel}<br><strong>TVA (20%):</strong> ${invoice.vatLabel}<br><strong>Montant HT:</strong> ${invoice.subtotalLabel}</p>`,
-    `<p style="margin:0 0 6px;"><strong>Configuration:</strong></p>`,
-    `<ul style="margin:0 0 12px 18px;padding:0;">${listHtml}</ul>`,
-    `<p style="margin:0 0 8px;">Email de test: aucune transaction n'a ete effectuee.</p>`,
-    `<p style="margin:0;font-size:12px;color:#4b5a71">${companyLine}</p>`,
+    `<div style="margin:0;padding:24px;background:#eef3fb;font-family:Arial,Helvetica,sans-serif;color:#14233b;">`,
+    `<div style="max-width:820px;margin:0 auto;background:#ffffff;border:1px solid #d9e4f2;border-radius:14px;overflow:hidden;">`,
+    `<div style="background:linear-gradient(135deg,#183454 0%,#285f97 100%);padding:18px 22px;color:#f8fbff;">`,
+    `<div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.86;">${escapeHtml(ATELIER_COMPANY_NAME)}</div>`,
+    `<div style="font-size:22px;font-weight:800;margin-top:6px;">Facture test ${escapeHtml(invoice.invoiceNumber)}</div>`,
+    `<div style="font-size:12px;opacity:0.9;margin-top:6px;">Simulation email (aucun debit) • ${escapeHtml(invoice.createdAtFr)}</div>`,
+    `</div>`,
+    `<div style="padding:20px 22px 6px 22px;">`,
+    `<p style="margin:0 0 12px 0;font-size:14px;line-height:1.55;">Bonjour <strong>${escapeHtml(invoice.buyerName)}</strong>,<br/>Ceci est un envoi de test pour vérifier la mise en page de la facture. Aucun paiement n'a ete effectue.</p>`,
+    `<table role="presentation" width="100%" style="border-collapse:separate;border-spacing:0 8px;margin:0 0 12px 0;">`,
+    `<tr><td style="font-size:12px;color:#5b6f8c;width:33%;">Ref. devis</td><td style="font-size:13px;font-weight:700;color:#10233d;">${escapeHtml(invoice.quoteCode)}</td></tr>`,
+    `<tr><td style="font-size:12px;color:#5b6f8c;">Reference test</td><td style="font-size:13px;font-weight:700;color:#10233d;">${escapeHtml(invoice.orderID)}</td></tr>`,
+    usageLine ? `<tr><td style="font-size:12px;color:#5b6f8c;">Usage</td><td style="font-size:13px;font-weight:700;color:#10233d;">${escapeHtml(usageLine)}</td></tr>` : "",
+    `</table>`,
+    `<table role="presentation" width="100%" style="border-collapse:collapse;margin:0 0 14px 0;border:1px solid #dde7f4;border-radius:10px;overflow:hidden;">`,
+    `<tr style="background:#f6f9ff;">`,
+    `<td style="padding:10px 12px;font-size:12px;color:#4f6482;">Montant HT</td>`,
+    `<td style="padding:10px 12px;font-size:12px;color:#4f6482;">TVA (20%)</td>`,
+    `<td style="padding:10px 12px;font-size:12px;color:#4f6482;">Montant TTC</td>`,
+    `</tr>`,
+    `<tr>`,
+    `<td style="padding:10px 12px;font-size:14px;font-weight:700;color:#10233d;">${escapeHtml(invoice.subtotalLabel)}</td>`,
+    `<td style="padding:10px 12px;font-size:14px;font-weight:700;color:#10233d;">${escapeHtml(invoice.vatLabel)}</td>`,
+    `<td style="padding:10px 12px;font-size:15px;font-weight:800;color:#0b3f72;">${escapeHtml(invoice.amountLabel)}</td>`,
+    `</tr>`,
+    `</table>`,
+    `<div style="font-size:13px;font-weight:700;color:#162c47;margin:0 0 8px 0;">Configuration detaillee</div>`,
+    `<table role="presentation" width="100%" style="border-collapse:collapse;border:1px solid #dde7f4;border-radius:10px;overflow:hidden;margin:0 0 12px 0;">${partsRows}</table>`,
+    `<p style="margin:0 0 12px 0;font-size:12px;color:#5b6f8c;">Email de test uniquement. La facture finale est envoyee apres paiement confirme.</p>`,
+    `</div>`,
+    `<div style="padding:12px 22px 16px 22px;background:#f7faff;border-top:1px solid #e2eaf6;font-size:12px;color:#5c6f8a;">${escapeHtml(companyLine || ATELIER_COMPANY_EMAIL)}</div>`,
+    `</div>`,
     `</div>`
   ].join("");
 }
@@ -338,14 +380,19 @@ function buildReceiptHtml(invoice) {
 function buildReceiptText(invoice) {
   return [
     `${ATELIER_COMPANY_NAME} - FACTURE TEST ${invoice.invoiceNumber}`,
+    "========================================",
     `Date: ${invoice.createdAtFr}`,
     `Client: ${invoice.buyerName} <${invoice.buyerEmail}>`,
-    `Code devis: ${invoice.quoteCode}`,
+    `Ref devis: ${invoice.quoteCode}`,
     `Reference test: ${invoice.orderID}`,
-    `Montant TTC: ${invoice.amountLabel}`,
-    `TVA (20%): ${invoice.vatLabel}`,
-    `Montant HT: ${invoice.subtotalLabel}`,
-    "Configuration:",
+    `Usage: ${invoice.usage || "N/A"}`,
+    "",
+    "MONTANTS",
+    `- HT: ${invoice.subtotalLabel}`,
+    `- TVA (20%): ${invoice.vatLabel}`,
+    `- TTC: ${invoice.amountLabel}`,
+    "",
+    "CONFIGURATION",
     ...invoice.parts.map((line) => `- ${line}`),
     "",
     "Email de test sans paiement PayPal."
