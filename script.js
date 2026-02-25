@@ -4834,12 +4834,27 @@ async function runTestReceiptFlow({ code, suggestedEmail = "" } = {}) {
     }
 
     const sendError = String(sentData?.sendError || "");
-    if (sendError.includes("non-browser applications")) {
-      toast("Envoi serveur EmailJS bloqué par ton plan. Aperçu OK.");
-      setStatus("customStatus", "Aperçu facture OK. Envoi test bloqué par EmailJS (API serveur non autorisée).");
+    if (sendError.includes("domain is not verified")) {
+      toast("Resend: domaine expéditeur non vérifié.");
+      setStatus("customStatus", "Aperçu facture OK. Envoi bloqué: domaine expéditeur Resend non vérifié (RESEND_FROM_EMAIL).");
       return;
     }
-    toast("Envoi test échoué côté EmailJS.");
+    if (sendError.includes("RESEND_NOT_CONFIGURED")) {
+      toast("Resend non configuré côté serveur.");
+      setStatus("customStatus", "Aperçu facture OK. Envoi bloqué: RESEND_API_KEY / RESEND_FROM_EMAIL manquants.");
+      return;
+    }
+    if (sendError.includes("EMAILJS_SEND_FAILED") || sendError.includes("non-browser applications")) {
+      toast("Fallback EmailJS indisponible sur ce plan.");
+      setStatus("customStatus", "Aperçu facture OK. Envoi bloqué: EmailJS API serveur indisponible.");
+      return;
+    }
+    if (sendError.toLowerCase().includes("too many requests")) {
+      toast("Limite d'envoi atteinte, réessaie dans quelques secondes.");
+      setStatus("customStatus", "Aperçu facture OK. Envoi temporairement limité (rate limit fournisseur email).");
+      return;
+    }
+    toast("Envoi test échoué côté serveur.");
     setStatus("customStatus", `Envoi test non effectué: ${sendError || "erreur inconnue"}`);
   } catch (err) {
     console.error(err);

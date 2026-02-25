@@ -1,4 +1,5 @@
 import { getRedisClient } from "./_redis.js";
+import { sendMailWithFallback } from "../lib/mailer.js";
 
 const EMAILJS_FORM_SERVICE_ID = String(
   process.env.EMAILJS_FORM_SERVICE_ID || process.env.EMAILJS_SERVICE_ID || ""
@@ -15,6 +16,8 @@ const EMAILJS_FORM_PRIVATE_KEY = String(
 const EMAILJS_FORM_TO_EMAIL = String(
   process.env.EMAILJS_FORM_TO_EMAIL || process.env.ATELIER_COMPANY_EMAIL || "rabuteaujuandavid@gmail.com"
 ).trim().toLowerCase();
+const ATELIER_COMPANY_NAME = String(process.env.ATELIER_COMPANY_NAME || "Atelier Electronique").trim();
+const ATELIER_COMPANY_EMAIL = String(process.env.ATELIER_COMPANY_EMAIL || EMAILJS_FORM_TO_EMAIL || "rabuteaujuandavid@gmail.com").trim().toLowerCase();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 const RATE_WINDOW_SECONDS = 60;
@@ -22,6 +25,15 @@ const RATE_MAX_PER_IP = 18;
 
 function clampText(value, max = 5000) {
   return String(value || "").trim().slice(0, max);
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function readClientIp(req) {
@@ -39,10 +51,6 @@ async function bumpCounter(client, key, ttlSeconds) {
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") return res.status(405).json({ error: "METHOD_NOT_ALLOWED" });
-
-    if (!EMAILJS_FORM_SERVICE_ID || !EMAILJS_FORM_TEMPLATE_ID || !EMAILJS_FORM_PUBLIC_KEY) {
-      return res.status(503).json({ error: "FORM_EMAIL_NOT_CONFIGURED" });
-    }
 
     let redis = null;
     try {
@@ -66,29 +74,46 @@ export default async function handler(req, res) {
     if (!message) return res.status(400).json({ error: "MISSING_MESSAGE" });
     if (!EMAIL_RE.test(EMAILJS_FORM_TO_EMAIL)) return res.status(500).json({ error: "INVALID_TARGET_EMAIL" });
 
-    const payload = {
-      service_id: EMAILJS_FORM_SERVICE_ID,
-      template_id: EMAILJS_FORM_TEMPLATE_ID,
-      user_id: EMAILJS_FORM_PUBLIC_KEY,
-      template_params: {
+    const text = [
+      `Sujet: ${subject}`,
+      `Nom: ${fromName}`,
+      `Email reponse: ${replyTo}`,
+      "",
+      message
+    ].join("\n");
+    const html = [
+      `<div style="font-family:Arial,sans-serif;color:#17212e;line-height:1.5">`,
+      `<h3 style="margin:0 0 8px;">${escapeHtml(subject)}</h3>`,
+      `<p style="margin:0 0 6px;"><strong>Nom:</strong> ${escapeHtml(fromName)}</p>`,
+      `<p style="margin:0 0 10px;"><strong>Email reponse:</strong> ${escapeHtml(replyTo)}</p>`,
+      `<pre style="white-space:pre-wrap;background:#f5f7fb;border-radius:8px;padding:10px;margin:0;">${escapeHtml(message)}</pre>`,
+      `</div>`
+    ].join("");
+
+    const send = await sendMailWithFallback({
+      to: EMAILJS_FORM_TO_EMAIL,
+      subject,
+      text,
+      html,
+      replyTo,
+      fromName: ATELIER_COMPANY_NAME,
+      emailjsTemplateParams: {
         subject,
         from_name: fromName,
         reply_to: replyTo,
         message,
         to_email: EMAILJS_FORM_TO_EMAIL
+      },
+      emailjsConfig: {
+        serviceId: EMAILJS_FORM_SERVICE_ID,
+        templateId: EMAILJS_FORM_TEMPLATE_ID,
+        publicKey: EMAILJS_FORM_PUBLIC_KEY,
+        privateKey: EMAILJS_FORM_PRIVATE_KEY
       }
-    };
-    if (EMAILJS_FORM_PRIVATE_KEY) payload.accessToken = EMAILJS_FORM_PRIVATE_KEY;
-
-    const emailRes = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
     });
 
-    if (!emailRes.ok) {
-      const detail = await emailRes.text().catch(() => "");
-      return res.status(502).json({ error: "EMAILJS_SEND_FAILED", detail: detail.slice(0, 200) });
+    if (!send.ok) {
+      return res.status(502).json({ error: "MAIL_SEND_FAILED", detail: String(send.error || "").slice(0, 260) });
     }
 
     return res.status(200).json({ ok: true });

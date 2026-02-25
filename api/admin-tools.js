@@ -1,4 +1,5 @@
 import { getRedisClient } from "./_redis.js";
+import { sendMailWithFallback } from "../lib/mailer.js";
 
 const ADMIN_MODIFY_KEY = String(process.env.ADMIN_MODIFY_KEY || process.env.ADMIN_SECRET || "").trim();
 const QUOTE_CODE_RE = /^DV-[A-Z0-9]{6,14}$/;
@@ -217,28 +218,27 @@ function buildReceiptText(invoice) {
   ].join("\n");
 }
 
-async function sendReceiptByEmailJS(payload) {
-  if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID_RECEIPT || !EMAILJS_PUBLIC_KEY) {
-    return { ok: false, error: "EMAILJS_NOT_CONFIGURED" };
-  }
-  const requestBody = {
-    service_id: EMAILJS_SERVICE_ID,
-    template_id: EMAILJS_TEMPLATE_ID_RECEIPT,
-    user_id: EMAILJS_PUBLIC_KEY,
-    template_params: payload
-  };
-  if (EMAILJS_PRIVATE_KEY) requestBody.accessToken = EMAILJS_PRIVATE_KEY;
-
-  const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(requestBody)
+async function sendReceiptMail(payload, toEmail, subjectOverride = "") {
+  const subject = subjectOverride || String(payload?.subject || "").trim();
+  return sendMailWithFallback({
+    to: toEmail,
+    subject,
+    text: String(payload?.message_text || ""),
+    html: String(payload?.message_html || ""),
+    replyTo: String(payload?.reply_to || ""),
+    fromName: ATELIER_COMPANY_NAME,
+    emailjsTemplateParams: {
+      ...payload,
+      to_email: toEmail,
+      subject
+    },
+    emailjsConfig: {
+      serviceId: EMAILJS_SERVICE_ID,
+      templateId: EMAILJS_TEMPLATE_ID_RECEIPT,
+      publicKey: EMAILJS_PUBLIC_KEY,
+      privateKey: EMAILJS_PRIVATE_KEY
+    }
   });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    return { ok: false, error: `EMAILJS_SEND_FAILED:${res.status}${detail ? `:${detail.slice(0, 120)}` : ""}` };
-  }
-  return { ok: true };
 }
 
 async function handleList(req, res, client) {
@@ -387,15 +387,15 @@ async function handleTestReceipt(body, res, client) {
   let emailSent = false;
   let sendError = "";
   if (sendEmail) {
-    const sent = await sendReceiptByEmailJS(payload);
+    const sent = await sendReceiptMail(payload, targetEmail);
     emailSent = Boolean(sent.ok);
     if (!sent.ok) sendError = String(sent.error || "RECEIPT_EMAIL_SEND_FAILED");
     if (emailSent && ATELIER_RECEIPT_COPY_EMAIL && ATELIER_RECEIPT_COPY_EMAIL !== targetEmail && EMAIL_RE.test(ATELIER_RECEIPT_COPY_EMAIL)) {
-      await sendReceiptByEmailJS({
-        ...payload,
-        to_email: ATELIER_RECEIPT_COPY_EMAIL,
-        subject: `[Copie atelier][TEST] ${invoice.invoiceNumber} - ${invoice.quoteCode}`
-      });
+      await sendReceiptMail(
+        payload,
+        ATELIER_RECEIPT_COPY_EMAIL,
+        `[Copie atelier][TEST] ${invoice.invoiceNumber} - ${invoice.quoteCode}`
+      );
     }
   }
 

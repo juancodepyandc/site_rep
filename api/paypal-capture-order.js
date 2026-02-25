@@ -1,13 +1,14 @@
 import { getRedisClient } from "./_redis.js";
+import { sendMailWithFallback } from "../lib/mailer.js";
 
 const EMAILJS_SERVICE_ID = String(
-  process.env.EMAILJS_RECEIPT_SERVICE_ID || process.env.EMAILJS_SERVICE_ID || "service_8r68jtk"
+  process.env.EMAILJS_RECEIPT_SERVICE_ID || process.env.EMAILJS_SERVICE_ID || ""
 ).trim();
 const EMAILJS_TEMPLATE_ID_RECEIPT = String(
-  process.env.EMAILJS_RECEIPT_TEMPLATE_ID || process.env.EMAILJS_TEMPLATE_ID_RECEIPT || process.env.EMAILJS_TEMPLATE_ID || "template_sd7paiv"
+  process.env.EMAILJS_RECEIPT_TEMPLATE_ID || process.env.EMAILJS_TEMPLATE_ID_RECEIPT || process.env.EMAILJS_TEMPLATE_ID || ""
 ).trim();
 const EMAILJS_PUBLIC_KEY = String(
-  process.env.EMAILJS_RECEIPT_PUBLIC_KEY || process.env.EMAILJS_PUBLIC_KEY || process.env.EMAILJS_USER_ID || "FNOmFW1q3gEntsR0J"
+  process.env.EMAILJS_RECEIPT_PUBLIC_KEY || process.env.EMAILJS_PUBLIC_KEY || process.env.EMAILJS_USER_ID || ""
 ).trim();
 const EMAILJS_PRIVATE_KEY = String(process.env.EMAILJS_RECEIPT_PRIVATE_KEY || process.env.EMAILJS_PRIVATE_KEY || "").trim();
 const ATELIER_RECEIPT_COPY_EMAIL = String(process.env.ATELIER_RECEIPT_COPY_EMAIL || "rabuteaujuandavid@gmail.com").trim().toLowerCase();
@@ -158,30 +159,27 @@ function invoicePayload({ quoteCode, orderID, captureData, record }) {
   };
 }
 
-async function sendReceiptByEmailJS(payload) {
-  if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID_RECEIPT || !EMAILJS_PUBLIC_KEY) {
-    return { ok: false, error: "EMAILJS_NOT_CONFIGURED" };
-  }
-
-  const requestBody = {
-    service_id: EMAILJS_SERVICE_ID,
-    template_id: EMAILJS_TEMPLATE_ID_RECEIPT,
-    user_id: EMAILJS_PUBLIC_KEY,
-    template_params: payload
-  };
-  if (EMAILJS_PRIVATE_KEY) requestBody.accessToken = EMAILJS_PRIVATE_KEY;
-
-  const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(requestBody)
+async function sendReceiptMail(payload, toEmail, subjectOverride = "") {
+  const subject = subjectOverride || String(payload?.subject || "").trim();
+  return sendMailWithFallback({
+    to: toEmail,
+    subject,
+    text: String(payload?.message_text || ""),
+    html: String(payload?.message_html || ""),
+    replyTo: String(payload?.reply_to || ""),
+    fromName: ATELIER_COMPANY_NAME,
+    emailjsTemplateParams: {
+      ...payload,
+      to_email: toEmail,
+      subject
+    },
+    emailjsConfig: {
+      serviceId: EMAILJS_SERVICE_ID,
+      templateId: EMAILJS_TEMPLATE_ID_RECEIPT,
+      publicKey: EMAILJS_PUBLIC_KEY,
+      privateKey: EMAILJS_PRIVATE_KEY
+    }
   });
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    return { ok: false, error: `EMAILJS_SEND_FAILED:${res.status}${detail ? `:${detail.slice(0, 120)}` : ""}` };
-  }
-  return { ok: true };
 }
 
 export default async function handler(req, res) {
@@ -260,7 +258,7 @@ export default async function handler(req, res) {
     if (invoice.buyerEmail) {
       const textBody = buildEmailText(invoice);
       const htmlBody = buildEmailHtml(invoice);
-      const emailResult = await sendReceiptByEmailJS({
+      const payload = {
         to_email: invoice.buyerEmail,
         from_name: ATELIER_COMPANY_NAME,
         subject: `Facture ${invoice.invoiceNumber} (${invoice.quoteCode})`,
@@ -279,33 +277,19 @@ export default async function handler(req, res) {
         config_lines: invoice.parts.join(" | "),
         message_text: textBody,
         message_html: htmlBody
-      });
+      };
+      const emailResult = await sendReceiptMail(payload, invoice.buyerEmail);
       receiptEmail = {
         sent: Boolean(emailResult.ok),
         reason: emailResult.ok ? "" : String(emailResult.error || "EMAIL_SEND_FAILED")
       };
 
       if (ATELIER_RECEIPT_COPY_EMAIL && ATELIER_RECEIPT_COPY_EMAIL !== invoice.buyerEmail) {
-        await sendReceiptByEmailJS({
-          to_email: ATELIER_RECEIPT_COPY_EMAIL,
-          from_name: ATELIER_COMPANY_NAME,
-          subject: `[Copie atelier] ${invoice.invoiceNumber} - ${invoice.quoteCode}`,
-          reply_to: ATELIER_COMPANY_EMAIL,
-          buyer_name: invoice.buyerName,
-          buyer_email: invoice.buyerEmail,
-          quote_code: invoice.quoteCode,
-          order_id: invoice.orderID,
-          capture_id: invoice.captureId,
-          invoice_number: invoice.invoiceNumber,
-          invoice_date: invoice.createdAtFr,
-          amount_paid: invoice.amountLabel,
-          amount_subtotal: invoice.subtotalLabel,
-          amount_vat: invoice.vatLabel,
-          usage: invoice.usage,
-          config_lines: invoice.parts.join(" | "),
-          message_text: textBody,
-          message_html: htmlBody
-        });
+        await sendReceiptMail(
+          payload,
+          ATELIER_RECEIPT_COPY_EMAIL,
+          `[Copie atelier] ${invoice.invoiceNumber} - ${invoice.quoteCode}`
+        );
       }
     }
 
