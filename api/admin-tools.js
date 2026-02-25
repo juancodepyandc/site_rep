@@ -85,6 +85,139 @@ function formatMoney(value, currency = "EUR") {
   }
 }
 
+function normalizeSeed(value) {
+  const raw = Number(value);
+  if (!Number.isFinite(raw)) return Math.floor(Date.now() % 2147483647);
+  const normalized = Math.floor(Math.abs(raw)) % 2147483647;
+  return normalized > 0 ? normalized : 1;
+}
+
+function createSeededRng(seed) {
+  let t = normalizeSeed(seed) >>> 0;
+  return () => {
+    t += 0x6d2b79f5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function pickFromCatalog(entries, rng) {
+  const list = Array.isArray(entries) ? entries : [];
+  if (!list.length) return null;
+  const idx = Math.max(0, Math.min(list.length - 1, Math.floor(rng() * list.length)));
+  return list[idx];
+}
+
+const RANDOM_RECEIPT_CATALOG = {
+  usage: [
+    "Bureautique / etude",
+    "Jeu competitif (1080p)",
+    "Jeu AAA (1440p / ultrawide)",
+    "Creation (montage / 3D / IA)",
+    "Streaming + multitache"
+  ],
+  cpu: [
+    { name: "AMD Ryzen 5 7600", price: 238.9 },
+    { name: "AMD Ryzen 7 7800X3D", price: 427.5 },
+    { name: "Intel Core i5-14600KF", price: 332.4 },
+    { name: "Intel Core i7-14700F", price: 418.2 }
+  ],
+  mobo: [
+    { name: "MSI B650 Gaming Plus WiFi", price: 199.99 },
+    { name: "Gigabyte B760M DS3H DDR4", price: 129.0 },
+    { name: "ASUS TUF B650-PLUS", price: 214.5 },
+    { name: "ASRock B760 Pro RS", price: 153.9 }
+  ],
+  ram: [
+    { name: "Corsair Vengeance 32 Go DDR5-6000", price: 124.9 },
+    { name: "G.Skill Ripjaws 32 Go DDR5-6000", price: 118.0 },
+    { name: "Kingston Fury 32 Go DDR4-3600", price: 88.9 }
+  ],
+  gpu: [
+    { name: "NVIDIA GeForce RTX 4060 Ti 8 Go", price: 459.9 },
+    { name: "NVIDIA GeForce RTX 4070 SUPER 12 Go", price: 699.0 },
+    { name: "AMD Radeon RX 7800 XT 16 Go", price: 579.0 },
+    { name: "AMD Radeon RX 7700 XT 12 Go", price: 469.0 }
+  ],
+  storage: [
+    { name: "Kingston NV2 NVMe 1 To", price: 68.9 },
+    { name: "Crucial P3 Plus NVMe 2 To", price: 118.0 },
+    { name: "Samsung 990 EVO 1 To", price: 104.0 }
+  ],
+  psu: [
+    { name: "Corsair RM750e Gold", price: 129.0 },
+    { name: "MSI MAG A750GL Gold", price: 112.0 },
+    { name: "be quiet! Pure Power 12M 750W", price: 124.0 }
+  ],
+  case: [
+    { name: "MSI MAG Forge 100R", price: 79.9 },
+    { name: "Corsair 4000D Airflow", price: 104.0 },
+    { name: "NZXT H6 Flow", price: 134.9 }
+  ],
+  cooling: [
+    { name: "Aucun Refroidissement inclus de base", price: 0 },
+    { name: "Thermalright Peerless Assassin 120 SE", price: 49.9 },
+    { name: "Arctic Liquid Freezer III 240", price: 99.0 }
+  ],
+  customCable: [
+    { name: "Aucun Aucun cable custom", price: 0 },
+    { name: "Lian Li Strimer Plus V2 (24-pin + GPU)", price: 92.0 },
+    { name: "CableMod PRO Kit", price: 78.0 }
+  ],
+  cableMgmt: [
+    { name: "Aucun Basique atelier", price: 0 },
+    { name: "Premium atelier", price: 34.0 },
+    { name: "Sync RGB via app", price: 59.0 }
+  ],
+  delivery: [
+    { name: "Traitement economique", price: 39.0 },
+    { name: "Traitement normal (3-5 jours ouvres)", price: 74.0 },
+    { name: "Traitement prioritaire", price: 129.0 }
+  ]
+};
+
+function buildRandomTestRecord({ seed, targetEmail = "" }) {
+  const rng = createSeededRng(seed);
+  const usage = pickFromCatalog(RANDOM_RECEIPT_CATALOG.usage, rng) || "Bureautique / etude";
+  const selected = {
+    cpu: pickFromCatalog(RANDOM_RECEIPT_CATALOG.cpu, rng),
+    mobo: pickFromCatalog(RANDOM_RECEIPT_CATALOG.mobo, rng),
+    ram: pickFromCatalog(RANDOM_RECEIPT_CATALOG.ram, rng),
+    gpu: pickFromCatalog(RANDOM_RECEIPT_CATALOG.gpu, rng),
+    storage: pickFromCatalog(RANDOM_RECEIPT_CATALOG.storage, rng),
+    psu: pickFromCatalog(RANDOM_RECEIPT_CATALOG.psu, rng),
+    case: pickFromCatalog(RANDOM_RECEIPT_CATALOG.case, rng),
+    cooling: pickFromCatalog(RANDOM_RECEIPT_CATALOG.cooling, rng),
+    customCable: pickFromCatalog(RANDOM_RECEIPT_CATALOG.customCable, rng),
+    cableMgmt: pickFromCatalog(RANDOM_RECEIPT_CATALOG.cableMgmt, rng),
+    delivery: pickFromCatalog(RANDOM_RECEIPT_CATALOG.delivery, rng)
+  };
+
+  const partNames = Object.fromEntries(
+    Object.entries(selected).map(([key, value]) => [key, String(value?.name || "").trim()])
+  );
+  const total = Object.values(selected).reduce((sum, entry) => sum + Number(entry?.price || 0), 20);
+  const safeSeed = normalizeSeed(seed);
+  const codeSuffix = safeSeed.toString(36).toUpperCase().slice(-6).padStart(6, "0");
+
+  return {
+    seed: safeSeed,
+    code: `DV-RND${codeSuffix}`,
+    record: {
+      requester: {
+        name: "Client test",
+        email: String(targetEmail || "").trim().toLowerCase()
+      },
+      usage,
+      config: {
+        total: Math.round(total * 100) / 100,
+        parts: partNames
+      }
+    }
+  };
+}
+
 function priorityFromRecord(record, pendingExists) {
   const deliveryId = String(record?.selects?.delivery || "").toLowerCase();
   const usage = String(record?.usage || "");
@@ -344,17 +477,32 @@ async function handleDelete(body, res, client) {
 }
 
 async function handleTestReceipt(body, res, client) {
-  const code = normalizeCode(body.code || "");
-  if (!code) return res.status(400).json({ error: "MISSING_CODE" });
-  if (!QUOTE_CODE_RE.test(code)) return res.status(400).json({ error: "INVALID_CODE_FORMAT" });
-
-  const raw = await client.get(`quote:${code}`);
-  if (!raw) return res.status(404).json({ error: "NOT_FOUND" });
-  const record = JSON.parse(raw);
-
   const sendEmail = Boolean(body.send_email === true || body.sendEmail === true);
+  const requestedEmail = String(body.to_email || body.toEmail || "").trim().toLowerCase();
+  const mode = String(body.mode || "").trim().toLowerCase();
+  const requestCode = normalizeCode(body.code || "");
+
+  let code = requestCode;
+  let record = null;
+  let generatedRandom = false;
+  let randomSeed = 0;
+
+  if (requestCode) {
+    if (!QUOTE_CODE_RE.test(requestCode)) return res.status(400).json({ error: "INVALID_CODE_FORMAT" });
+    const raw = await client.get(`quote:${requestCode}`);
+    if (!raw) return res.status(404).json({ error: "NOT_FOUND" });
+    record = JSON.parse(raw);
+  } else {
+    const seed = normalizeSeed(body.seed || Date.now());
+    const randomBuilt = buildRandomTestRecord({ seed, targetEmail: requestedEmail });
+    code = randomBuilt.code;
+    record = randomBuilt.record;
+    randomSeed = randomBuilt.seed;
+    generatedRandom = true;
+  }
+
   const fallbackEmail = String(record?.requester?.email || "").trim().toLowerCase();
-  let targetEmail = String(body.to_email || body.toEmail || fallbackEmail).trim().toLowerCase();
+  let targetEmail = String(requestedEmail || fallbackEmail).trim().toLowerCase();
   if (sendEmail && (!targetEmail || !EMAIL_RE.test(targetEmail))) {
     return res.status(400).json({ error: "INVALID_TARGET_EMAIL" });
   }
@@ -406,6 +554,9 @@ async function handleTestReceipt(body, res, client) {
     invoiceNumber: invoice.invoiceNumber,
     emailSent,
     sendError,
+    generatedRandom,
+    seed: randomSeed || undefined,
+    mode: generatedRandom ? "random" : (mode || "quote"),
     preview: {
       subject: payload.subject,
       amount: invoice.amountLabel,

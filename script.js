@@ -4781,21 +4781,26 @@ async function runTestReceiptFlow({ code, suggestedEmail = "" } = {}) {
     return;
   }
   const normalizedCode = String(code || "").trim().toUpperCase();
-  if (!normalizedCode) {
-    toast("Charge d'abord un devis ou utilise l'onglet devis admin.");
-    return;
-  }
 
   try {
-    const previewData = await apiSendTestReceipt({
+    const previewPayload = {
       admin_key: adminSessionKey,
-      code: normalizedCode,
       send_email: false
-    });
+    };
+    if (normalizedCode) previewPayload.code = normalizedCode;
+    else previewPayload.mode = "random";
+
+    const previewData = await apiSendTestReceipt(previewPayload);
     const invoiceNumber = String(previewData?.invoiceNumber || "").trim();
+    const previewCode = String(previewData?.code || normalizedCode || "").trim().toUpperCase();
+    const randomSeed = Number(previewData?.seed || 0);
+    const isRandomPreview = Boolean(previewData?.generatedRandom || !normalizedCode);
     const opened = openTestReceiptPreview(previewData?.preview || {}, invoiceNumber);
-    setStatus("customStatus", `Aperçu facture test généré${invoiceNumber ? ` (${invoiceNumber})` : ""}.`);
-    toast(opened ? "Aperçu facture ouvert." : "Aperçu généré (popup bloquée).");
+    setStatus(
+      "customStatus",
+      `${isRandomPreview ? "Aperçu facture test aléatoire" : "Aperçu facture test"} généré${invoiceNumber ? ` (${invoiceNumber})` : ""}.`
+    );
+    toast(opened ? (isRandomPreview ? "Aperçu aléatoire ouvert." : "Aperçu facture ouvert.") : "Aperçu généré (popup bloquée).");
 
     const sendMail = await themedConfirm(
       "Envoyer aussi cette facture test par email ?",
@@ -4823,7 +4828,9 @@ async function runTestReceiptFlow({ code, suggestedEmail = "" } = {}) {
 
     const sentData = await apiSendTestReceipt({
       admin_key: adminSessionKey,
-      code: normalizedCode,
+      code: previewCode || undefined,
+      seed: randomSeed || undefined,
+      mode: isRandomPreview ? "random" : "quote",
       to_email: targetEmail,
       send_email: true
     });
