@@ -1,21 +1,58 @@
+const PAYPAL_CLIENT_ID_LIVE = String(process.env.PAYPAL_CLIENT_ID || "").trim();
+const PAYPAL_CLIENT_SECRET_LIVE = String(process.env.PAYPAL_CLIENT_SECRET || "").trim();
+const PAYPAL_CLIENT_ID_SANDBOX = String(process.env.PAYPAL_SANDBOX_CLIENT_ID || process.env.PAYPAL_CLIENT_ID_SANDBOX || "").trim();
+const PAYPAL_CLIENT_SECRET_SANDBOX = String(process.env.PAYPAL_SANDBOX_CLIENT_SECRET || process.env.PAYPAL_CLIENT_SECRET_SANDBOX || "").trim();
+const PAYPAL_SANDBOX_ENABLED = String(process.env.PAYPAL_SANDBOX_ENABLED || "0").trim() === "1";
+
+function normalizePayPalMode(value) {
+  const mode = String(value || "").trim().toLowerCase();
+  if (mode === "live" || mode === "sandbox") return mode;
+  return "";
+}
+
+function resolvePayPalConfig({ requestedMode }) {
+  const defaultMode = process.env.PAYPAL_ENV === "sandbox" ? "sandbox" : "live";
+  const mode = requestedMode || defaultMode;
+
+  if (mode === "sandbox") {
+    if (!PAYPAL_SANDBOX_ENABLED) {
+      return { error: "PAYPAL_SANDBOX_DISABLED" };
+    }
+    if (!PAYPAL_CLIENT_ID_SANDBOX || !PAYPAL_CLIENT_SECRET_SANDBOX) {
+      return { error: "PAYPAL_SANDBOX_MISSING_CREDENTIALS" };
+    }
+    return {
+      mode,
+      baseUrl: "https://api-m.sandbox.paypal.com",
+      clientId: PAYPAL_CLIENT_ID_SANDBOX,
+      secret: PAYPAL_CLIENT_SECRET_SANDBOX
+    };
+  }
+
+  if (!PAYPAL_CLIENT_ID_LIVE || !PAYPAL_CLIENT_SECRET_LIVE) {
+    return { error: "PAYPAL_LIVE_MISSING_CREDENTIALS" };
+  }
+  return {
+    mode: "live",
+    baseUrl: "https://api-m.paypal.com",
+    clientId: PAYPAL_CLIENT_ID_LIVE,
+    secret: PAYPAL_CLIENT_SECRET_LIVE
+  };
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const env = process.env.PAYPAL_ENV === "live" ? "live" : "sandbox";
-    const baseUrl =
-      env === "live"
-        ? "https://api-m.paypal.com"
-        : "https://api-m.sandbox.paypal.com";
-
-    const clientId = process.env.PAYPAL_CLIENT_ID;
-    const secret = process.env.PAYPAL_CLIENT_SECRET;
-
-    if (!clientId || !secret) {
-      return res.status(500).json({ error: "Missing PayPal credentials" });
+    const requestedMode = normalizePayPalMode(req.body?.paypalMode || req.body?.paypal_mode || "");
+    if (!requestedMode && (req.body?.paypalMode || req.body?.paypal_mode)) {
+      return res.status(400).json({ error: "INVALID_PAYPAL_MODE" });
     }
+    const paypal = resolvePayPalConfig({ requestedMode });
+    if (paypal.error === "PAYPAL_SANDBOX_DISABLED") return res.status(403).json({ error: paypal.error });
+    if (paypal.error) return res.status(500).json({ error: paypal.error });
 
     const { amount, currency = "EUR", summary } = req.body || {};
     const value = Number(amount);
@@ -31,13 +68,16 @@ export default async function handler(req, res) {
     const proto = req.headers["x-forwarded-proto"] || "https";
     const host = req.headers.host;
 
-    const returnUrl = `${proto}://${host}/paypal-return.html`;
-    const cancelUrl = `${proto}://${host}/paypal-cancel.html`;
+    const origin = `${proto}://${host}`;
+    const returnUrl = new URL("/paypal-return.html", origin);
+    returnUrl.searchParams.set("pp_mode", paypal.mode);
+    const cancelUrl = new URL("/paypal-cancel.html", origin);
+    cancelUrl.searchParams.set("pp_mode", paypal.mode);
 
-    const auth = Buffer.from(`${clientId}:${secret}`).toString("base64");
+    const auth = Buffer.from(`${paypal.clientId}:${paypal.secret}`).toString("base64");
 
     // 1️⃣ Token
-    const tokenRes = await fetch(`${baseUrl}/v1/oauth2/token`, {
+    const tokenRes = await fetch(`${paypal.baseUrl}/v1/oauth2/token`, {
       method: "POST",
       headers: {
         Authorization: `Basic ${auth}`,
@@ -63,7 +103,7 @@ export default async function handler(req, res) {
       : `AE-${Date.now().toString(36).toUpperCase().slice(-10)}`;
 
     // 2️⃣ Création commande
-    const orderRes = await fetch(`${baseUrl}/v2/checkout/orders`, {
+    const orderRes = await fetch(`${paypal.baseUrl}/v2/checkout/orders`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${tokenData.access_token}`,
@@ -83,8 +123,8 @@ export default async function handler(req, res) {
           }
         ],
         application_context: {
-          return_url: returnUrl,
-          cancel_url: cancelUrl,
+          return_url: returnUrl.toString(),
+          cancel_url: cancelUrl.toString(),
           user_action: "PAY_NOW"
         }
       })
@@ -99,7 +139,8 @@ export default async function handler(req, res) {
 
     res.status(200).json({
       orderID: orderData.id,
-      approveUrl: approve?.href || null
+      approveUrl: approve?.href || null,
+      paypalMode: paypal.mode
     });
 
   } catch (err) {

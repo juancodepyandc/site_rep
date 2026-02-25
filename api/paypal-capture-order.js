@@ -16,6 +16,11 @@ const ATELIER_COMPANY_NAME = String(process.env.ATELIER_COMPANY_NAME || "Atelier
 const ATELIER_COMPANY_EMAIL = String(process.env.ATELIER_COMPANY_EMAIL || "rabuteaujuandavid@gmail.com").trim().toLowerCase();
 const ATELIER_COMPANY_PHONE = String(process.env.ATELIER_COMPANY_PHONE || "").trim();
 const ATELIER_COMPANY_ADDRESS = String(process.env.ATELIER_COMPANY_ADDRESS || "").trim();
+const PAYPAL_CLIENT_ID_LIVE = String(process.env.PAYPAL_CLIENT_ID || "").trim();
+const PAYPAL_CLIENT_SECRET_LIVE = String(process.env.PAYPAL_CLIENT_SECRET || "").trim();
+const PAYPAL_CLIENT_ID_SANDBOX = String(process.env.PAYPAL_SANDBOX_CLIENT_ID || process.env.PAYPAL_CLIENT_ID_SANDBOX || "").trim();
+const PAYPAL_CLIENT_SECRET_SANDBOX = String(process.env.PAYPAL_SANDBOX_CLIENT_SECRET || process.env.PAYPAL_CLIENT_SECRET_SANDBOX || "").trim();
+const PAYPAL_SANDBOX_ENABLED = String(process.env.PAYPAL_SANDBOX_ENABLED || "0").trim() === "1";
 const QUOTE_CODE_RE = /^DV-[A-Z0-9]{6,14}$/;
 
 function toAscii(value) {
@@ -67,6 +72,42 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+function normalizePayPalMode(value) {
+  const mode = String(value || "").trim().toLowerCase();
+  if (mode === "live" || mode === "sandbox") return mode;
+  return "";
+}
+
+function resolvePayPalConfig({ requestedMode }) {
+  const defaultMode = process.env.PAYPAL_ENV === "sandbox" ? "sandbox" : "live";
+  const mode = requestedMode || defaultMode;
+
+  if (mode === "sandbox") {
+    if (!PAYPAL_SANDBOX_ENABLED) {
+      return { error: "PAYPAL_SANDBOX_DISABLED" };
+    }
+    if (!PAYPAL_CLIENT_ID_SANDBOX || !PAYPAL_CLIENT_SECRET_SANDBOX) {
+      return { error: "PAYPAL_SANDBOX_MISSING_CREDENTIALS" };
+    }
+    return {
+      mode,
+      baseUrl: "https://api-m.sandbox.paypal.com",
+      clientId: PAYPAL_CLIENT_ID_SANDBOX,
+      secret: PAYPAL_CLIENT_SECRET_SANDBOX
+    };
+  }
+
+  if (!PAYPAL_CLIENT_ID_LIVE || !PAYPAL_CLIENT_SECRET_LIVE) {
+    return { error: "PAYPAL_LIVE_MISSING_CREDENTIALS" };
+  }
+  return {
+    mode: "live",
+    baseUrl: "https://api-m.paypal.com",
+    clientId: PAYPAL_CLIENT_ID_LIVE,
+    secret: PAYPAL_CLIENT_SECRET_LIVE
+  };
+}
+
 function buildEmailHtml(invoice) {
   const partsRows = invoice.parts
     .map((line) => {
@@ -83,10 +124,10 @@ function buildEmailHtml(invoice) {
   return [
     `<div style="margin:0;padding:28px 14px;background:#edf2f8;font-family:Arial,Helvetica,sans-serif;color:#12263f;">`,
     `<div style="max-width:820px;margin:0 auto;background:#ffffff;border:1px solid #d6e0ec;border-radius:16px;overflow:hidden;box-shadow:0 12px 28px rgba(14,32,56,.08);">`,
-    `<div style="background:linear-gradient(130deg,#0c2440 0%,#17497b 72%,#1f5f9d 100%);padding:22px 24px;color:#ffffff;">`,
-    `<div style="font-size:11px;letter-spacing:0.09em;text-transform:uppercase;font-weight:700;opacity:0.92;">${escapeHtml(ATELIER_COMPANY_NAME)}</div>`,
-    `<div style="font-size:28px;line-height:1.2;font-weight:800;margin-top:8px;letter-spacing:-0.01em;">Facture ${escapeHtml(invoice.invoiceNumber)}</div>`,
-    `<div style="margin-top:12px;display:inline-block;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.32);font-size:12px;font-weight:700;color:#f7fbff;">Paiement PayPal confirme • ${escapeHtml(invoice.createdAtFr)}</div>`,
+    `<div style="background:linear-gradient(130deg,#0f2f52 0%,#1f5f96 72%,#2f76b4 100%);padding:22px 24px;color:#ffffff;">`,
+    `<div style="display:inline-block;padding:7px 11px;border-radius:999px;background:#ffffff;color:#153a61;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:800;">${escapeHtml(ATELIER_COMPANY_NAME)}</div>`,
+    `<div style="margin-top:10px;padding:12px 14px;border-radius:12px;background:#ffffff;color:#102844;font-size:28px;line-height:1.2;font-weight:900;letter-spacing:-0.01em;">Facture ${escapeHtml(invoice.invoiceNumber)}</div>`,
+    `<div style="margin-top:10px;display:inline-block;padding:8px 11px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid rgba(20,57,91,.2);font-size:12px;font-weight:800;color:#1a4068;">Paiement PayPal confirme • ${escapeHtml(invoice.createdAtFr)}</div>`,
     `</div>`,
     `<div style="padding:22px 24px 10px 24px;">`,
     `<p style="margin:0 0 14px 0;font-size:14px;line-height:1.62;color:#1b2f49;">Bonjour <strong>${escapeHtml(invoice.buyerName)}</strong>,<br/>Merci pour votre commande. Cette facture reprend votre configuration validee et le paiement capture.</p>`,
@@ -234,24 +275,22 @@ export default async function handler(req, res) {
   }
 
   try {
-    const env = process.env.PAYPAL_ENV === "live" ? "live" : "sandbox";
-    const baseUrl = env === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
-
-    const clientId = process.env.PAYPAL_CLIENT_ID;
-    const secret = process.env.PAYPAL_CLIENT_SECRET;
-
-    if (!clientId || !secret) {
-      return res.status(500).json({ error: "Missing PayPal credentials" });
+    const requestedMode = normalizePayPalMode(req.body?.paypalMode || req.body?.paypal_mode || "");
+    if (!requestedMode && (req.body?.paypalMode || req.body?.paypal_mode)) {
+      return res.status(400).json({ error: "INVALID_PAYPAL_MODE" });
     }
+    const paypal = resolvePayPalConfig({ requestedMode });
+    if (paypal.error === "PAYPAL_SANDBOX_DISABLED") return res.status(403).json({ error: paypal.error });
+    if (paypal.error) return res.status(500).json({ error: paypal.error });
 
     const { orderID } = req.body || {};
     const order = String(orderID || "").trim();
     if (!order) return res.status(400).json({ error: "Missing orderID" });
     if (!/^[A-Z0-9\-]{10,64}$/i.test(order)) return res.status(400).json({ error: "Invalid orderID" });
 
-    const auth = Buffer.from(`${clientId}:${secret}`).toString("base64");
+    const auth = Buffer.from(`${paypal.clientId}:${paypal.secret}`).toString("base64");
 
-    const tokenRes = await fetch(`${baseUrl}/v1/oauth2/token`, {
+    const tokenRes = await fetch(`${paypal.baseUrl}/v1/oauth2/token`, {
       method: "POST",
       headers: {
         Authorization: `Basic ${auth}`,
@@ -266,7 +305,7 @@ export default async function handler(req, res) {
     }
 
     const captureRes = await fetch(
-      `${baseUrl}/v2/checkout/orders/${encodeURIComponent(order)}/capture`,
+      `${paypal.baseUrl}/v2/checkout/orders/${encodeURIComponent(order)}/capture`,
       {
         method: "POST",
         headers: {
@@ -343,7 +382,8 @@ export default async function handler(req, res) {
       ok: true,
       capture: captureData,
       quoteCode: quoteCode || "",
-      receiptEmail
+      receiptEmail,
+      paypalMode: paypal.mode
     });
   } catch (err) {
     console.error(err);

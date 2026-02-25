@@ -5844,67 +5844,105 @@ function bindCustomBuilder() {
   });
 
   const buyNowBtn = document.getElementById("buyNow");
-  if (buyNowBtn) {
-    buyNowBtn.addEventListener("click", async () => {
-      const state = compute();
-      if (!state.ready) {
-        toast("Complète la configuration avant d'acheter");
-        return;
-      }
+  const buyNowSandboxBtn = document.getElementById("buyNowSandbox");
 
-      if (!state.canCheckout) {
-        toast("Corrige d'abord les incompatibilités bloquantes");
-        setStatus("customStatus", "Achat bloqué: incompatibilités détectées.");
-        return;
-      }
+  const setCheckoutButtonsIdle = () => {
+    if (buyNowBtn) {
+      buyNowBtn.disabled = false;
+      buyNowBtn.textContent = "Acheter maintenant";
+    }
+    if (buyNowSandboxBtn) {
+      buyNowSandboxBtn.disabled = false;
+      buyNowSandboxBtn.textContent = "Simuler paiement (sandbox)";
+    }
+  };
 
-      if (state.customCoolingPending) {
-        toast("Boucle custom sur devis: achat direct indisponible pour cette option");
-        setStatus("customStatus", "Passe par le devis pour valider un watercooling 100% custom.");
-        return;
-      }
+  const setCheckoutButtonsBusy = (mode = "live") => {
+    if (buyNowBtn) buyNowBtn.disabled = true;
+    if (buyNowSandboxBtn) buyNowSandboxBtn.disabled = true;
+    if (mode === "sandbox") {
+      if (buyNowSandboxBtn) buyNowSandboxBtn.textContent = "Redirection vers PayPal Sandbox…";
+    } else {
+      if (buyNowBtn) buyNowBtn.textContent = "Redirection vers PayPal…";
+    }
+  };
 
-      if (["localhost", "127.0.0.1"].includes(window.location.hostname)) {
-        toast("Mode local: paiement PayPal indisponible sans backend Vercel");
-        setStatus("customStatus", "En local, utilise " + "Envoyer mon devis" + " (EmailJS fonctionne). Paiement actif en prod.");
-        return;
-      }
+  async function launchPayPalCheckout(mode = "live") {
+    const state = compute();
+    if (!state.ready) {
+      toast("Complète la configuration avant d'acheter");
+      return;
+    }
 
-      const code = saveQuote(state);
-      const summary = {
-        cpu: `${state.selection.cpu.brand} ${state.selection.cpu.name}`,
-        gpu: `${state.selection.gpu.brand} ${state.selection.gpu.name}`,
-        ram: `${state.selection.ram.brand} ${state.selection.ram.name}`,
-        quoteCode: code
-      };
+    if (!state.canCheckout) {
+      toast("Corrige d'abord les incompatibilités bloquantes");
+      setStatus("customStatus", "Achat bloqué: incompatibilités détectées.");
+      return;
+    }
 
-      try {
-        buyNowBtn.disabled = true;
-        buyNowBtn.textContent = "Redirection vers PayPal…";
+    if (state.customCoolingPending) {
+      toast("Boucle custom sur devis: achat direct indisponible pour cette option");
+      setStatus("customStatus", "Passe par le devis pour valider un watercooling 100% custom.");
+      return;
+    }
 
-        const res = await fetch("/api/paypal-create-order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: state.total, currency: "EUR", summary })
-        });
+    if (["localhost", "127.0.0.1"].includes(window.location.hostname)) {
+      toast("Mode local: paiement PayPal indisponible sans backend Vercel");
+      setStatus("customStatus", "En local, utilise " + "Envoyer mon devis" + " (EmailJS fonctionne). Paiement actif en prod.");
+      return;
+    }
 
-        const data = await res.json();
-        if (!res.ok || !data.approveUrl) {
-          console.error(data);
+    const code = saveQuote(state);
+    const summary = {
+      cpu: `${state.selection.cpu.brand} ${state.selection.cpu.name}`,
+      gpu: `${state.selection.gpu.brand} ${state.selection.gpu.name}`,
+      ram: `${state.selection.ram.brand} ${state.selection.ram.name}`,
+      quoteCode: code
+    };
+
+    try {
+      setCheckoutButtonsBusy(mode);
+
+      const res = await fetch("/api/paypal-create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: state.total, currency: "EUR", summary, paypalMode: mode })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.approveUrl) {
+        const errorCode = String(data?.error || "");
+        if (errorCode === "PAYPAL_SANDBOX_DISABLED") {
+          toast("Sandbox PayPal désactivée côté serveur.");
+          setStatus("customStatus", "Simulation indisponible: active PAYPAL_SANDBOX_ENABLED=1.");
+        } else if (errorCode === "PAYPAL_SANDBOX_MISSING_CREDENTIALS") {
+          toast("Clés PayPal sandbox manquantes.");
+          setStatus("customStatus", "Simulation indisponible: ajoute PAYPAL_SANDBOX_CLIENT_ID et PAYPAL_SANDBOX_CLIENT_SECRET.");
+        } else if (errorCode === "PAYPAL_LIVE_MISSING_CREDENTIALS") {
+          toast("Clés PayPal live manquantes.");
+          setStatus("customStatus", "Achat indisponible: vérifie PAYPAL_CLIENT_ID et PAYPAL_CLIENT_SECRET.");
+        } else {
           toast("Erreur PayPal");
-          buyNowBtn.disabled = false;
-          buyNowBtn.textContent = "Acheter maintenant";
-          return;
+          setStatus("customStatus", `Paiement refusé côté API: ${errorCode || "PAYPAL_ORDER_CREATE_FAILED"}.`);
         }
-
-        window.location.href = data.approveUrl;
-      } catch (err) {
-        console.error(err);
-        toast("Erreur réseau");
-        buyNowBtn.disabled = false;
-        buyNowBtn.textContent = "Acheter maintenant";
+        console.error(data);
+        setCheckoutButtonsIdle();
+        return;
       }
-    });
+
+      window.location.href = data.approveUrl;
+    } catch (err) {
+      console.error(err);
+      toast("Erreur réseau");
+      setCheckoutButtonsIdle();
+    }
+  }
+
+  if (buyNowBtn) {
+    buyNowBtn.addEventListener("click", () => launchPayPalCheckout("live"));
+  }
+  if (buyNowSandboxBtn) {
+    buyNowSandboxBtn.addEventListener("click", () => launchPayPalCheckout("sandbox"));
   }
 
   setQuoteCodeUI("", "Génère un code pour retrouver ta simulation plus tard.");

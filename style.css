@@ -1020,6 +1020,15 @@ body.is-combo-open .panel:hover::after{
   background:var(--ui-btn-ghost-bg);
   border-color:var(--ui-btn-ghost-border);
 }
+.btn--sandbox{
+  border-color:rgba(255,204,102,.42);
+  background:linear-gradient(180deg, rgba(255,204,102,.16), rgba(255,255,255,.04));
+  color:rgba(255,238,205,.96);
+}
+.btn--sandbox:hover{
+  border-color:rgba(255,214,134,.62);
+  box-shadow:0 12px 30px rgba(122,89,25,.24);
+}
 .btn--full{width:100%}
 
 .btn--shine::after{

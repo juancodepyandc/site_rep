@@ -40,6 +40,8 @@ async function finish(){
 
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
+  const paypalMode = String(params.get("pp_mode") || "").trim().toLowerCase();
+  const isSandbox = paypalMode === "sandbox";
 
   if (!token) {
     finalizeUi("Token PayPal manquant. Retourne sur la page principale.", { enableButton: true });
@@ -50,14 +52,18 @@ async function finish(){
     const res = await fetch("/api/paypal-capture-order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderID: token })
+      body: JSON.stringify({
+        orderID: token,
+        paypalMode: paypalMode === "sandbox" ? "sandbox" : "live"
+      })
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok && data?.ok) {
       const receipt = data?.receiptEmail?.sent
         ? "Facture envoyee automatiquement."
         : "Paiement capture. Envoi facture en attente de configuration email.";
-      finalizeUi(`${receipt} Redirection...`, { enableButton: true, autoRedirectMs: 1500 });
+      const modePrefix = isSandbox ? "Simulation sandbox reussie. " : "";
+      finalizeUi(`${modePrefix}${receipt} Redirection...`, { enableButton: true, autoRedirectMs: 1500 });
       return;
     }
 
