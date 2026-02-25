@@ -7,44 +7,67 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="center">
-  <div class="result success">
-    <h1>Paiement confirmé</h1>
-    <p>Merci pour ta commande. Le paiement a bien été validé.</p>
-    <p>Tu recevras un email de confirmation rapidement.</p>
-    <p id="captureStatus" style="opacity:.85"></p>
-    <button class="btn btn--primary btn--shine" onclick="finish()">Finaliser</button>
-  </div>
+  <main class="result result--paypal success">
+    <span class="result__kicker">Paiement PayPal</span>
+    <h1>Paiement confirme</h1>
+    <p class="result__lead">Commande validee. La facture est envoyee automatiquement a l'email du devis/paiement.</p>
+    <p id="captureStatus" class="result__status" aria-live="polite">Validation de la commande...</p>
+    <button id="returnHomeBtn" class="btn btn--primary btn--shine" type="button" onclick="window.location.href='/'" disabled>
+      Retour au site
+    </button>
+  </main>
 
 <script>
-async function finish(){
+let captureDone = false;
+
+function finalizeUi(message, { enableButton = true, autoRedirectMs = 0 } = {}) {
   const statusEl = document.getElementById("captureStatus");
-  const btn = document.querySelector("button");
+  const btn = document.getElementById("returnHomeBtn");
+  if (statusEl) statusEl.textContent = message;
+  if (btn && enableButton) btn.disabled = false;
+  if (autoRedirectMs > 0) {
+    window.setTimeout(() => {
+      window.location.href = "/";
+    }, autoRedirectMs);
+  }
+}
+
+async function finish(){
+  if (captureDone) return;
+  captureDone = true;
+  const btn = document.getElementById("returnHomeBtn");
   if (btn) btn.disabled = true;
-  if (statusEl) statusEl.textContent = "Validation de la commande...";
+
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
-  if(token){
-    try{
-      const res = await fetch("/api/paypal-capture-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderID: token })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data?.ok) {
-        const receipt = data?.receiptEmail?.sent
-          ? "Facture client envoyée."
-          : "Facture client non envoyée automatiquement (configuration email à vérifier).";
-        if (statusEl) statusEl.textContent = `${receipt} Redirection...`;
-      } else if (statusEl) {
-        statusEl.textContent = "Paiement capturé avec alerte technique. Vérifie le back-office.";
-      }
-    } catch {
-      if (statusEl) statusEl.textContent = "Capture impossible depuis cette page, vérifie l'API.";
-    }
+
+  if (!token) {
+    finalizeUi("Token PayPal manquant. Retourne sur la page principale.", { enableButton: true });
+    return;
   }
-  window.location.href = "/";
+
+  try{
+    const res = await fetch("/api/paypal-capture-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderID: token })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data?.ok) {
+      const receipt = data?.receiptEmail?.sent
+        ? "Facture envoyee automatiquement."
+        : "Paiement capture. Envoi facture en attente de configuration email.";
+      finalizeUi(`${receipt} Redirection...`, { enableButton: true, autoRedirectMs: 1500 });
+      return;
+    }
+
+    finalizeUi("Paiement capture avec alerte technique. Verifie le back-office.", { enableButton: true });
+  } catch {
+    finalizeUi("Capture impossible depuis cette page. Verifie l'API.", { enableButton: true });
+  }
 }
+
+document.addEventListener("DOMContentLoaded", finish);
 </script>
 </body>
 </html>

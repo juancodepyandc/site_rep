@@ -333,45 +333,45 @@ function buildReceiptHtml(invoice) {
       const [left, ...rest] = String(line || "").split(":");
       const right = rest.join(":").trim();
       return `<tr>
-        <td style="padding:8px 10px;border-bottom:1px solid #e6edf7;color:#30415b;font-size:13px;width:38%;">${escapeHtml(left || "Composant")}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #e6edf7;color:#0f1e35;font-size:13px;font-weight:600;">${escapeHtml(right || line)}</td>
+        <td style="padding:9px 11px;border-bottom:1px solid #e3ebf5;color:#3d526f;font-size:13px;width:38%;background:#fbfdff;">${escapeHtml(left || "Composant")}</td>
+        <td style="padding:9px 11px;border-bottom:1px solid #e3ebf5;color:#12243b;font-size:13px;font-weight:600;background:#ffffff;">${escapeHtml(right || line)}</td>
       </tr>`;
     })
     .join("");
   const companyLine = [ATELIER_COMPANY_ADDRESS, ATELIER_COMPANY_PHONE, ATELIER_COMPANY_EMAIL].filter(Boolean).join(" • ");
   const usageLine = String(invoice.usage || "").trim();
   return [
-    `<div style="margin:0;padding:24px;background:#eef3fb;font-family:Arial,Helvetica,sans-serif;color:#14233b;">`,
-    `<div style="max-width:820px;margin:0 auto;background:#ffffff;border:1px solid #d9e4f2;border-radius:14px;overflow:hidden;">`,
-    `<div style="background:linear-gradient(135deg,#183454 0%,#285f97 100%);padding:18px 22px;color:#f8fbff;">`,
-    `<div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.86;">${escapeHtml(ATELIER_COMPANY_NAME)}</div>`,
-    `<div style="font-size:22px;font-weight:800;margin-top:6px;">Facture test ${escapeHtml(invoice.invoiceNumber)}</div>`,
-    `<div style="font-size:12px;opacity:0.9;margin-top:6px;">Simulation email (aucun debit) • ${escapeHtml(invoice.createdAtFr)}</div>`,
+    `<div style="margin:0;padding:28px 14px;background:#edf2f8;font-family:Arial,Helvetica,sans-serif;color:#12263f;">`,
+    `<div style="max-width:820px;margin:0 auto;background:#ffffff;border:1px solid #d6e0ec;border-radius:16px;overflow:hidden;box-shadow:0 12px 28px rgba(14,32,56,.08);">`,
+    `<div style="background:linear-gradient(130deg,#142d47 0%,#1e4f7f 72%,#2a6ea8 100%);padding:22px 24px;color:#ffffff;">`,
+    `<div style="font-size:11px;letter-spacing:0.09em;text-transform:uppercase;font-weight:700;opacity:0.92;">${escapeHtml(ATELIER_COMPANY_NAME)}</div>`,
+    `<div style="font-size:28px;line-height:1.2;font-weight:800;margin-top:8px;letter-spacing:-0.01em;">Facture test ${escapeHtml(invoice.invoiceNumber)}</div>`,
+    `<div style="margin-top:12px;display:inline-block;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.32);font-size:12px;font-weight:700;color:#f7fbff;">Simulation email (aucun debit) • ${escapeHtml(invoice.createdAtFr)}</div>`,
     `</div>`,
-    `<div style="padding:20px 22px 6px 22px;">`,
-    `<p style="margin:0 0 12px 0;font-size:14px;line-height:1.55;">Bonjour <strong>${escapeHtml(invoice.buyerName)}</strong>,<br/>Ceci est un envoi de test pour vérifier la mise en page de la facture. Aucun paiement n'a ete effectue.</p>`,
-    `<table role="presentation" width="100%" style="border-collapse:separate;border-spacing:0 8px;margin:0 0 12px 0;">`,
-    `<tr><td style="font-size:12px;color:#5b6f8c;width:33%;">Ref. devis</td><td style="font-size:13px;font-weight:700;color:#10233d;">${escapeHtml(invoice.quoteCode)}</td></tr>`,
-    `<tr><td style="font-size:12px;color:#5b6f8c;">Reference test</td><td style="font-size:13px;font-weight:700;color:#10233d;">${escapeHtml(invoice.orderID)}</td></tr>`,
-    usageLine ? `<tr><td style="font-size:12px;color:#5b6f8c;">Usage</td><td style="font-size:13px;font-weight:700;color:#10233d;">${escapeHtml(usageLine)}</td></tr>` : "",
+    `<div style="padding:22px 24px 10px 24px;">`,
+    `<p style="margin:0 0 14px 0;font-size:14px;line-height:1.62;color:#1b2f49;">Bonjour <strong>${escapeHtml(invoice.buyerName)}</strong>,<br/>Ceci est un envoi de test pour verifier la mise en page de la facture. Aucun paiement n'a ete effectue.</p>`,
+    `<div style="margin:0 0 14px 0;padding:12px 14px;border:1px solid #f0d9ad;background:#fff8e8;border-radius:12px;font-size:12px;line-height:1.55;color:#6c4a16;"><strong style="display:block;font-size:12px;color:#5a3c11;margin-bottom:4px;">Simulation uniquement</strong>Ce document est genere pour test. La facture finale est envoyee apres paiement confirme.</div>`,
+    `<table role="presentation" width="100%" style="border-collapse:separate;border-spacing:0 8px;margin:0 0 14px 0;">`,
+    `<tr><td style="font-size:12px;color:#5a718f;width:33%;">Ref. devis</td><td style="font-size:13px;font-weight:700;color:#102743;">${escapeHtml(invoice.quoteCode)}</td></tr>`,
+    `<tr><td style="font-size:12px;color:#5a718f;">Reference test</td><td style="font-size:13px;font-weight:700;color:#102743;">${escapeHtml(invoice.orderID)}</td></tr>`,
+    usageLine ? `<tr><td style="font-size:12px;color:#5a718f;">Usage</td><td style="font-size:13px;font-weight:700;color:#102743;">${escapeHtml(usageLine)}</td></tr>` : "",
     `</table>`,
-    `<table role="presentation" width="100%" style="border-collapse:collapse;margin:0 0 14px 0;border:1px solid #dde7f4;border-radius:10px;overflow:hidden;">`,
-    `<tr style="background:#f6f9ff;">`,
-    `<td style="padding:10px 12px;font-size:12px;color:#4f6482;">Montant HT</td>`,
-    `<td style="padding:10px 12px;font-size:12px;color:#4f6482;">TVA (20%)</td>`,
-    `<td style="padding:10px 12px;font-size:12px;color:#4f6482;">Montant TTC</td>`,
+    `<table role="presentation" width="100%" style="border-collapse:collapse;margin:0 0 16px 0;border:1px solid #d8e3f1;border-radius:12px;overflow:hidden;">`,
+    `<tr style="background:#eff4fb;">`,
+    `<td style="padding:11px 12px;font-size:12px;color:#456180;font-weight:700;">Montant HT</td>`,
+    `<td style="padding:11px 12px;font-size:12px;color:#456180;font-weight:700;">TVA (20%)</td>`,
+    `<td style="padding:11px 12px;font-size:12px;color:#456180;font-weight:700;">Montant TTC</td>`,
     `</tr>`,
     `<tr>`,
-    `<td style="padding:10px 12px;font-size:14px;font-weight:700;color:#10233d;">${escapeHtml(invoice.subtotalLabel)}</td>`,
-    `<td style="padding:10px 12px;font-size:14px;font-weight:700;color:#10233d;">${escapeHtml(invoice.vatLabel)}</td>`,
-    `<td style="padding:10px 12px;font-size:15px;font-weight:800;color:#0b3f72;">${escapeHtml(invoice.amountLabel)}</td>`,
+    `<td style="padding:11px 12px;font-size:14px;font-weight:700;color:#10243d;">${escapeHtml(invoice.subtotalLabel)}</td>`,
+    `<td style="padding:11px 12px;font-size:14px;font-weight:700;color:#10243d;">${escapeHtml(invoice.vatLabel)}</td>`,
+    `<td style="padding:11px 12px;font-size:16px;font-weight:800;color:#0d4b80;">${escapeHtml(invoice.amountLabel)}</td>`,
     `</tr>`,
     `</table>`,
-    `<div style="font-size:13px;font-weight:700;color:#162c47;margin:0 0 8px 0;">Configuration detaillee</div>`,
-    `<table role="presentation" width="100%" style="border-collapse:collapse;border:1px solid #dde7f4;border-radius:10px;overflow:hidden;margin:0 0 12px 0;">${partsRows}</table>`,
-    `<p style="margin:0 0 12px 0;font-size:12px;color:#5b6f8c;">Email de test uniquement. La facture finale est envoyee apres paiement confirme.</p>`,
+    `<div style="font-size:13px;font-weight:800;color:#173552;margin:0 0 8px 0;">Configuration detaillee</div>`,
+    `<table role="presentation" width="100%" style="border-collapse:collapse;border:1px solid #d8e3f1;border-radius:12px;overflow:hidden;margin:0 0 12px 0;">${partsRows}</table>`,
     `</div>`,
-    `<div style="padding:12px 22px 16px 22px;background:#f7faff;border-top:1px solid #e2eaf6;font-size:12px;color:#5c6f8a;">${escapeHtml(companyLine || ATELIER_COMPANY_EMAIL)}</div>`,
+    `<div style="padding:13px 24px 16px 24px;background:#f6f9fe;border-top:1px solid #dfe8f4;font-size:12px;color:#576f8d;">${escapeHtml(companyLine || ATELIER_COMPANY_EMAIL)}</div>`,
     `</div>`,
     `</div>`
   ].join("");

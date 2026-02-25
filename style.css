@@ -42,6 +42,82 @@ body{
   overflow-x:hidden;
 }
 
+body.center{
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  padding:24px 16px;
+  background:
+    radial-gradient(80% 90% at 10% 0%, rgba(58,146,255,.2), transparent 58%),
+    radial-gradient(72% 84% at 90% 100%, rgba(39,215,177,.14), transparent 60%),
+    linear-gradient(180deg, #070b12, #0a1018 56%, #0d141f 100%);
+}
+
+.result{
+  width:min(680px, 100%);
+  border-radius:20px;
+  padding:26px 24px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.05));
+  box-shadow:0 22px 60px rgba(0,0,0,.42);
+}
+
+.result h1{
+  margin:8px 0 0;
+  font-size:36px;
+  line-height:1.06;
+  letter-spacing:-.03em;
+}
+
+.result p{
+  margin:12px 0 0;
+  color:rgba(255,255,255,.84);
+  line-height:1.6;
+}
+
+.result.success{
+  border-color:rgba(102,233,186,.34);
+  box-shadow:0 24px 62px rgba(8,25,18,.38);
+}
+
+.result.cancel{
+  border-color:rgba(255,167,167,.32);
+}
+
+.result__kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 11px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.08);
+  color:rgba(255,255,255,.9);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+
+.result__lead{
+  font-size:14px;
+}
+
+.result__status{
+  margin-top:16px;
+  padding:11px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.16);
+  background:rgba(255,255,255,.06);
+  color:rgba(255,255,255,.94);
+  font-size:12.5px;
+  font-weight:700;
+}
+
+.result .btn{
+  margin-top:16px;
+}
+
 h1,h2,h3,.section__title,.hero__title,.brand__name,.panel__title,.quote__title{
   font-family:"Sora","Manrope",system-ui,sans-serif;
 }
@@ -1974,6 +2050,13 @@ body.is-modal-open{
   }
 }
 @media (max-width:600px){
+  .result{
+    padding:20px 16px;
+    border-radius:16px;
+  }
+  .result h1{
+    font-size:30px;
+  }
   .panel{padding:14px}
   .contact-card{padding:12px}
   .contact-card__value{font-size:15px}
@@ -1989,7 +2072,7 @@ body.is-modal-open{
     width:min(320px, calc(100vw - 24px));
   }
 }
-#openPreview3d{
+/*#openPreview3d{
   display:none;
 }
-
+*/

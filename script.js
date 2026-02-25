@@ -4766,7 +4766,7 @@ function openTestReceiptPreview(preview, invoiceNumber = "") {
   const html = String(preview?.html || "").trim();
   if (!html) return false;
   const subject = String(preview?.subject || "Facture test").trim();
-  const wrapped = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${subject}</title><style>body{margin:0;background:#0b0f17;color:#eef3ff;font-family:Manrope,Arial,sans-serif}.wrap{max-width:920px;margin:0 auto;padding:20px}.card{background:#fff;color:#152030;border-radius:12px;padding:22px;box-shadow:0 18px 36px rgba(0,0,0,.35)}.meta{color:#8ea2c1;font-size:12px;margin:0 0 12px 0}</style></head><body><div class="wrap"><p class="meta">Prévisualisation facture test ${invoiceNumber ? `• ${invoiceNumber}` : ""}</p><div class="card">${html}</div></div></body></html>`;
+  const wrapped = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${subject}</title><style>body{margin:0;background:#eaf0f8;color:#1b2b41;font-family:Manrope,Arial,sans-serif}.wrap{max-width:940px;margin:0 auto;padding:22px}.card{background:#fff;color:#152030;border:1px solid #d6e0ec;border-radius:14px;padding:20px;box-shadow:0 16px 34px rgba(14,32,56,.12)}.meta{color:#455f80;font-size:12px;font-weight:700;margin:0 0 12px 0}</style></head><body><div class="wrap"><p class="meta">Previsualisation facture test ${invoiceNumber ? `• ${invoiceNumber}` : ""}</p><div class="card">${html}</div></div></body></html>`;
   const w = window.open("", "_blank", "noopener,noreferrer");
   if (!w) return false;
   w.document.open();
@@ -4781,62 +4781,36 @@ async function runTestReceiptFlow({ code, suggestedEmail = "" } = {}) {
     return;
   }
   const normalizedCode = String(code || "").trim().toUpperCase();
+  const targetEmail = String(suggestedEmail || "").trim().toLowerCase();
+  const hasValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail);
 
   try {
-    const previewPayload = {
+    if (!hasValidEmail) {
+      toast("Email client introuvable pour l'envoi test.");
+      setStatus("customStatus", "Envoi test bloque: charge un devis avec un email client valide.");
+      return;
+    }
+
+    const sendPayload = {
       admin_key: adminSessionKey,
-      send_email: false
+      send_email: true,
+      to_email: targetEmail
     };
-    if (normalizedCode) previewPayload.code = normalizedCode;
-    else previewPayload.mode = "random";
+    if (normalizedCode) sendPayload.code = normalizedCode;
+    else sendPayload.mode = "random";
 
-    const previewData = await apiSendTestReceipt(previewPayload);
-    const invoiceNumber = String(previewData?.invoiceNumber || "").trim();
-    const previewCode = String(previewData?.code || normalizedCode || "").trim().toUpperCase();
-    const randomSeed = Number(previewData?.seed || 0);
-    const isRandomPreview = Boolean(previewData?.generatedRandom || !normalizedCode);
-    const opened = openTestReceiptPreview(previewData?.preview || {}, invoiceNumber);
-    setStatus(
-      "customStatus",
-      `${isRandomPreview ? "Aperçu facture test aléatoire" : "Aperçu facture test"} généré${invoiceNumber ? ` (${invoiceNumber})` : ""}.`
-    );
-    toast(opened ? (isRandomPreview ? "Aperçu aléatoire ouvert." : "Aperçu facture ouvert.") : "Aperçu généré (popup bloquée).");
+    const sentData = await apiSendTestReceipt(sendPayload);
+    const invoiceNumber = String(sentData?.invoiceNumber || "").trim();
+    const wasRandom = Boolean(sentData?.generatedRandom || !normalizedCode);
+    const opened = openTestReceiptPreview(sentData?.preview || {}, invoiceNumber);
 
-    const sendMail = await themedConfirm(
-      "Envoyer aussi cette facture test par email ?",
-      {
-        title: "Facture test",
-        confirmText: "Oui, envoyer",
-        cancelText: "Non"
-      }
-    );
-    if (!sendMail) return;
-
-    const fallbackEmail = String(suggestedEmail || "").trim().toLowerCase();
-    const targetEmail = await themedPrompt(
-      "Email destinataire pour l'envoi test :",
-      {
-        title: "Envoi facture test",
-        confirmText: "Envoyer",
-        cancelText: "Annuler",
-        placeholder: "client@domaine.fr",
-        value: fallbackEmail,
-        inputType: "email"
-      }
-    );
-    if (!targetEmail) return;
-
-    const sentData = await apiSendTestReceipt({
-      admin_key: adminSessionKey,
-      code: previewCode || undefined,
-      seed: randomSeed || undefined,
-      mode: isRandomPreview ? "random" : "quote",
-      to_email: targetEmail,
-      send_email: true
-    });
     if (sentData?.emailSent) {
       setStatus("customStatus", `Facture test envoyée à ${targetEmail}${sentData?.invoiceNumber ? ` (${sentData.invoiceNumber})` : ""}.`);
-      toast("Facture test envoyée.");
+      if (opened) {
+        toast(wasRandom ? "Facture test aleatoire envoyee + apercu ouvert." : "Facture test envoyee + apercu ouvert.");
+      } else {
+        toast(wasRandom ? "Facture test aleatoire envoyee." : "Facture test envoyee.");
+      }
       return;
     }
 
