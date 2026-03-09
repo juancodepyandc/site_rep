@@ -235,17 +235,17 @@
             <div class="form__grid">
               <div class="field">
                 <label>Nom</label>
-                <input type="text" name="from_name" placeholder="Ex : Juan" required />
+                <input type="text" id="mobileFromName" name="from_name" placeholder="Ex : Juan" required />
               </div>
 
               <div class="field">
                 <label>Email</label>
-                <input type="email" name="reply_to" placeholder="Ex : nom@domaine.fr" required />
+                <input type="email" id="mobileReplyTo" name="reply_to" placeholder="Ex : nom@domaine.fr" required />
               </div>
 
               <div class="field">
                 <label>Type d’appareil</label>
-                <select name="device_type" required>
+                <select id="mobileDeviceType" name="device_type" required>
                   <option value="" disabled selected>Choisir…</option>
                   <option>iPhone</option>
                   <option>Android</option>
@@ -256,7 +256,7 @@
 
               <div class="field">
                 <label>Problème rencontré</label>
-                <select name="mobile_issue" required>
+                <select id="mobileIssue" name="mobile_issue" required>
                   <option value="" disabled selected>Choisir…</option>
                   <option>Écran cassé / tactile</option>
                   <option>Batterie</option>
@@ -270,12 +270,27 @@
 
               <div class="field field--full">
                 <label>Modèle</label>
-                <input type="text" name="model" placeholder="Ex : iPhone 13 / Samsung S22 / iPad…" required />
+                <input type="text" id="mobileModel" name="model" placeholder="Ex : iPhone 13 / Samsung S22 / iPad…" required />
               </div>
 
               <div class="field field--full">
                 <label>Description libre</label>
-                <textarea name="description" rows="7" placeholder="Décris le symptôme et ce qui s’est passé juste avant." required></textarea>
+                <textarea id="mobileDescription" name="description" rows="7" placeholder="Décris le symptôme et ce qui s’est passé juste avant." required></textarea>
+              </div>
+
+              <div class="field field--full mobile-camera-tools" id="mobileCameraTools" hidden>
+                <label>Diagnostic caméra</label>
+                <div class="mobile-camera-tools__actions">
+                  <button class="btn btn--ghost btn--tiny" type="button" id="mobileCameraTestBtn">Test caméra</button>
+                  <button class="btn btn--ghost btn--tiny" type="button" id="mobileCameraLogsBtn">Voir les logs</button>
+                  <button class="btn btn--ghost btn--tiny" type="button" id="mobileCameraDownloadBtn">Télécharger les logs</button>
+                </div>
+                <div class="form__hint" id="mobileCameraHint" aria-live="polite"></div>
+              </div>
+
+              <div class="field field--full mobile-camera-panel" id="mobileCameraPanel" hidden>
+                <video id="mobileCameraVideo" playsinline autoplay muted></video>
+                <div class="mobile-camera-panel__meta" id="mobileCameraPanelMeta"></div>
               </div>
             </div>
 
@@ -283,6 +298,7 @@
               <button class="btn btn--primary btn--shine" type="submit">Demander un devis</button>
               <div class="form__hint" id="mobileStatus" aria-live="polite"></div>
             </div>
+            <div class="form__hint mobile-code" id="mobileQuoteCodeHint" aria-live="polite"></div>
           </form>
         </div>
       </div>

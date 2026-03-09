@@ -19,6 +19,51 @@ function sanitizeAdminStatus(status) {
   };
 }
 
+function sanitizeMobileRequest(payload) {
+  if (!payload || typeof payload !== "object") return undefined;
+  return {
+    deviceType: clampText(payload.deviceType || "", 120),
+    issue: clampText(payload.issue || "", 160),
+    model: clampText(payload.model || "", 220),
+    description: clampText(payload.description || "", 4000)
+  };
+}
+
+function sanitizeCameraDiagnostics(payload) {
+  if (!payload || typeof payload !== "object") return undefined;
+  const runs = Array.isArray(payload.runs) ? payload.runs.slice(-8) : [];
+  const safeRuns = runs.map((run) => {
+    const entries = Array.isArray(run?.entries) ? run.entries.slice(-300) : [];
+    return {
+      runId: clampText(run?.runId || "", 80),
+      startedAt: clampText(run?.startedAt || "", 80),
+      endedAt: clampText(run?.endedAt || "", 80),
+      status: clampText(run?.status || "", 40),
+      summary: run?.summary && typeof run.summary === "object"
+        ? {
+            supportsMediaDevices: Boolean(run.summary.supportsMediaDevices),
+            supportsPermissionsApi: Boolean(run.summary.supportsPermissionsApi),
+            cameraPermissionState: clampText(run.summary.cameraPermissionState || "", 40),
+            detectedVideoInputs: Number(run.summary.detectedVideoInputs || 0),
+            testedStreams: Number(run.summary.testedStreams || 0)
+          }
+        : undefined,
+      entries: entries.map((entry) => ({
+        ts: clampText(entry?.ts || "", 80),
+        level: clampText(entry?.level || "", 16),
+        event: clampText(entry?.event || "", 120),
+        detail: entry?.detail && typeof entry.detail === "object"
+          ? JSON.parse(JSON.stringify(entry.detail))
+          : clampText(entry?.detail || "", 800)
+      }))
+    };
+  });
+  return {
+    updatedAt: clampText(payload.updatedAt || "", 80),
+    runs: safeRuns
+  };
+}
+
 function sanitizeRecord(record, code, inheritedAdminStatus) {
   if (!record || typeof record !== "object") return null;
   const requester = record.requester && typeof record.requester === "object" ? record.requester : {};
@@ -56,6 +101,10 @@ function sanitizeRecord(record, code, inheritedAdminStatus) {
     usage: clampText(record.usage || "", 200),
     config: record.config && typeof record.config === "object" ? record.config : null,
     preview3d: record.preview3d && typeof record.preview3d === "object" ? record.preview3d : null,
+    serviceType: clampText(record.serviceType || "", 80),
+    issueCategory: clampText(record.issueCategory || "", 120),
+    mobileRequest: sanitizeMobileRequest(record.mobileRequest),
+    cameraDiagnostics: sanitizeCameraDiagnostics(record.cameraDiagnostics),
     adminStatus: sanitizeAdminStatus(record.adminStatus) || sanitizeAdminStatus(inheritedAdminStatus),
     updatedAt: record.updatedAt || undefined,
     lastOtpModification: record.lastOtpModification && typeof record.lastOtpModification === "object" ? record.lastOtpModification : undefined,

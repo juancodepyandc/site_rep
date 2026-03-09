@@ -271,11 +271,20 @@ function buildPartsSummary(record) {
     ["Boîtier", "case"],
     ["Refroidissement", "cooling"]
   ];
-  return fields
+  const known = fields
     .map(([label, key]) => {
       const value = String(parts[key] || "").trim();
       if (!value) return "";
       return `${label}: ${value}`;
+    })
+    .filter(Boolean)
+    .slice(0, 12);
+  if (known.length) return known;
+  return Object.entries(parts)
+    .map(([key, value]) => {
+      const v = String(value || "").trim();
+      if (!v) return "";
+      return `${key}: ${v}`;
     })
     .filter(Boolean)
     .slice(0, 12);
@@ -455,6 +464,9 @@ async function handleList(req, res, client) {
     const totalValue = Number(record?.config?.total || 0) || 0;
     const status = String(record?.adminStatus?.state || "open").trim() === "settled" ? "settled" : "open";
     const priority = priorityFromRecord(record, Boolean(pending));
+    const cameraRuns = Array.isArray(record?.cameraDiagnostics?.runs) ? record.cameraDiagnostics.runs : [];
+    const latestRun = cameraRuns.length ? cameraRuns[cameraRuns.length - 1] : null;
+    const latestEntries = Array.isArray(latestRun?.entries) ? latestRun.entries : [];
 
     quotes.push({
       code,
@@ -467,12 +479,17 @@ async function handleList(req, res, client) {
       totalLabel: totalValue > 0 ? euro(totalValue) : "—",
       deliveryName: String(record?.config?.parts?.delivery || "").trim() || String(record?.selects?.delivery || "").trim(),
       status,
+      serviceType: String(record?.serviceType || "").trim(),
+      issueCategory: String(record?.issueCategory || "").trim(),
       pendingModification: Boolean(pending),
       pendingExpiresAt: toIsoOrEmpty(pending?.expiresAt),
       priorityLevel: priority.level,
       priorityLabel: priority.label,
       priorityReason: priority.reason,
-      partsSummary: buildPartsSummary(record)
+      partsSummary: buildPartsSummary(record),
+      hasCameraLogs: latestEntries.length > 0,
+      cameraLogCount: latestEntries.length,
+      cameraLastRunAt: toIsoOrEmpty(latestRun?.endedAt || latestRun?.startedAt)
     });
   }
 

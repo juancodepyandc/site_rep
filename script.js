@@ -1,5 +1,7 @@
 const BASE_PRICE = 20;
 const QUOTE_STORAGE_KEY = "atelier_quotes_v2";
+const MOBILE_QUOTE_STORAGE_KEY = "atelier_mobile_quotes_v1";
+const MOBILE_LAST_QUOTE_CODE_KEY = "atelier_mobile_last_quote_code";
 
 const CATALOG = {
   cpu: [
@@ -3936,7 +3938,6 @@ function bindClassicForm(formId, subject, statusElId) {
 }
 
 bindClassicForm("form-pc", "Demande devis — Réparation PC", "pcStatus");
-bindClassicForm("form-mobile", "Demande devis — Réparation Mobile", "mobileStatus");
 
 const formContact = document.getElementById("form-contact");
 if (formContact) {
@@ -3961,6 +3962,24 @@ if (formContact) {
     if (ok) formContact.reset();
   });
 }
+
+const formMobile = document.getElementById("form-mobile");
+const mobileFromNameEl = document.getElementById("mobileFromName");
+const mobileReplyToEl = document.getElementById("mobileReplyTo");
+const mobileDeviceTypeEl = document.getElementById("mobileDeviceType");
+const mobileIssueEl = document.getElementById("mobileIssue");
+const mobileModelEl = document.getElementById("mobileModel");
+const mobileDescriptionEl = document.getElementById("mobileDescription");
+const mobileStatusEl = document.getElementById("mobileStatus");
+const mobileQuoteCodeHintEl = document.getElementById("mobileQuoteCodeHint");
+const mobileCameraToolsEl = document.getElementById("mobileCameraTools");
+const mobileCameraPanelEl = document.getElementById("mobileCameraPanel");
+const mobileCameraVideoEl = document.getElementById("mobileCameraVideo");
+const mobileCameraPanelMetaEl = document.getElementById("mobileCameraPanelMeta");
+const mobileCameraHintEl = document.getElementById("mobileCameraHint");
+const mobileCameraTestBtn = document.getElementById("mobileCameraTestBtn");
+const mobileCameraLogsBtn = document.getElementById("mobileCameraLogsBtn");
+const mobileCameraDownloadBtn = document.getElementById("mobileCameraDownloadBtn");
 
 const formCustom = document.getElementById("form-custom");
 const quoteNameEl = document.getElementById("quoteName");
@@ -4016,6 +4035,10 @@ let optimizedPresetLocked = false;
 let optimizedPresetSnapshot = {};
 let isNoviceMode = false;
 const CORE_CATEGORY_KEYS = ["cpu", "mobo", "ram", "gpu", "storage", "psu", "case"];
+let currentMobileQuoteCode = "";
+let mobileCameraRuns = [];
+let mobileActiveStream = null;
+let mobileCameraTestBusy = false;
 
 function updateModifyActionVisibility() {
   const hasCode = Boolean(currentQuoteCode);
@@ -4060,6 +4083,551 @@ function setQuoteCodeUI(code, meta) {
   if (quoteCodeValueEl) quoteCodeValueEl.textContent = code || "Non généré";
   if (quoteCodeMetaEl) quoteCodeMetaEl.textContent = meta || "Génère un code devis pour retrouver ta simulation.";
   updateModifyActionVisibility();
+}
+
+function readMobileQuoteStore() {
+  try {
+    return JSON.parse(localStorage.getItem(MOBILE_QUOTE_STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function writeMobileQuoteStore(store) {
+  localStorage.setItem(MOBILE_QUOTE_STORAGE_KEY, JSON.stringify(store || {}));
+}
+
+function normalizeFreeText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function mobileIssueNeedsCamera(issueLabel = "") {
+  const t = normalizeFreeText(issueLabel);
+  if (!t) return false;
+  return t.includes("camera") || t.includes("audio");
+}
+
+function setMobileCameraHint(text = "") {
+  if (mobileCameraHintEl) mobileCameraHintEl.textContent = text;
+}
+
+function setMobileQuoteCodeHint(text = "") {
+  if (mobileQuoteCodeHintEl) mobileQuoteCodeHintEl.textContent = text;
+}
+
+function stopMobileCameraStream() {
+  if (!mobileActiveStream) return;
+  try {
+    mobileActiveStream.getTracks().forEach((track) => track.stop());
+  } catch {}
+  mobileActiveStream = null;
+  if (mobileCameraVideoEl) mobileCameraVideoEl.srcObject = null;
+}
+
+function updateMobileCameraAvailabilityUI() {
+  const issueLabel = mobileIssueEl?.value || "";
+  const eligible = mobileIssueNeedsCamera(issueLabel) && Boolean(currentMobileQuoteCode);
+  if (mobileCameraToolsEl) mobileCameraToolsEl.hidden = !eligible;
+  if (!eligible) {
+    if (mobileCameraPanelEl) mobileCameraPanelEl.hidden = true;
+    setMobileCameraHint("");
+    stopMobileCameraStream();
+  }
+  if (mobileCameraLogsBtn) mobileCameraLogsBtn.disabled = !eligible || !mobileCameraRuns.length;
+  if (mobileCameraDownloadBtn) mobileCameraDownloadBtn.disabled = !eligible || !mobileCameraRuns.length;
+}
+
+function parseBrowserInfo(ua = "") {
+  const checks = [
+    [/Edg\/([\d.]+)/, "Edge"],
+    [/OPR\/([\d.]+)/, "Opera"],
+    [/Chrome\/([\d.]+)/, "Chrome"],
+    [/Version\/([\d.]+).*Safari/, "Safari"],
+    [/Firefox\/([\d.]+)/, "Firefox"]
+  ];
+  for (const [re, name] of checks) {
+    const m = ua.match(re);
+    if (m) return { name, version: m[1] || "unknown" };
+  }
+  return { name: "Unknown", version: "unknown" };
+}
+
+function parseOsInfo(ua = "") {
+  const ios = ua.match(/OS (\d+[_\d]*) like Mac OS X/);
+  if (ios) return { name: "iOS", version: String(ios[1] || "").replace(/_/g, ".") || "unknown" };
+  const android = ua.match(/Android ([\d.]+)/);
+  if (android) return { name: "Android", version: android[1] || "unknown" };
+  const windows = ua.match(/Windows NT ([\d.]+)/);
+  if (windows) return { name: "Windows", version: windows[1] || "unknown" };
+  const mac = ua.match(/Mac OS X ([\d_]+)/);
+  if (mac) return { name: "macOS", version: String(mac[1] || "").replace(/_/g, ".") || "unknown" };
+  return { name: "Unknown", version: "unknown" };
+}
+
+function collectClientEnvironmentSnapshot() {
+  const ua = navigator.userAgent || "";
+  const browser = parseBrowserInfo(ua);
+  const os = parseOsInfo(ua);
+  const platform = navigator.platform || "unknown";
+  const maxTouchPoints = Number(navigator.maxTouchPoints || 0);
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (platform === "MacIntel" && maxTouchPoints > 1);
+  const isAndroid = /Android/.test(ua);
+  return {
+    platform,
+    browser,
+    os,
+    isIOS,
+    isAndroid,
+    language: navigator.language || "unknown",
+    userAgent: ua
+  };
+}
+
+function createCameraRun() {
+  return {
+    runId: `cam-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    startedAt: new Date().toISOString(),
+    endedAt: "",
+    status: "running",
+    summary: {},
+    entries: []
+  };
+}
+
+function pushCameraLog(run, event, detail = {}, level = "info") {
+  if (!run || !Array.isArray(run.entries)) return;
+  run.entries.push({
+    ts: new Date().toISOString(),
+    level,
+    event,
+    detail
+  });
+}
+
+function simplifyMediaError(err) {
+  if (!err) return { name: "UnknownError", message: "Unknown error" };
+  return {
+    name: String(err.name || "UnknownError"),
+    message: String(err.message || ""),
+    constraint: String(err.constraint || ""),
+    stack: String(err.stack || "").slice(0, 800)
+  };
+}
+
+function summarizeTrack(track) {
+  if (!track) return {};
+  const settings = typeof track.getSettings === "function" ? track.getSettings() : {};
+  const constraints = typeof track.getConstraints === "function" ? track.getConstraints() : {};
+  const capabilities = typeof track.getCapabilities === "function" ? track.getCapabilities() : {};
+  const capsSummary = {
+    width: capabilities?.width || null,
+    height: capabilities?.height || null,
+    frameRate: capabilities?.frameRate || null,
+    facingMode: capabilities?.facingMode || null
+  };
+  return {
+    label: String(track.label || ""),
+    id: String(track.id || ""),
+    muted: Boolean(track.muted),
+    enabled: Boolean(track.enabled),
+    readyState: String(track.readyState || ""),
+    settings,
+    constraints,
+    capabilities: capsSummary
+  };
+}
+
+function mobileCameraLogsPayloadFromRuns(runs, code = "") {
+  return {
+    generatedAt: new Date().toISOString(),
+    quoteCode: code || "",
+    runCount: Array.isArray(runs) ? runs.length : 0,
+    runs: Array.isArray(runs) ? runs : []
+  };
+}
+
+function openCameraLogsWindow(payload, title = "Logs test camera") {
+  const serialized = JSON.stringify(payload || {}, null, 2);
+  const w = window.open("", "_blank", "noopener,noreferrer");
+  if (!w) return false;
+  w.document.open();
+  w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>body{margin:0;background:#09111c;color:#e6eefb;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;padding:18px}h1{font-family:Manrope,Arial,sans-serif;font-size:18px;margin:0 0 10px 0}pre{white-space:pre-wrap;word-break:break-word;background:#0f1a2a;border:1px solid #263a57;border-radius:10px;padding:12px;line-height:1.45;font-size:12px}</style></head><body><h1>${title}</h1><pre>${serialized.replace(/</g, "&lt;")}</pre></body></html>`);
+  w.document.close();
+  return true;
+}
+
+function downloadCameraLogs(payload, fileName = "") {
+  const name = fileName || `camera-logs-${Date.now()}.json`;
+  const blob = new Blob([JSON.stringify(payload || {}, null, 2)], { type: "application/json;charset=utf-8" });
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(href);
+}
+
+function readMobileFormPayload() {
+  return {
+    fromName: String(mobileFromNameEl?.value || "").trim(),
+    replyTo: String(mobileReplyToEl?.value || "").trim().toLowerCase(),
+    deviceType: String(mobileDeviceTypeEl?.value || "").trim(),
+    issue: String(mobileIssueEl?.value || "").trim(),
+    model: String(mobileModelEl?.value || "").trim(),
+    description: String(mobileDescriptionEl?.value || "").trim()
+  };
+}
+
+function createMobileQuoteRecord({ code, payload }) {
+  const issueLabel = String(payload?.issue || "").trim();
+  return {
+    code,
+    createdAt: new Date().toISOString(),
+    requester: {
+      name: String(payload?.fromName || "").trim(),
+      email: String(payload?.replyTo || "").trim().toLowerCase(),
+      details: String(payload?.description || "").trim(),
+      noviceMode: false,
+      noviceBrief: "",
+      budgetMin: 0,
+      budgetMax: 0
+    },
+    signature: JSON.stringify(payload || {}),
+    selects: {},
+    external: {},
+    usage: `Reparation mobile - ${issueLabel || "N/A"}`,
+    serviceType: "mobile-repair",
+    issueCategory: mobileIssueNeedsCamera(issueLabel) ? "camera-audio" : "other",
+    mobileRequest: {
+      deviceType: String(payload?.deviceType || "").trim(),
+      issue: issueLabel,
+      model: String(payload?.model || "").trim(),
+      description: String(payload?.description || "").trim()
+    },
+    cameraDiagnostics: {
+      updatedAt: new Date().toISOString(),
+      runs: mobileCameraRuns.slice(-8)
+    },
+    config: {
+      total: 0,
+      parts: {
+        device: String(payload?.deviceType || "").trim(),
+        issue: issueLabel,
+        model: String(payload?.model || "").trim()
+      }
+    }
+  };
+}
+
+async function persistMobileQuoteRecord(record) {
+  if (!record?.code) return;
+  const store = readMobileQuoteStore();
+  store[record.code] = record;
+  writeMobileQuoteStore(store);
+  localStorage.setItem(MOBILE_LAST_QUOTE_CODE_KEY, record.code);
+  await saveQuoteToDatabase(record);
+}
+
+async function runMobileCameraDiagnostic() {
+  if (mobileCameraTestBusy) return;
+  if (!currentMobileQuoteCode) {
+    setMobileCameraHint("Envoie d'abord le devis pour activer le test camera.");
+    return;
+  }
+  if (!mobileIssueNeedsCamera(mobileIssueEl?.value || "")) {
+    setMobileCameraHint("Le test camera n'est disponible que pour la categorie camera/audio.");
+    return;
+  }
+  const hasMediaDevices = Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && navigator.mediaDevices.enumerateDevices);
+  if (!hasMediaDevices) {
+    setMobileCameraHint("Navigateur incompatible: mediaDevices indisponible.");
+    return;
+  }
+
+  mobileCameraTestBusy = true;
+  if (mobileCameraTestBtn) mobileCameraTestBtn.disabled = true;
+  setMobileCameraHint("Test camera en cours...");
+  if (mobileCameraPanelEl) mobileCameraPanelEl.hidden = false;
+  if (mobileCameraPanelMetaEl) mobileCameraPanelMetaEl.textContent = "Initialisation du diagnostic...";
+  stopMobileCameraStream();
+
+  const run = createCameraRun();
+  const env = collectClientEnvironmentSnapshot();
+  pushCameraLog(run, "environment_snapshot", env, "info");
+  run.summary.supportsMediaDevices = true;
+  run.summary.supportsPermissionsApi = Boolean(navigator.permissions?.query);
+
+  if (navigator.permissions?.query) {
+    try {
+      const camPerm = await navigator.permissions.query({ name: "camera" });
+      run.summary.cameraPermissionState = String(camPerm?.state || "unknown");
+      pushCameraLog(run, "permission_query_before", { state: camPerm?.state || "unknown" }, "info");
+    } catch (err) {
+      pushCameraLog(run, "permission_query_error", simplifyMediaError(err), "warn");
+      run.summary.cameraPermissionState = "unknown";
+    }
+  } else {
+    run.summary.cameraPermissionState = "unsupported";
+    pushCameraLog(run, "permission_api_unsupported", { note: "navigator.permissions.query non supporte pour camera" }, "warn");
+  }
+
+  try {
+    const beforeDevices = await navigator.mediaDevices.enumerateDevices();
+    const beforeVideo = beforeDevices.filter((d) => d.kind === "videoinput");
+    pushCameraLog(run, "enumerate_before_permission", {
+      videoInputs: beforeVideo.map((d) => ({
+        deviceId: d.deviceId || "",
+        groupId: d.groupId || "",
+        label: d.label || ""
+      })),
+      count: beforeVideo.length
+    }, "info");
+  } catch (err) {
+    pushCameraLog(run, "enumerate_before_permission_error", simplifyMediaError(err), "warn");
+  }
+
+  const tests = [
+    { label: "facing_user_exact", video: { facingMode: { exact: "user" } } },
+    { label: "facing_environment_exact", video: { facingMode: { exact: "environment" } } },
+    { label: "video_true_fallback", video: true }
+  ];
+  const testResults = [];
+
+  for (const test of tests) {
+    const constraints = { video: test.video, audio: false };
+    pushCameraLog(run, "get_user_media_request", { label: test.label, constraints }, "info");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      const track = stream.getVideoTracks()[0] || null;
+      const trackInfo = summarizeTrack(track);
+      testResults.push({ ok: true, label: test.label, constraints, trackInfo });
+      pushCameraLog(run, "get_user_media_success", { label: test.label, trackInfo }, "info");
+      stream.getTracks().forEach((t) => t.stop());
+    } catch (err) {
+      const errorInfo = simplifyMediaError(err);
+      testResults.push({ ok: false, label: test.label, constraints, error: errorInfo });
+      pushCameraLog(run, "get_user_media_error", { label: test.label, error: errorInfo }, "error");
+    }
+  }
+
+  try {
+    const afterDevices = await navigator.mediaDevices.enumerateDevices();
+    const afterVideo = afterDevices.filter((d) => d.kind === "videoinput");
+    run.summary.detectedVideoInputs = afterVideo.length;
+    pushCameraLog(run, "enumerate_after_permission", {
+      videoInputs: afterVideo.map((d) => ({
+        deviceId: d.deviceId || "",
+        groupId: d.groupId || "",
+        label: d.label || ""
+      })),
+      count: afterVideo.length,
+      labelsAccessible: afterVideo.some((d) => String(d.label || "").trim().length > 0)
+    }, "info");
+  } catch (err) {
+    pushCameraLog(run, "enumerate_after_permission_error", simplifyMediaError(err), "warn");
+  }
+
+  const previewCandidate = testResults.find((entry) => entry.ok && entry.label === "facing_environment_exact")
+    || testResults.find((entry) => entry.ok && entry.label === "facing_user_exact")
+    || testResults.find((entry) => entry.ok);
+
+  if (previewCandidate) {
+    try {
+      mobileActiveStream = await navigator.mediaDevices.getUserMedia({
+        video: previewCandidate.constraints.video,
+        audio: false
+      });
+      if (mobileCameraVideoEl) {
+        mobileCameraVideoEl.srcObject = mobileActiveStream;
+        await mobileCameraVideoEl.play().catch(() => {});
+      }
+      if (mobileCameraPanelEl) mobileCameraPanelEl.hidden = false;
+      const previewTrack = mobileActiveStream.getVideoTracks()[0] || null;
+      const previewInfo = summarizeTrack(previewTrack);
+      pushCameraLog(run, "preview_stream_started", { selectedTest: previewCandidate.label, previewInfo }, "info");
+      if (mobileCameraPanelMetaEl) {
+        const width = previewInfo?.settings?.width || "?";
+        const height = previewInfo?.settings?.height || "?";
+        const facing = previewInfo?.settings?.facingMode || "unknown";
+        mobileCameraPanelMetaEl.textContent = `Flux actif: ${width}x${height} • facingMode=${facing}`;
+      }
+      run.status = "success";
+    } catch (err) {
+      pushCameraLog(run, "preview_stream_error", simplifyMediaError(err), "error");
+      run.status = "partial_failure";
+      if (mobileCameraPanelEl) mobileCameraPanelEl.hidden = true;
+      setMobileCameraHint("Tests effectués, mais impossible d'afficher un flux persistant.");
+    }
+  } else {
+    run.status = "failure";
+    if (mobileCameraPanelEl) mobileCameraPanelEl.hidden = true;
+    setMobileCameraHint("Aucun flux caméra accessible. Vérifie les permissions et réessaie.");
+  }
+
+  run.summary.testedStreams = testResults.length;
+  run.summary.successfulTests = testResults.filter((entry) => entry.ok).length;
+  run.endedAt = new Date().toISOString();
+
+  mobileCameraRuns = [...mobileCameraRuns, run].slice(-8);
+  const payload = readMobileFormPayload();
+  const record = createMobileQuoteRecord({ code: currentMobileQuoteCode, payload });
+  await persistMobileQuoteRecord(record);
+
+  if (run.status === "success") {
+    setMobileCameraHint("Diagnostic caméra terminé. Logs enregistrés.");
+  } else if (run.status === "partial_failure") {
+    setMobileCameraHint("Diagnostic partiel: certaines étapes ont échoué. Consulte les logs.");
+  }
+
+  updateMobileCameraAvailabilityUI();
+  mobileCameraTestBusy = false;
+  if (mobileCameraTestBtn) mobileCameraTestBtn.disabled = false;
+}
+
+async function restoreLastMobileQuoteSession() {
+  if (!formMobile) return;
+  const lastCode = String(localStorage.getItem(MOBILE_LAST_QUOTE_CODE_KEY) || "").trim().toUpperCase();
+  if (!lastCode) return;
+  const store = readMobileQuoteStore();
+  let record = store[lastCode] || null;
+  if (!record) {
+    record = await fetchQuoteFromDatabase(lastCode);
+    if (record) {
+      store[lastCode] = record;
+      writeMobileQuoteStore(store);
+    }
+  }
+  if (!record || String(record.serviceType || "") !== "mobile-repair") return;
+
+  currentMobileQuoteCode = String(record.code || lastCode).trim().toUpperCase();
+  const req = record.mobileRequest && typeof record.mobileRequest === "object" ? record.mobileRequest : {};
+  if (mobileFromNameEl) mobileFromNameEl.value = String(record.requester?.name || "").trim();
+  if (mobileReplyToEl) mobileReplyToEl.value = String(record.requester?.email || "").trim().toLowerCase();
+  if (mobileDeviceTypeEl && req.deviceType) mobileDeviceTypeEl.value = String(req.deviceType || "").trim();
+  if (mobileIssueEl && req.issue) mobileIssueEl.value = String(req.issue || "").trim();
+  if (mobileModelEl) mobileModelEl.value = String(req.model || "").trim();
+  if (mobileDescriptionEl) mobileDescriptionEl.value = String(req.description || record.requester?.details || "").trim();
+  mobileCameraRuns = Array.isArray(record?.cameraDiagnostics?.runs) ? record.cameraDiagnostics.runs : [];
+  setMobileQuoteCodeHint(`Devis mobile rechargé: ${currentMobileQuoteCode}`);
+  updateMobileCameraAvailabilityUI();
+}
+
+function cameraRunsFromRecord(record) {
+  return Array.isArray(record?.cameraDiagnostics?.runs) ? record.cameraDiagnostics.runs : [];
+}
+
+async function openOrDownloadCameraLogsForQuote(code, shouldDownload = false) {
+  const normalized = String(code || "").trim().toUpperCase();
+  if (!normalized) return false;
+  const record = await getQuoteRecordByCode(normalized);
+  const runs = cameraRunsFromRecord(record);
+  if (!runs.length) {
+    toast("Aucun log caméra sur ce devis.");
+    return false;
+  }
+  const payload = mobileCameraLogsPayloadFromRuns(runs, normalized);
+  if (shouldDownload) {
+    downloadCameraLogs(payload, `camera-logs-${normalized}.json`);
+    toast("Logs caméra téléchargés.");
+    return true;
+  }
+  const opened = openCameraLogsWindow(payload, `Logs camera ${normalized}`);
+  if (!opened) toast("Popup bloquée: autorise les popups pour voir les logs.");
+  return opened;
+}
+
+function bindMobileFormFlow() {
+  if (!formMobile) return;
+
+  if (mobileIssueEl) {
+    mobileIssueEl.addEventListener("change", () => {
+      updateMobileCameraAvailabilityUI();
+    });
+  }
+  if (mobileCameraTestBtn) {
+    mobileCameraTestBtn.addEventListener("click", async () => {
+      await runMobileCameraDiagnostic();
+    });
+  }
+  if (mobileCameraLogsBtn) {
+    mobileCameraLogsBtn.addEventListener("click", () => {
+      if (!mobileCameraRuns.length) {
+        toast("Aucun log caméra disponible.");
+        return;
+      }
+      const payload = mobileCameraLogsPayloadFromRuns(mobileCameraRuns, currentMobileQuoteCode);
+      const opened = openCameraLogsWindow(payload, `Logs camera ${currentMobileQuoteCode || ""}`.trim());
+      if (!opened) toast("Popup bloquée: autorise les popups pour voir les logs.");
+    });
+  }
+  if (mobileCameraDownloadBtn) {
+    mobileCameraDownloadBtn.addEventListener("click", () => {
+      if (!mobileCameraRuns.length) {
+        toast("Aucun log caméra à télécharger.");
+        return;
+      }
+      const payload = mobileCameraLogsPayloadFromRuns(mobileCameraRuns, currentMobileQuoteCode);
+      const file = `camera-logs-${currentMobileQuoteCode || Date.now()}.json`;
+      downloadCameraLogs(payload, file);
+      toast("Logs caméra téléchargés.");
+    });
+  }
+
+  formMobile.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const payload = readMobileFormPayload();
+    if (!payload.fromName || !payload.replyTo || !payload.deviceType || !payload.issue || !payload.model || !payload.description) {
+      setStatus("mobileStatus", "Complète tous les champs du devis mobile.");
+      return;
+    }
+
+    const code = currentMobileQuoteCode || createQuoteCode();
+    currentMobileQuoteCode = code;
+    const quoteRecord = createMobileQuoteRecord({ code, payload });
+    await persistMobileQuoteRecord(quoteRecord);
+
+    const logSummary = mobileCameraRuns.length
+      ? `logs_camera: ${mobileCameraRuns.length} session(s) (derniere: ${mobileCameraRuns[mobileCameraRuns.length - 1]?.status || "n/a"})`
+      : "logs_camera: aucun test lance";
+
+    const message = [
+      "type : devis_reparation_mobile",
+      `code_devis : ${code}`,
+      `nom : ${payload.fromName}`,
+      `email : ${payload.replyTo}`,
+      `appareil : ${payload.deviceType}`,
+      `probleme : ${payload.issue}`,
+      `modele : ${payload.model}`,
+      `description : ${payload.description}`,
+      logSummary
+    ].join("\n");
+
+    const ok = await sendEmail({
+      subject: `Demande devis — Réparation Mobile (${code})`,
+      from_name: payload.fromName,
+      reply_to: payload.replyTo,
+      message,
+      statusElId: "mobileStatus"
+    });
+
+    if (!ok) return;
+
+    setMobileQuoteCodeHint(`Code devis mobile: ${code}. Conserve-le pour le suivi.`);
+    if (mobileIssueNeedsCamera(payload.issue)) {
+      setMobileCameraHint("Devis envoyé. Tu peux lancer le test caméra pour le diagnostic.");
+    } else {
+      setMobileCameraHint("");
+    }
+    updateMobileCameraAvailabilityUI();
+  });
+
+  updateMobileCameraAvailabilityUI();
 }
 
 function roundBudgetStep(value) {
@@ -4986,13 +5554,16 @@ function renderAdminQuotesList(quotes) {
     grid.className = "admin-quote__grid";
     const cards = [
       { label: "Client", value: `${quote.requesterName || "—"}${quote.requesterEmail ? ` (${quote.requesterEmail})` : ""}` },
+      { label: "Service", value: quote.serviceType || "pc-custom" },
+      { label: "Catégorie", value: quote.issueCategory || "—" },
       { label: "Usage", value: quote.usage || "—" },
       { label: "Total estimé", value: quote.totalLabel || "—" },
       { label: "Traitement", value: quote.deliveryName || "—" },
       { label: "Créé le", value: formatDateTimeFr(quote.createdAt) },
       { label: "MAJ", value: formatDateTimeFr(quote.updatedAt || quote.createdAt) },
       { label: "OTP modification", value: quote.pendingModification ? `En attente (exp. ${formatDateTimeFr(quote.pendingExpiresAt)})` : "Aucun" },
-      { label: "Priorité", value: quote.priorityReason || "—" }
+      { label: "Priorité", value: quote.priorityReason || "—" },
+      { label: "Logs caméra", value: quote.hasCameraLogs ? `${quote.cameraLogCount || 0} entrées (maj ${formatDateTimeFr(quote.cameraLastRunAt)})` : "Aucun" }
     ];
     cards.forEach((entry) => {
       const cell = document.createElement("div");
@@ -5051,7 +5622,23 @@ function renderAdminQuotesList(quotes) {
     testReceiptBtn.dataset.email = String(quote.requesterEmail || "");
     testReceiptBtn.textContent = "Facture test";
 
-    actions.append(settleBtn, testReceiptBtn, deleteBtn);
+    const viewCameraLogsBtn = document.createElement("button");
+    viewCameraLogsBtn.type = "button";
+    viewCameraLogsBtn.className = "btn btn--ghost btn--tiny";
+    viewCameraLogsBtn.dataset.adminAction = "view-camera-logs";
+    viewCameraLogsBtn.dataset.code = String(quote.code || "");
+    viewCameraLogsBtn.textContent = "Voir logs";
+    viewCameraLogsBtn.hidden = !quote.hasCameraLogs;
+
+    const downloadCameraLogsBtn = document.createElement("button");
+    downloadCameraLogsBtn.type = "button";
+    downloadCameraLogsBtn.className = "btn btn--ghost btn--tiny";
+    downloadCameraLogsBtn.dataset.adminAction = "download-camera-logs";
+    downloadCameraLogsBtn.dataset.code = String(quote.code || "");
+    downloadCameraLogsBtn.textContent = "Télécharger logs";
+    downloadCameraLogsBtn.hidden = !quote.hasCameraLogs;
+
+    actions.append(settleBtn, testReceiptBtn, viewCameraLogsBtn, downloadCameraLogsBtn, deleteBtn);
     body.append(grid, partsLabel, partsList, actions);
     details.append(summary, body);
     adminQuotesListEl.appendChild(details);
@@ -5537,6 +6124,16 @@ function bindCustomBuilder() {
         }
       }
 
+      if (action === "view-camera-logs") {
+        await openOrDownloadCameraLogsForQuote(code, false);
+        return;
+      }
+
+      if (action === "download-camera-logs") {
+        await openOrDownloadCameraLogsForQuote(code, true);
+        return;
+      }
+
       if (action === "test-receipt") {
         const suggestedEmail = String(button.dataset.email || "").trim().toLowerCase();
         await runTestReceiptFlow({ code, suggestedEmail });
@@ -5951,6 +6548,14 @@ function bindCustomBuilder() {
 
 initThemeCustomizer();
 bindCustomBuilder();
+bindMobileFormFlow();
+void restoreLastMobileQuoteSession();
+window.addEventListener("pagehide", () => {
+  stopMobileCameraStream();
+});
+window.addEventListener("beforeunload", () => {
+  stopMobileCameraStream();
+});
 
 (function tiltCards() {
   const cards = $$(".tilt");
