@@ -5147,12 +5147,13 @@ function createMobileQuoteRecord({ code, payload }) {
 }
 
 async function persistMobileQuoteRecord(record) {
-  if (!record?.code) return;
+  if (!record?.code) return false;
   const store = readMobileQuoteStore();
   store[record.code] = record;
   writeMobileQuoteStore(store);
   localStorage.setItem(MOBILE_LAST_QUOTE_CODE_KEY, record.code);
-  await saveQuoteToDatabase(record);
+  const saved = await saveQuoteToDatabase(record);
+  return saved;
 }
 
 async function runMobileCameraDiagnostic() {
@@ -5394,15 +5395,19 @@ async function runMobileCameraDiagnostic() {
     mobileCameraRuns = [...mobileCameraRuns, run].slice(-8);
     const payload = readMobileFormPayload();
     const record = createMobileQuoteRecord({ code: currentMobileQuoteCode, payload });
-    await persistMobileQuoteRecord(record);
+    const saved = await persistMobileQuoteRecord(record);
+    if (!saved) {
+      pushCameraLog(run, "quote_save_warning", { code: currentMobileQuoteCode, reason: "SAVE_FAILED_AFTER_RETRIES" }, "warn");
+      setMobileCameraHint("Diagnostic terminé localement, mais sauvegarde serveur instable. Refais un test si besoin.");
+    }
 
     const frontStatusText = `avant: ${cameraPhaseStatusToText(frontState, run.summary.frontCameraError)}`;
     const rearStatusText = `arrière: ${cameraPhaseStatusToText(rearState, run.summary.rearCameraError)}`;
-    if (run.status === "success") {
+    if (saved && run.status === "success") {
       setMobileCameraHint(`Diagnostic caméra terminé. ${frontStatusText} • ${rearStatusText}.`);
-    } else if (run.status === "partial_failure") {
+    } else if (saved && run.status === "partial_failure") {
       setMobileCameraHint(`Diagnostic partiel. ${frontStatusText} • ${rearStatusText}. Voir les logs côté admin.`);
-    } else {
+    } else if (saved) {
       const hintLead = Array.isArray(run.summary.diagnosticHints) && run.summary.diagnosticHints.length
         ? ` ${run.summary.diagnosticHints[0]}`
         : "";
@@ -5415,8 +5420,10 @@ async function runMobileCameraDiagnostic() {
     mobileCameraRuns = [...mobileCameraRuns, run].slice(-8);
     const payload = readMobileFormPayload();
     const record = createMobileQuoteRecord({ code: currentMobileQuoteCode, payload });
-    await persistMobileQuoteRecord(record);
-    setMobileCameraHint("Diagnostic interrompu par une erreur inattendue. Voir les logs côté admin.");
+    const saved = await persistMobileQuoteRecord(record);
+    setMobileCameraHint(saved
+      ? "Diagnostic interrompu par une erreur inattendue. Voir les logs côté admin."
+      : "Diagnostic interrompu et sauvegarde serveur instable. Relance un test.");
   } finally {
     stopMobileCameraStream();
     updateMobileCameraAvailabilityUI();
@@ -5532,7 +5539,7 @@ function cameraRunsFromRecord(record) {
 async function openOrDownloadCameraLogsForQuote(code, shouldDownload = false, runId = "") {
   const normalized = String(code || "").trim().toUpperCase();
   if (!normalized) return false;
-  const record = await getQuoteRecordByCode(normalized);
+  const record = await getQuoteRecordByCode(normalized, { fresh: true });
   const allRuns = cameraRunsFromRecord(record);
   const targetRunId = String(runId || "").trim();
   const runs = targetRunId
@@ -5669,7 +5676,11 @@ function bindMobileFormFlow() {
     const code = (mobileQuoteContextReady && currentMobileQuoteCode) ? currentMobileQuoteCode : createQuoteCode();
     currentMobileQuoteCode = code;
     const quoteRecord = createMobileQuoteRecord({ code, payload });
-    await persistMobileQuoteRecord(quoteRecord);
+    const saved = await persistMobileQuoteRecord(quoteRecord);
+    if (!saved) {
+      setStatus("mobileStatus", "Erreur sauvegarde devis. Réessaie dans quelques secondes.");
+      return;
+    }
 
     const logSummary = mobileCameraRuns.length
       ? `logs_camera: ${mobileCameraRuns.length} session(s) (derniere: ${mobileCameraRuns[mobileCameraRuns.length - 1]?.status || "n/a"})`
@@ -5963,27 +5974,169 @@ function writeQuoteStore(store) {
   localStorage.setItem(QUOTE_STORAGE_KEY, JSON.stringify(store));
 }
 
-async function saveQuoteToDatabase(record) {
+function cloneJson(value) {
   try {
-    const res = await fetch("/api/save-quote", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ record }),
-      keepalive: true
-    });
-
-    return res.ok;
+    return JSON.parse(JSON.stringify(value));
   } catch {
-    return false;
+    return null;
   }
 }
 
-async function fetchQuoteFromDatabase(code) {
+function cameraDiagnosticsSize(value) {
+  try {
+    return JSON.stringify(value || {}).length;
+  } catch {
+    return 0;
+  }
+}
+
+function trimCameraDiagnosticsForTransport(cameraDiagnostics, { aggressive = false } = {}) {
+  if (!cameraDiagnostics || typeof cameraDiagnostics !== "object") return cameraDiagnostics;
+  const sourceRuns = Array.isArray(cameraDiagnostics.runs) ? cameraDiagnostics.runs : [];
+  const maxRuns = aggressive ? 3 : 6;
+  const maxEntries = aggressive ? 90 : 220;
+  const trimmedRuns = sourceRuns.slice(-maxRuns).map((run, idx, arr) => {
+    const safeRun = cloneJson(run) || {};
+    const entries = Array.isArray(safeRun.entries) ? safeRun.entries.slice(-maxEntries) : [];
+    if (!entries.length) {
+      entries.push({
+        ts: new Date().toISOString(),
+        level: "warn",
+        event: "diagnostic_entry_missing",
+        detail: { note: "Historique réduit pour fiabilité de sauvegarde." }
+      });
+    }
+    safeRun.entries = entries;
+    const clips = Array.isArray(safeRun?.media?.clips) ? safeRun.media.clips.slice(-2) : [];
+    const isLatestRun = idx === arr.length - 1;
+    safeRun.media = {
+      clips: clips.map((clip) => {
+        const safeClip = cloneJson(clip) || {};
+        if (aggressive || !isLatestRun) {
+          safeClip.dataUrl = "";
+          safeClip.dropped = true;
+          safeClip.droppedReason = safeClip.droppedReason || "TRIMMED_FOR_SAVE_RELIABILITY";
+        }
+        return safeClip;
+      })
+    };
+    if (!safeRun.summary || typeof safeRun.summary !== "object") safeRun.summary = {};
+    safeRun.summary.recordingCount = safeRun.media.clips.length;
+    return safeRun;
+  });
+
+  const out = {
+    ...(cloneJson(cameraDiagnostics) || {}),
+    updatedAt: new Date().toISOString(),
+    runs: trimmedRuns
+  };
+
+  const targetSize = aggressive ? 120000 : 220000;
+  let guard = 0;
+  while (cameraDiagnosticsSize(out) > targetSize && guard < 40) {
+    guard += 1;
+    let changed = false;
+
+    for (const run of out.runs) {
+      const clips = Array.isArray(run?.media?.clips) ? run.media.clips : [];
+      const withData = clips.find((clip) => String(clip?.dataUrl || "").trim());
+      if (withData) {
+        withData.dataUrl = "";
+        withData.dropped = true;
+        withData.droppedReason = withData.droppedReason || "TRIMMED_FOR_SAVE_RELIABILITY";
+        changed = true;
+        break;
+      }
+    }
+
+    if (!changed) {
+      for (const run of out.runs) {
+        if (Array.isArray(run?.entries) && run.entries.length > 80) {
+          run.entries = run.entries.slice(-80);
+          changed = true;
+        }
+      }
+    }
+
+    if (!changed && out.runs.length > 1) {
+      out.runs.shift();
+      changed = true;
+    }
+
+    if (!changed) break;
+  }
+
+  return out;
+}
+
+function buildRecordForSaveVariant(record, { aggressive = false } = {}) {
+  const clone = cloneJson(record);
+  if (!clone || typeof clone !== "object") return null;
+  if (clone.cameraDiagnostics && typeof clone.cameraDiagnostics === "object") {
+    clone.cameraDiagnostics = trimCameraDiagnosticsForTransport(clone.cameraDiagnostics, { aggressive });
+  }
+  return clone;
+}
+
+async function saveQuoteToDatabase(record) {
+  const candidates = [];
+  const addCandidate = (candidate) => {
+    if (!candidate || typeof candidate !== "object") return;
+    const signatureValue = (() => {
+      try {
+        return JSON.stringify(candidate);
+      } catch {
+        return "";
+      }
+    })();
+    if (!signatureValue) return;
+    if (candidates.some((item) => item.signatureValue === signatureValue)) return;
+    candidates.push({ candidate, signatureValue });
+  };
+
+  addCandidate(record);
+  if (record?.cameraDiagnostics && typeof record.cameraDiagnostics === "object") {
+    addCandidate(buildRecordForSaveVariant(record, { aggressive: false }));
+    addCandidate(buildRecordForSaveVariant(record, { aggressive: true }));
+  }
+
+  for (const item of candidates) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const res = await fetch("/api/save-quote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
+          body: JSON.stringify({ record: item.candidate }),
+          keepalive: true,
+          cache: "no-store"
+        });
+        if (res.ok) return true;
+        const data = await res.json().catch(() => ({}));
+        const errCode = String(data?.error || "");
+        const tooLarge = res.status === 413 || errCode === "RECORD_TOO_LARGE";
+        if (tooLarge) break;
+      } catch {
+        // Retry once per candidate on transient network failure.
+      }
+      await waitMs(180 * (attempt + 1));
+    }
+  }
+
+  return false;
+}
+
+async function fetchQuoteFromDatabase(code, { fresh = false } = {}) {
   const clean = String(code || "").trim().toUpperCase();
   if (!clean) return null;
 
   try {
-    const res = await fetch(`/api/load-quote?code=${encodeURIComponent(clean)}`, { method: "GET" });
+    const params = new URLSearchParams({ code: clean });
+    if (fresh) params.set("_ts", Date.now().toString(36));
+    const res = await fetch(`/api/load-quote?${params.toString()}`, {
+      method: "GET",
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache" }
+    });
     if (!res.ok) return null;
 
     const data = await res.json();
@@ -6109,12 +6262,13 @@ function buildQuoteRecord(state, code, {
   };
 }
 
-async function getQuoteRecordByCode(code) {
+async function getQuoteRecordByCode(code, { fresh = false } = {}) {
   const normalized = String(code || "").trim().toUpperCase();
   if (!normalized) return null;
   const store = readQuoteStore();
-  if (store[normalized]) return store[normalized];
-  const remote = await fetchQuoteFromDatabase(normalized);
+  if (!fresh && store[normalized]) return store[normalized];
+  const remote = await fetchQuoteFromDatabase(normalized, { fresh: true });
+  if (!remote && store[normalized]) return store[normalized];
   if (!remote) return null;
   store[normalized] = remote;
   writeQuoteStore(store);
@@ -6542,9 +6696,14 @@ function setAdminQuotesStatus(text, tone = "") {
 async function apiFetchAdminQuotes(adminKey) {
   const params = new URLSearchParams({
     action: "list",
-    admin_key: String(adminKey || "").trim()
+    admin_key: String(adminKey || "").trim(),
+    _ts: Date.now().toString(36)
   });
-  const res = await fetch(`/api/admin-tools?${params.toString()}`, { method: "GET" });
+  const res = await fetch(`/api/admin-tools?${params.toString()}`, {
+    method: "GET",
+    cache: "no-store",
+    headers: { "Cache-Control": "no-cache" }
+  });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error || "ADMIN_QUOTES_FETCH_FAILED");
   return data;
