@@ -4052,6 +4052,8 @@ let currentPcRepairQuoteCode = "";
 let mobileCameraRuns = [];
 let mobileActiveStream = null;
 let mobileCameraTestBusy = false;
+let mobileQuoteContextReady = false;
+let mobileApplyingLoadedRecord = false;
 
 function updateModifyActionVisibility() {
   const hasCode = Boolean(currentQuoteCode);
@@ -4152,6 +4154,23 @@ function setPcQuoteCodeHint(text = "") {
   if (pcQuoteCodeHintEl) pcQuoteCodeHintEl.textContent = text;
 }
 
+function setMobileQuoteContextReady(ready) {
+  mobileQuoteContextReady = Boolean(ready);
+  updateMobileCameraAvailabilityUI();
+}
+
+function resetMobileQuoteContextAfterManualEdit() {
+  if (mobileApplyingLoadedRecord) return;
+  if (!mobileQuoteContextReady) return;
+  currentMobileQuoteCode = "";
+  mobileQuoteContextReady = false;
+  mobileCameraRuns = [];
+  stopMobileCameraStream();
+  setMobileQuoteCodeHint("Devis mobile modifié. Renvoie ou recharge un devis pour relancer le diagnostic caméra.");
+  setMobileCameraHint("");
+  updateMobileCameraAvailabilityUI();
+}
+
 function readPcRepairFormPayload() {
   return {
     fromName: String(pcFromNameEl?.value || "").trim(),
@@ -4226,7 +4245,7 @@ function stopMobileCameraStream() {
 
 function updateMobileCameraAvailabilityUI() {
   const issueLabel = mobileIssueEl?.value || "";
-  const eligible = mobileIssueNeedsCamera(issueLabel) && Boolean(currentMobileQuoteCode);
+  const eligible = mobileIssueNeedsCamera(issueLabel) && Boolean(currentMobileQuoteCode) && mobileQuoteContextReady;
   if (mobileCameraToolsEl) mobileCameraToolsEl.hidden = !eligible;
   if (!eligible) {
     if (mobileCameraPanelEl) mobileCameraPanelEl.hidden = true;
@@ -4344,27 +4363,156 @@ function mobileCameraLogsPayloadFromRuns(runs, code = "") {
   };
 }
 
+let cameraLogsViewer = null;
+
+function ensureCameraLogsViewer() {
+  if (cameraLogsViewer) return cameraLogsViewer;
+  const root = document.createElement("div");
+  root.className = "camera-logs-viewer";
+  root.hidden = true;
+
+  const backdrop = document.createElement("div");
+  backdrop.className = "camera-logs-viewer__backdrop";
+
+  const dialog = document.createElement("div");
+  dialog.className = "camera-logs-viewer__dialog";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+
+  const head = document.createElement("div");
+  head.className = "camera-logs-viewer__head";
+  const titleEl = document.createElement("div");
+  titleEl.className = "camera-logs-viewer__title";
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "btn btn--ghost btn--tiny";
+  closeBtn.textContent = "Fermer";
+
+  const pre = document.createElement("pre");
+  pre.className = "camera-logs-viewer__pre";
+
+  head.append(titleEl, closeBtn);
+  dialog.append(head, pre);
+  root.append(backdrop, dialog);
+  document.body.appendChild(root);
+
+  const close = () => {
+    root.hidden = true;
+    document.body.classList.remove("is-modal-open");
+  };
+  backdrop.addEventListener("click", close);
+  closeBtn.addEventListener("click", close);
+  root.addEventListener("click", (event) => {
+    if (event.target === root) close();
+  });
+
+  cameraLogsViewer = { root, titleEl, pre, close };
+  return cameraLogsViewer;
+}
+
 function openCameraLogsWindow(payload, title = "Logs test camera") {
-  const serialized = JSON.stringify(payload || {}, null, 2);
-  const w = window.open("", "_blank", "noopener,noreferrer");
-  if (!w) return false;
-  w.document.open();
-  w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>body{margin:0;background:#09111c;color:#e6eefb;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;padding:18px}h1{font-family:Manrope,Arial,sans-serif;font-size:18px;margin:0 0 10px 0}pre{white-space:pre-wrap;word-break:break-word;background:#0f1a2a;border:1px solid #263a57;border-radius:10px;padding:12px;line-height:1.45;font-size:12px}</style></head><body><h1>${title}</h1><pre>${serialized.replace(/</g, "&lt;")}</pre></body></html>`);
-  w.document.close();
+  const viewer = ensureCameraLogsViewer();
+  viewer.titleEl.textContent = String(title || "Logs test camera");
+  viewer.pre.textContent = JSON.stringify(payload || {}, null, 2);
+  viewer.root.hidden = false;
+  document.body.classList.add("is-modal-open");
   return true;
 }
 
-function downloadCameraLogs(payload, fileName = "") {
-  const name = fileName || `camera-logs-${Date.now()}.json`;
-  const blob = new Blob([JSON.stringify(payload || {}, null, 2)], { type: "application/json;charset=utf-8" });
+function cameraLogDetailToSentence(detail) {
+  if (!detail || typeof detail !== "object") return String(detail || "");
+  const label = String(detail?.label || "").trim();
+  const errorName = String(detail?.error?.name || detail?.name || "").trim();
+  const errorMessage = String(detail?.error?.message || detail?.message || "").trim();
+  const state = String(detail?.state || "").trim();
+  const count = Number(detail?.count || 0);
+  if (label && errorName) return `${label}: ${errorName}${errorMessage ? ` - ${errorMessage}` : ""}`;
+  if (label && state) return `${label}: état ${state}`;
+  if (label && Number.isFinite(count) && count > 0) return `${label}: ${count} périphérique(s) détecté(s)`;
+  if (errorName) return `${errorName}${errorMessage ? ` - ${errorMessage}` : ""}`;
+  if (state) return `état permission ${state}`;
+  try {
+    return JSON.stringify(detail);
+  } catch {
+    return "[détail non sérialisable]";
+  }
+}
+
+function buildCameraLogsMarkdown(payload) {
+  const runs = Array.isArray(payload?.runs) ? payload.runs : [];
+  const quoteCode = String(payload?.quoteCode || "").trim();
+  const generatedAt = String(payload?.generatedAt || new Date().toISOString());
+  const lines = [
+    "# Rapport diagnostic caméra",
+    "",
+    `- Devis: ${quoteCode || "N/A"}`,
+    `- Généré le: ${generatedAt}`,
+    `- Sessions: ${runs.length}`,
+    ""
+  ];
+
+  runs.forEach((run, index) => {
+    const entries = Array.isArray(run?.entries) ? run.entries : [];
+    const frontSuccess = entries.some((entry) => entry?.event === "get_user_media_success" && entry?.detail?.label === "facing_user_exact");
+    const frontError = entries.find((entry) => entry?.event === "get_user_media_error" && entry?.detail?.label === "facing_user_exact");
+    const rearSuccess = entries.some((entry) => entry?.event === "get_user_media_success" && entry?.detail?.label === "facing_environment_exact");
+    const rearError = entries.find((entry) => entry?.event === "get_user_media_error" && entry?.detail?.label === "facing_environment_exact");
+    const frontState = frontSuccess
+      ? "OK"
+      : `KO${frontError ? ` (${cameraLogDetailToSentence(frontError?.detail || {})})` : ""}`;
+    const rearState = rearSuccess
+      ? "OK"
+      : `KO${rearError ? ` (${cameraLogDetailToSentence(rearError?.detail || {})})` : ""}`;
+
+    lines.push(`## Session ${index + 1} — ${String(run?.runId || "run").trim() || "run"}`);
+    lines.push(`- Statut: ${String(run?.status || "unknown")}`);
+    lines.push(`- Début: ${String(run?.startedAt || "N/A")}`);
+    lines.push(`- Fin: ${String(run?.endedAt || "N/A")}`);
+    lines.push(`- Caméra avant (user): ${frontState}`);
+    lines.push(`- Caméra arrière (environment): ${rearState}`);
+    lines.push(`- Nombre de logs techniques: ${entries.length}`);
+    lines.push("");
+    lines.push("### Journal détaillé");
+    if (!entries.length) {
+      lines.push("- Aucun événement enregistré.");
+    } else {
+      entries.forEach((entry) => {
+        const ts = String(entry?.ts || "").trim();
+        const level = String(entry?.level || "info").toUpperCase();
+        const event = String(entry?.event || "event").trim();
+        const detailText = cameraLogDetailToSentence(entry?.detail);
+        lines.push(`- [${ts || "N/A"}] ${level} — ${event}: ${detailText || "aucun détail"}`);
+      });
+    }
+    lines.push("");
+  });
+
+  if (!runs.length) {
+    lines.push("Aucune session disponible.");
+  }
+
+  return lines.join("\n");
+}
+
+function triggerFileDownload(content, type, fileName) {
+  const blob = new Blob([content], { type });
   const href = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = href;
-  a.download = name;
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(href);
+}
+
+function downloadCameraLogs(payload, fileName = "") {
+  const jsonName = fileName || `camera-logs-${Date.now()}.json`;
+  const markdownName = jsonName.replace(/\.json$/i, ".md");
+  const json = JSON.stringify(payload || {}, null, 2);
+  const markdown = buildCameraLogsMarkdown(payload || {});
+  triggerFileDownload(json, "application/json;charset=utf-8", jsonName);
+  triggerFileDownload(markdown, "text/markdown;charset=utf-8", markdownName);
 }
 
 function readMobileFormPayload() {
@@ -4527,9 +4675,30 @@ async function runMobileCameraDiagnostic() {
     pushCameraLog(run, "enumerate_after_permission_error", simplifyMediaError(err), "warn");
   }
 
+  const frontTest = testResults.find((entry) => entry.label === "facing_user_exact") || null;
+  const rearTest = testResults.find((entry) => entry.label === "facing_environment_exact") || null;
+  const fallbackTest = testResults.find((entry) => entry.label === "video_true_fallback") || null;
+  run.summary.frontCameraStatus = frontTest?.ok ? "ok" : "error";
+  run.summary.rearCameraStatus = rearTest?.ok ? "ok" : "error";
+  run.summary.frontCameraError = frontTest?.ok ? "" : String(frontTest?.error?.name || frontTest?.error?.message || "UNKNOWN");
+  run.summary.rearCameraError = rearTest?.ok ? "" : String(rearTest?.error?.name || rearTest?.error?.message || "UNKNOWN");
+  pushCameraLog(run, "dual_camera_summary", {
+    front: {
+      requested: "user",
+      ok: Boolean(frontTest?.ok),
+      error: frontTest?.ok ? null : frontTest?.error || null
+    },
+    rear: {
+      requested: "environment",
+      ok: Boolean(rearTest?.ok),
+      error: rearTest?.ok ? null : rearTest?.error || null
+    }
+  }, (frontTest?.ok && rearTest?.ok) ? "info" : "warn");
+
   const previewCandidate = testResults.find((entry) => entry.ok && entry.label === "facing_environment_exact")
     || testResults.find((entry) => entry.ok && entry.label === "facing_user_exact")
     || testResults.find((entry) => entry.ok);
+  let previewStarted = false;
 
   if (previewCandidate) {
     try {
@@ -4551,18 +4720,25 @@ async function runMobileCameraDiagnostic() {
         const facing = previewInfo?.settings?.facingMode || "unknown";
         mobileCameraPanelMetaEl.textContent = `Flux actif: ${width}x${height} • facingMode=${facing}`;
       }
-      run.status = "success";
+      previewStarted = true;
     } catch (err) {
       pushCameraLog(run, "preview_stream_error", simplifyMediaError(err), "error");
-      run.status = "partial_failure";
       if (mobileCameraPanelEl) mobileCameraPanelEl.hidden = true;
       setMobileCameraHint("Tests effectués, mais impossible d'afficher un flux persistant.");
     }
   } else {
-    run.status = "failure";
     if (mobileCameraPanelEl) mobileCameraPanelEl.hidden = true;
     setMobileCameraHint("Aucun flux caméra accessible. Vérifie les permissions et réessaie.");
   }
+
+  const frontOk = Boolean(frontTest?.ok);
+  const rearOk = Boolean(rearTest?.ok);
+  const anyOk = Boolean(frontOk || rearOk || fallbackTest?.ok || previewStarted);
+  const detectedInputs = Number(run.summary.detectedVideoInputs || 0);
+  const expectsDual = detectedInputs >= 2;
+  if (!anyOk) run.status = "failure";
+  else if ((expectsDual && (!frontOk || !rearOk)) || !previewStarted) run.status = "partial_failure";
+  else run.status = "success";
 
   run.summary.testedStreams = testResults.length;
   run.summary.successfulTests = testResults.filter((entry) => entry.ok).length;
@@ -4573,10 +4749,18 @@ async function runMobileCameraDiagnostic() {
   const record = createMobileQuoteRecord({ code: currentMobileQuoteCode, payload });
   await persistMobileQuoteRecord(record);
 
+  const frontStatus = run.summary.frontCameraStatus === "ok"
+    ? "avant OK"
+    : `avant KO (${run.summary.frontCameraError || "raison inconnue"})`;
+  const rearStatus = run.summary.rearCameraStatus === "ok"
+    ? "arrière OK"
+    : `arrière KO (${run.summary.rearCameraError || "raison inconnue"})`;
   if (run.status === "success") {
-    setMobileCameraHint("Diagnostic caméra terminé. Résultat transmis au devis.");
+    setMobileCameraHint(`Diagnostic caméra terminé. ${frontStatus} • ${rearStatus}.`);
   } else if (run.status === "partial_failure") {
-    setMobileCameraHint("Diagnostic partiel: certaines étapes ont échoué.");
+    setMobileCameraHint(`Diagnostic partiel. ${frontStatus} • ${rearStatus}. Voir les logs côté admin.`);
+  } else {
+    setMobileCameraHint(`Diagnostic en échec. ${frontStatus} • ${rearStatus}.`);
   }
 
   updateMobileCameraAvailabilityUI();
@@ -4589,6 +4773,7 @@ function applyMobileQuoteRecord(record, sourceLabel = "") {
   const code = String(record.code || "").trim().toUpperCase();
   if (!code) return false;
   const req = record.mobileRequest && typeof record.mobileRequest === "object" ? record.mobileRequest : {};
+  mobileApplyingLoadedRecord = true;
   currentMobileQuoteCode = code;
   if (mobileFromNameEl) mobileFromNameEl.value = String(record.requester?.name || "").trim();
   if (mobileReplyToEl) mobileReplyToEl.value = String(record.requester?.email || "").trim().toLowerCase();
@@ -4597,9 +4782,10 @@ function applyMobileQuoteRecord(record, sourceLabel = "") {
   if (mobileModelEl) mobileModelEl.value = String(req.model || "").trim();
   if (mobileDescriptionEl) mobileDescriptionEl.value = String(req.description || record.requester?.details || "").trim();
   mobileCameraRuns = Array.isArray(record?.cameraDiagnostics?.runs) ? record.cameraDiagnostics.runs : [];
+  mobileApplyingLoadedRecord = false;
   const suffix = sourceLabel ? ` (${sourceLabel})` : "";
   setMobileQuoteCodeHint(`Devis mobile chargé: ${code}${suffix}`);
-  updateMobileCameraAvailabilityUI();
+  setMobileQuoteContextReady(true);
   return true;
 }
 
@@ -4696,7 +4882,7 @@ async function openOrDownloadCameraLogsForQuote(code, shouldDownload = false, ru
   if (shouldDownload) {
     const suffix = targetRunId ? `-${targetRunId}` : "";
     downloadCameraLogs(payload, `camera-logs-${normalized}${suffix}.json`);
-    toast("Logs caméra téléchargés.");
+    toast("Logs caméra téléchargés (JSON + MD).");
     return true;
   }
   const titleSuffix = targetRunId ? ` • ${targetRunId}` : "";
@@ -4767,11 +4953,20 @@ function bindPcRepairFormFlow() {
 function bindMobileFormFlow() {
   if (!formMobile) return;
 
-  if (mobileIssueEl) {
-    mobileIssueEl.addEventListener("change", () => {
-      updateMobileCameraAvailabilityUI();
+  [mobileFromNameEl, mobileReplyToEl, mobileModelEl, mobileDescriptionEl].forEach((el) => {
+    if (!el) return;
+    el.addEventListener("input", () => {
+      resetMobileQuoteContextAfterManualEdit();
     });
-  }
+  });
+  [mobileDeviceTypeEl, mobileIssueEl].forEach((el) => {
+    if (!el) return;
+    el.addEventListener("change", () => {
+      resetMobileQuoteContextAfterManualEdit();
+      if (el === mobileIssueEl) updateMobileCameraAvailabilityUI();
+    });
+  });
+
   if (mobileCameraTestBtn) {
     mobileCameraTestBtn.addEventListener("click", async () => {
       await runMobileCameraDiagnostic();
@@ -4804,7 +4999,7 @@ function bindMobileFormFlow() {
       return;
     }
 
-    const code = currentMobileQuoteCode || createQuoteCode();
+    const code = (mobileQuoteContextReady && currentMobileQuoteCode) ? currentMobileQuoteCode : createQuoteCode();
     currentMobileQuoteCode = code;
     const quoteRecord = createMobileQuoteRecord({ code, payload });
     await persistMobileQuoteRecord(quoteRecord);
@@ -4836,6 +5031,7 @@ function bindMobileFormFlow() {
     if (!ok) return;
 
     setMobileQuoteCodeHint(`Code devis mobile: ${code}. Conserve-le pour le suivi.`);
+    setMobileQuoteContextReady(true);
     if (mobileIssueNeedsCamera(payload.issue)) {
       setMobileCameraHint("Devis envoyé. Tu peux lancer le test caméra pour le diagnostic.");
     } else {
@@ -6996,8 +7192,6 @@ initThemeCustomizer();
 bindCustomBuilder();
 bindPcRepairFormFlow();
 bindMobileFormFlow();
-void restoreLastPcRepairQuoteSession();
-void restoreLastMobileQuoteSession();
 window.addEventListener("pagehide", () => {
   stopMobileCameraStream();
 });

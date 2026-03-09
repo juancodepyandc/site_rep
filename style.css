@@ -2088,6 +2088,61 @@ body.is-modal-open{
   flex-wrap:wrap;
 }
 
+.camera-logs-viewer{
+  position:fixed;
+  inset:0;
+  z-index:1200;
+  display:grid;
+  place-items:center;
+  padding:14px;
+}
+
+.camera-logs-viewer__backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(5,10,18,.72);
+  backdrop-filter:blur(3px);
+}
+
+.camera-logs-viewer__dialog{
+  position:relative;
+  width:min(960px, calc(100vw - 28px));
+  max-height:calc(100vh - 28px);
+  display:grid;
+  grid-template-rows:auto minmax(0, 1fr);
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(150deg, rgba(18,29,44,.98), rgba(11,19,31,.96));
+  box-shadow:0 24px 52px rgba(0,0,0,.45);
+}
+
+.camera-logs-viewer__head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px 14px;
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+
+.camera-logs-viewer__title{
+  font-size:14px;
+  font-weight:900;
+  color:rgba(238,247,255,.95);
+}
+
+.camera-logs-viewer__pre{
+  margin:0;
+  padding:14px;
+  overflow:auto;
+  font-size:12px;
+  line-height:1.5;
+  color:#d8e9ff;
+  font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+
 .reveal{opacity:0;transform:translateY(18px) scale(.99);transition:opacity .75s cubic-bezier(.2,.9,.2,1), transform .75s cubic-bezier(.2,.9,.2,1)}
 .reveal.is-in{opacity:1;transform:translateY(0) scale(1)}
 
