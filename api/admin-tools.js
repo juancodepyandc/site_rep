@@ -317,12 +317,14 @@ function summarizeCameraRuns(record) {
   const rawRuns = Array.isArray(record?.cameraDiagnostics?.runs) ? record.cameraDiagnostics.runs : [];
   const runs = rawRuns.slice(-12).map((run) => {
     const entries = Array.isArray(run?.entries) ? run.entries : [];
+    const clips = Array.isArray(run?.media?.clips) ? run.media.clips : [];
     return {
       runId: clampText(run?.runId || "", 120),
       startedAt: toIsoOrEmpty(run?.startedAt),
       endedAt: toIsoOrEmpty(run?.endedAt),
       status: clampText(run?.status || "", 60),
       entryCount: entries.length,
+      recordingCount: clips.length,
       cameraPermissionState: clampText(run?.summary?.cameraPermissionState || "", 40)
     };
   });

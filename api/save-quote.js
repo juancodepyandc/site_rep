@@ -29,11 +29,60 @@ function sanitizeMobileRequest(payload) {
   };
 }
 
+function sanitizeCameraDetail(detail) {
+  if (detail && typeof detail === "object") {
+    try {
+      const serialized = JSON.stringify(detail);
+      if (serialized.length <= 7000) return JSON.parse(serialized);
+      return {
+        _truncated: true,
+        preview: serialized.slice(0, 6800)
+      };
+    } catch {
+      return clampText(String(detail), 1200);
+    }
+  }
+  return clampText(detail || "", 1200);
+}
+
+function sanitizeCameraClip(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const dataUrl = String(raw.dataUrl || "").trim();
+  const isVideoDataUrl = dataUrl.startsWith("data:video/") && dataUrl.includes(";base64,");
+  const safeDataUrl = isVideoDataUrl && dataUrl.length <= 220000 ? dataUrl : "";
+  return {
+    phase: clampText(raw.phase || "", 24),
+    phaseLabel: clampText(raw.phaseLabel || "", 80),
+    mimeType: clampText(raw.mimeType || "", 80),
+    extension: clampText(raw.extension || "", 12),
+    byteLength: Number(raw.byteLength || 0),
+    durationMs: Number(raw.durationMs || 0),
+    capturedAt: clampText(raw.capturedAt || "", 80),
+    dataUrl: safeDataUrl,
+    dropped: Boolean(raw.dropped) || !safeDataUrl,
+    droppedReason: clampText(raw.droppedReason || (safeDataUrl ? "" : "DATA_TOO_LARGE_OR_INVALID"), 80),
+    verification: raw.verification && typeof raw.verification === "object"
+      ? {
+          verdict: clampText(raw.verification.verdict || "", 24),
+          positiveSignals: Array.isArray(raw.verification.positiveSignals)
+            ? raw.verification.positiveSignals.slice(0, 8).map((v) => clampText(v || "", 180))
+            : [],
+          negativeSignals: Array.isArray(raw.verification.negativeSignals)
+            ? raw.verification.negativeSignals.slice(0, 8).map((v) => clampText(v || "", 180))
+            : []
+        }
+      : undefined
+  };
+}
+
 function sanitizeCameraDiagnostics(payload) {
   if (!payload || typeof payload !== "object") return undefined;
   const runs = Array.isArray(payload.runs) ? payload.runs.slice(-8) : [];
   const safeRuns = runs.map((run) => {
     const entries = Array.isArray(run?.entries) ? run.entries.slice(-300) : [];
+    const clips = Array.isArray(run?.media?.clips)
+      ? run.media.clips.map((clip) => sanitizeCameraClip(clip)).filter(Boolean).slice(-2)
+      : [];
     return {
       runId: clampText(run?.runId || "", 80),
       startedAt: clampText(run?.startedAt || "", 80),
@@ -43,25 +92,59 @@ function sanitizeCameraDiagnostics(payload) {
         ? {
             supportsMediaDevices: Boolean(run.summary.supportsMediaDevices),
             supportsPermissionsApi: Boolean(run.summary.supportsPermissionsApi),
+            supportsMediaRecorder: Boolean(run.summary.supportsMediaRecorder),
             cameraPermissionState: clampText(run.summary.cameraPermissionState || "", 40),
             detectedVideoInputs: Number(run.summary.detectedVideoInputs || 0),
-            testedStreams: Number(run.summary.testedStreams || 0)
+            testedStreams: Number(run.summary.testedStreams || 0),
+            successfulTests: Number(run.summary.successfulTests || 0),
+            previewSequence: clampText(run.summary.previewSequence || "", 40),
+            phaseSeconds: Number(run.summary.phaseSeconds || 0),
+            recordingSeconds: Number(run.summary.recordingSeconds || 0),
+            recordingMimeType: clampText(run.summary.recordingMimeType || "", 60),
+            recordingCount: Number(run.summary.recordingCount || clips.length || 0),
+            frontCameraStatus: clampText(run.summary.frontCameraStatus || "", 32),
+            rearCameraStatus: clampText(run.summary.rearCameraStatus || "", 32),
+            frontCameraVerification: clampText(run.summary.frontCameraVerification || "", 24),
+            rearCameraVerification: clampText(run.summary.rearCameraVerification || "", 24),
+            frontCameraError: clampText(run.summary.frontCameraError || "", 240),
+            rearCameraError: clampText(run.summary.rearCameraError || "", 240),
+            cameraSwitchCheck: clampText(run.summary.cameraSwitchCheck || "", 40),
+            diagnosticHints: Array.isArray(run.summary.diagnosticHints)
+              ? run.summary.diagnosticHints.slice(0, 12).map((v) => clampText(v || "", 260))
+              : []
           }
         : undefined,
       entries: entries.map((entry) => ({
         ts: clampText(entry?.ts || "", 80),
         level: clampText(entry?.level || "", 16),
         event: clampText(entry?.event || "", 120),
-        detail: entry?.detail && typeof entry.detail === "object"
-          ? JSON.parse(JSON.stringify(entry.detail))
-          : clampText(entry?.detail || "", 800)
-      }))
+        detail: sanitizeCameraDetail(entry?.detail)
+      })),
+      media: { clips }
     };
   });
-  return {
+  const result = {
     updatedAt: clampText(payload.updatedAt || "", 80),
     runs: safeRuns
   };
+  let guard = 0;
+  while (JSON.stringify(result).length > 300000 && guard < 64) {
+    guard += 1;
+    let removed = false;
+    for (let i = 0; i < result.runs.length; i += 1) {
+      const clips = result.runs[i]?.media?.clips;
+      if (Array.isArray(clips) && clips.length) {
+        clips.shift();
+        if (result.runs[i]?.summary && typeof result.runs[i].summary === "object") {
+          result.runs[i].summary.recordingCount = clips.length;
+        }
+        removed = true;
+        break;
+      }
+    }
+    if (!removed) break;
+  }
+  return result;
 }
 
 function sanitizeRecord(record, code, inheritedAdminStatus) {

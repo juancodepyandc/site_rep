@@ -4055,6 +4055,10 @@ let mobileCameraTestBusy = false;
 let mobileQuoteContextReady = false;
 let mobileApplyingLoadedRecord = false;
 let mobileQuoteBaseSignature = "";
+const CAMERA_PHASE_SECONDS = 6;
+const CAMERA_RECORD_SECONDS = 3;
+const CAMERA_RECORD_VIDEO_BITS_PER_SECOND = 140000;
+const CAMERA_RECORD_MAX_DATA_URL_LENGTH = 220000;
 
 function updateModifyActionVisibility() {
   const hasCode = Boolean(currentQuoteCode);
@@ -4377,6 +4381,344 @@ function summarizeTrack(track) {
   };
 }
 
+function normalizeFacingMode(value) {
+  const normalized = normalizeFreeText(value || "");
+  if (!normalized) return "";
+  if (normalized.includes("environment") || normalized.includes("rear") || normalized.includes("back") || normalized.includes("arriere")) {
+    return "environment";
+  }
+  if (normalized.includes("user") || normalized.includes("front") || normalized.includes("avant") || normalized.includes("face")) {
+    return "user";
+  }
+  return normalized;
+}
+
+function inferPhaseVerification(phase = "front", trackInfo = {}, candidateLabel = "", deviceHints = {}) {
+  const expectedFacing = phase === "rear" ? "environment" : "user";
+  const oppositeFacing = phase === "rear" ? "user" : "environment";
+  const expectedDeviceId = String(phase === "rear" ? deviceHints?.rearId : deviceHints?.frontId || "").trim();
+  const oppositeDeviceId = String(phase === "rear" ? deviceHints?.frontId : deviceHints?.rearId || "").trim();
+  const settingsFacingRaw = String(trackInfo?.settings?.facingMode || trackInfo?.constraints?.facingMode || "").trim();
+  const settingsFacing = normalizeFacingMode(settingsFacingRaw);
+  const trackDeviceId = String(trackInfo?.settings?.deviceId || "").trim();
+  const labelNormalized = normalizeFreeText(trackInfo?.label || "");
+  const positiveSignals = [];
+  const negativeSignals = [];
+
+  if (settingsFacing) {
+    if (settingsFacing === expectedFacing) positiveSignals.push(`settings.facingMode=${settingsFacing}`);
+    if (settingsFacing === oppositeFacing) negativeSignals.push(`settings.facingMode=${settingsFacing}`);
+  }
+
+  const frontKeywords = ["front", "avant", "facetime", "selfie", "user", "face"];
+  const rearKeywords = ["rear", "back", "arriere", "environment", "ultra wide", "wide", "telephoto"];
+  const expectedKeywords = expectedFacing === "user" ? frontKeywords : rearKeywords;
+  const oppositeKeywords = expectedFacing === "user" ? rearKeywords : frontKeywords;
+  if (labelNormalized) {
+    if (expectedKeywords.some((token) => labelNormalized.includes(token))) {
+      positiveSignals.push(`label≈${expectedFacing}`);
+    }
+    if (oppositeKeywords.some((token) => labelNormalized.includes(token))) {
+      negativeSignals.push(`label≈${oppositeFacing}`);
+    }
+  }
+
+  if (trackDeviceId && expectedDeviceId && trackDeviceId === expectedDeviceId) {
+    positiveSignals.push("deviceId attendu");
+  }
+  if (trackDeviceId && oppositeDeviceId && trackDeviceId === oppositeDeviceId) {
+    negativeSignals.push("deviceId opposé");
+  }
+  if (!trackDeviceId) {
+    const candidate = normalizeFreeText(candidateLabel);
+    if (candidate.includes(expectedFacing === "user" ? "front" : "rear")) {
+      positiveSignals.push(`candidate=${candidateLabel}`);
+    }
+  }
+
+  let verdict = "unknown";
+  if (negativeSignals.length > positiveSignals.length) verdict = "mismatch";
+  else if (positiveSignals.length >= 2 && !negativeSignals.length) verdict = "confirmed";
+  else if (positiveSignals.length >= 1 && !negativeSignals.length) verdict = "likely";
+  else if (!positiveSignals.length && negativeSignals.length) verdict = "mismatch";
+
+  const limitations = [];
+  if (!settingsFacing) limitations.push("settings.facingMode non exposé par le navigateur.");
+  if (!labelNormalized) limitations.push("label caméra non exposé (souvent masqué sans permission complète).");
+  if (!trackDeviceId) limitations.push("deviceId caméra non exploitable pour vérifier le basculement.");
+
+  return {
+    phase,
+    expectedFacing,
+    candidateLabel: String(candidateLabel || "").trim(),
+    settingsFacing,
+    trackDeviceId,
+    expectedDeviceId,
+    oppositeDeviceId,
+    verdict,
+    positiveSignals,
+    negativeSignals,
+    limitations
+  };
+}
+
+function pickRecorderMimeType() {
+  if (!window.MediaRecorder || typeof window.MediaRecorder.isTypeSupported !== "function") return "";
+  const preferred = [
+    "video/webm;codecs=vp9,opus",
+    "video/webm;codecs=vp8,opus",
+    "video/webm",
+    "video/mp4"
+  ];
+  return preferred.find((mime) => window.MediaRecorder.isTypeSupported(mime)) || "";
+}
+
+function videoExtensionFromMime(mime = "") {
+  const m = String(mime || "").toLowerCase();
+  if (m.includes("mp4")) return "mp4";
+  if (m.includes("ogg")) return "ogv";
+  return "webm";
+}
+
+function readBlobAsDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    try {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("FILE_READER_ERROR"));
+      reader.readAsDataURL(blob);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+function parseDataUrlToBlob(dataUrl = "") {
+  const source = String(dataUrl || "").trim();
+  const match = source.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return null;
+  try {
+    const mimeType = match[1] || "application/octet-stream";
+    const binary = atob(match[2] || "");
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mimeType });
+  } catch {
+    return null;
+  }
+}
+
+function ensureRunMediaBucket(run) {
+  if (!run || typeof run !== "object") return { clips: [] };
+  if (!run.media || typeof run.media !== "object") run.media = { clips: [] };
+  if (!Array.isArray(run.media.clips)) run.media.clips = [];
+  return run.media;
+}
+
+async function recordCameraPhaseClip({ stream, phase, run, seconds = CAMERA_RECORD_SECONDS, verification = null }) {
+  const targetMs = Math.max(1200, Math.round(Number(seconds || CAMERA_RECORD_SECONDS) * 1000));
+  const phaseLabel = phase === "rear" ? "camera_arriere" : "camera_avant";
+  if (!window.MediaRecorder || typeof window.MediaRecorder !== "function") {
+    pushCameraLog(run, "recording_unsupported", { phase, reason: "MediaRecorder indisponible" }, "warn");
+    return { ok: false, clip: null, reason: "MEDIA_RECORDER_UNSUPPORTED" };
+  }
+  const mimeType = pickRecorderMimeType();
+  let recorder = null;
+  try {
+    const options = mimeType
+      ? { mimeType, videoBitsPerSecond: CAMERA_RECORD_VIDEO_BITS_PER_SECOND }
+      : { videoBitsPerSecond: CAMERA_RECORD_VIDEO_BITS_PER_SECOND };
+    recorder = new MediaRecorder(stream, options);
+  } catch (err) {
+    pushCameraLog(run, "recording_recorder_create_error", { phase, error: simplifyMediaError(err) }, "warn");
+    return { ok: false, clip: null, reason: "RECORDER_CREATE_FAILED" };
+  }
+
+  return await new Promise((resolve) => {
+    const chunks = [];
+    let settled = false;
+    const startedAt = Date.now();
+    const finalize = (result) => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+    };
+
+    recorder.addEventListener("dataavailable", (event) => {
+      if (event?.data && event.data.size > 0) chunks.push(event.data);
+    });
+
+    recorder.addEventListener("error", (event) => {
+      const err = event?.error || event;
+      pushCameraLog(run, "recording_error", { phase, error: simplifyMediaError(err) }, "warn");
+      finalize({ ok: false, clip: null, reason: "RECORDER_RUNTIME_ERROR" });
+    });
+
+    recorder.addEventListener("stop", async () => {
+      const endedAt = Date.now();
+      const durationMs = Math.max(0, endedAt - startedAt);
+      const blob = new Blob(chunks, { type: recorder.mimeType || mimeType || "video/webm" });
+      if (!blob.size) {
+        pushCameraLog(run, "recording_empty", { phase, durationMs }, "warn");
+        finalize({ ok: false, clip: null, reason: "EMPTY_RECORDING" });
+        return;
+      }
+      try {
+        const dataUrl = await readBlobAsDataUrl(blob);
+        if (!dataUrl || dataUrl.length > CAMERA_RECORD_MAX_DATA_URL_LENGTH) {
+          pushCameraLog(run, "recording_discarded_too_large", {
+            phase,
+            byteLength: blob.size,
+            dataUrlLength: dataUrl ? dataUrl.length : 0,
+            maxAllowed: CAMERA_RECORD_MAX_DATA_URL_LENGTH
+          }, "warn");
+          finalize({
+            ok: false,
+            clip: {
+              phase,
+              phaseLabel,
+              mimeType: blob.type || recorder.mimeType || mimeType || "video/webm",
+              extension: videoExtensionFromMime(blob.type || recorder.mimeType || mimeType),
+              byteLength: Number(blob.size || 0),
+              durationMs,
+              capturedAt: new Date(endedAt).toISOString(),
+              dataUrl: "",
+              dropped: true,
+              droppedReason: "DATA_TOO_LARGE",
+              verification: verification && typeof verification === "object"
+                ? { verdict: verification.verdict || "unknown", positiveSignals: verification.positiveSignals || [], negativeSignals: verification.negativeSignals || [] }
+                : undefined
+            },
+            reason: "DATA_TOO_LARGE"
+          });
+          return;
+        }
+
+        const clip = {
+          phase,
+          phaseLabel,
+          mimeType: blob.type || recorder.mimeType || mimeType || "video/webm",
+          extension: videoExtensionFromMime(blob.type || recorder.mimeType || mimeType),
+          byteLength: Number(blob.size || 0),
+          durationMs,
+          capturedAt: new Date(endedAt).toISOString(),
+          dataUrl,
+          dropped: false,
+          droppedReason: "",
+          verification: verification && typeof verification === "object"
+            ? { verdict: verification.verdict || "unknown", positiveSignals: verification.positiveSignals || [], negativeSignals: verification.negativeSignals || [] }
+            : undefined
+        };
+        pushCameraLog(run, "recording_saved", {
+          phase,
+          mimeType: clip.mimeType,
+          extension: clip.extension,
+          byteLength: clip.byteLength,
+          durationMs: clip.durationMs
+        }, "info");
+        finalize({ ok: true, clip, reason: "" });
+      } catch (err) {
+        pushCameraLog(run, "recording_encode_error", { phase, error: simplifyMediaError(err) }, "warn");
+        finalize({ ok: false, clip: null, reason: "DATAURL_ENCODE_FAILED" });
+      }
+    });
+
+    try {
+      pushCameraLog(run, "recording_start", {
+        phase,
+        requestedSeconds: Number(seconds || CAMERA_RECORD_SECONDS),
+        mimeType: mimeType || recorder.mimeType || "auto",
+        bitRate: CAMERA_RECORD_VIDEO_BITS_PER_SECOND
+      }, "info");
+      recorder.start(250);
+    } catch (err) {
+      pushCameraLog(run, "recording_start_error", { phase, error: simplifyMediaError(err) }, "warn");
+      finalize({ ok: false, clip: null, reason: "RECORDER_START_FAILED" });
+      return;
+    }
+
+    window.setTimeout(() => {
+      try {
+        if (recorder.state !== "inactive") recorder.stop();
+      } catch (err) {
+        pushCameraLog(run, "recording_stop_error", { phase, error: simplifyMediaError(err) }, "warn");
+        finalize({ ok: false, clip: null, reason: "RECORDER_STOP_FAILED" });
+      }
+    }, targetMs);
+  });
+}
+
+function cameraPhaseStatusFromResult(result) {
+  if (!result?.ok) return "error";
+  const verdict = String(result?.verification?.verdict || "").trim();
+  if (verdict === "mismatch") return "mismatch";
+  if (verdict === "confirmed" || verdict === "likely") return "ok";
+  return "unverified";
+}
+
+function cameraPhaseStatusToText(status = "", errorText = "") {
+  const cleanError = String(errorText || "").trim();
+  if (status === "ok") return "OK confirmé";
+  if (status === "unverified") return "OK non vérifiable";
+  if (status === "mismatch") return "Mismatch (pas la caméra attendue)";
+  if (status === "error") return `KO (${cleanError || "échec getUserMedia"})`;
+  return status || "N/A";
+}
+
+function compactCameraClipForStorage(clip = {}) {
+  if (!clip || typeof clip !== "object") return null;
+  const dataUrl = String(clip.dataUrl || "").trim();
+  const safeDataUrl = dataUrl && dataUrl.length <= CAMERA_RECORD_MAX_DATA_URL_LENGTH ? dataUrl : "";
+  return {
+    phase: String(clip.phase || "").trim(),
+    phaseLabel: String(clip.phaseLabel || "").trim(),
+    mimeType: String(clip.mimeType || "").trim(),
+    extension: String(clip.extension || "").trim(),
+    byteLength: Number(clip.byteLength || 0),
+    durationMs: Number(clip.durationMs || 0),
+    capturedAt: String(clip.capturedAt || "").trim(),
+    dataUrl: safeDataUrl,
+    dropped: Boolean(clip.dropped) || !safeDataUrl,
+    droppedReason: safeDataUrl ? String(clip.droppedReason || "").trim() : String(clip.droppedReason || "DATA_TOO_LARGE").trim(),
+    verification: clip.verification && typeof clip.verification === "object"
+      ? {
+          verdict: String(clip.verification.verdict || "").trim(),
+          positiveSignals: Array.isArray(clip.verification.positiveSignals) ? clip.verification.positiveSignals.slice(0, 6).map((v) => String(v || "").trim()) : [],
+          negativeSignals: Array.isArray(clip.verification.negativeSignals) ? clip.verification.negativeSignals.slice(0, 6).map((v) => String(v || "").trim()) : []
+        }
+      : undefined
+  };
+}
+
+function compactCameraRunsForStorage(runs = []) {
+  const list = Array.isArray(runs) ? runs.slice(-8) : [];
+  return list.map((run) => {
+    const compact = {
+      runId: String(run?.runId || "").trim(),
+      startedAt: String(run?.startedAt || "").trim(),
+      endedAt: String(run?.endedAt || "").trim(),
+      status: String(run?.status || "").trim(),
+      summary: run?.summary && typeof run.summary === "object" ? JSON.parse(JSON.stringify(run.summary)) : {},
+      entries: Array.isArray(run?.entries) ? run.entries.slice(-320).map((entry) => ({
+        ts: String(entry?.ts || "").trim(),
+        level: String(entry?.level || "info").trim(),
+        event: String(entry?.event || "").trim(),
+        detail: entry?.detail && typeof entry.detail === "object"
+          ? JSON.parse(JSON.stringify(entry.detail))
+          : String(entry?.detail || "").trim()
+      })) : []
+    };
+    if (run?.media && typeof run.media === "object") {
+      const clips = Array.isArray(run.media.clips)
+        ? run.media.clips.map((clip) => compactCameraClipForStorage(clip)).filter(Boolean).slice(-2)
+        : [];
+      compact.media = { clips };
+      compact.summary.recordingCount = clips.length;
+    }
+    return compact;
+  });
+}
+
 function waitMs(ms = 0) {
   return new Promise((resolve) => {
     window.setTimeout(resolve, Math.max(0, Number(ms || 0)));
@@ -4442,19 +4784,24 @@ function pickCameraDeviceIds(devices = []) {
 function cameraPhaseCandidates(phase = "front", deviceHints = {}) {
   const frontId = String(deviceHints?.frontId || "").trim();
   const rearId = String(deviceHints?.rearId || "").trim();
+  const qualityHints = {
+    width: { ideal: 640, max: 1280 },
+    height: { ideal: 360, max: 720 },
+    frameRate: { ideal: 12, max: 24 }
+  };
   if (phase === "rear") {
     return [
-      { label: "phase_rear_exact_environment", constraints: { video: { facingMode: { exact: "environment" } }, audio: false } },
-      { label: "phase_rear_ideal_environment", constraints: { video: { facingMode: { ideal: "environment" } }, audio: false } },
-      ...(rearId ? [{ label: "phase_rear_device_id", constraints: { video: { deviceId: { exact: rearId } }, audio: false } }] : []),
-      { label: "phase_rear_fallback_true", constraints: { video: true, audio: false } }
+      { label: "phase_rear_exact_environment", constraints: { video: { facingMode: { exact: "environment" }, ...qualityHints }, audio: false } },
+      { label: "phase_rear_ideal_environment", constraints: { video: { facingMode: { ideal: "environment" }, ...qualityHints }, audio: false } },
+      ...(rearId ? [{ label: "phase_rear_device_id", constraints: { video: { deviceId: { exact: rearId }, ...qualityHints }, audio: false } }] : []),
+      { label: "phase_rear_fallback_true", constraints: { video: qualityHints, audio: false } }
     ];
   }
   return [
-    { label: "phase_front_exact_user", constraints: { video: { facingMode: { exact: "user" } }, audio: false } },
-    { label: "phase_front_ideal_user", constraints: { video: { facingMode: { ideal: "user" } }, audio: false } },
-    ...(frontId ? [{ label: "phase_front_device_id", constraints: { video: { deviceId: { exact: frontId } }, audio: false } }] : []),
-    { label: "phase_front_fallback_true", constraints: { video: true, audio: false } }
+    { label: "phase_front_exact_user", constraints: { video: { facingMode: { exact: "user" }, ...qualityHints }, audio: false } },
+    { label: "phase_front_ideal_user", constraints: { video: { facingMode: { ideal: "user" }, ...qualityHints }, audio: false } },
+    ...(frontId ? [{ label: "phase_front_device_id", constraints: { video: { deviceId: { exact: frontId }, ...qualityHints }, audio: false } }] : []),
+    { label: "phase_front_fallback_true", constraints: { video: qualityHints, audio: false } }
   ];
 }
 
@@ -4467,8 +4814,9 @@ async function openCameraPhaseStream(phase, run, env, deviceHints = {}) {
       const stream = await navigator.mediaDevices.getUserMedia(candidate.constraints);
       const track = stream.getVideoTracks()[0] || null;
       const trackInfo = summarizeTrack(track);
-      pushCameraLog(run, "phase_get_user_media_success", { phase, label: candidate.label, trackInfo }, "info");
-      return { ok: true, stream, label: candidate.label, trackInfo, attempts: candidates.length, errors };
+      const verification = inferPhaseVerification(phase, trackInfo, candidate.label, deviceHints);
+      pushCameraLog(run, "phase_get_user_media_success", { phase, label: candidate.label, trackInfo, verification }, "info");
+      return { ok: true, stream, label: candidate.label, trackInfo, verification, attempts: candidates.length, errors };
     } catch (err) {
       const errorInfo = simplifyMediaError(err);
       const hints = diagnosticHintsFromError(errorInfo, env);
@@ -4476,7 +4824,7 @@ async function openCameraPhaseStream(phase, run, env, deviceHints = {}) {
       pushCameraLog(run, "phase_get_user_media_error", { phase, label: candidate.label, error: errorInfo, hints }, "error");
     }
   }
-  return { ok: false, stream: null, label: "", trackInfo: {}, attempts: candidates.length, errors };
+  return { ok: false, stream: null, label: "", trackInfo: {}, verification: null, attempts: candidates.length, errors };
 }
 
 async function showPhasePreview({ phaseLabel, seconds, run }) {
@@ -4563,6 +4911,16 @@ function cameraLogDetailToSentence(detail) {
   const errorMessage = String(detail?.error?.message || detail?.message || "").trim();
   const state = String(detail?.state || "").trim();
   const count = Number(detail?.count || 0);
+  const verdict = String(detail?.verification?.verdict || detail?.verdict || "").trim();
+  const switchCheck = String(detail?.switchCheck || "").trim();
+  const phase = String(detail?.phase || "").trim();
+  const recordingPhase = String(detail?.phaseLabel || "").trim();
+  if (recordingPhase && Number.isFinite(Number(detail?.byteLength || 0)) && Number(detail?.byteLength || 0) > 0) {
+    const verdictLabel = verdict ? `, ${verdict}` : "";
+    return `${recordingPhase}: ${Number(detail?.byteLength || 0)} octets${verdictLabel}`;
+  }
+  if (phase && verdict) return `${phase}: ${verdict}`;
+  if (switchCheck) return `switch_check=${switchCheck}`;
   if (label && errorName) return `${label}: ${errorName}${errorMessage ? ` - ${errorMessage}` : ""}`;
   if (label && state) return `${label}: état ${state}`;
   if (label && Number.isFinite(count) && count > 0) return `${label}: ${count} périphérique(s) détecté(s)`;
@@ -4573,6 +4931,19 @@ function cameraLogDetailToSentence(detail) {
   } catch {
     return "[détail non sérialisable]";
   }
+}
+
+function cameraRunClips(run) {
+  return Array.isArray(run?.media?.clips) ? run.media.clips : [];
+}
+
+function inferPhaseStatusFromEntries(entries = [], phase = "front") {
+  const list = Array.isArray(entries) ? entries : [];
+  const success = list.some((entry) => String(entry?.event || "") === "phase_get_user_media_success" && String(entry?.detail?.phase || "") === phase);
+  if (success) return { status: "ok", error: "" };
+  const errorEntry = list.find((entry) => String(entry?.event || "") === "phase_get_user_media_error" && String(entry?.detail?.phase || "") === phase);
+  const error = String(errorEntry?.detail?.error?.name || errorEntry?.detail?.error?.message || "").trim();
+  return { status: "error", error };
 }
 
 function buildCameraLogsMarkdown(payload) {
@@ -4591,40 +4962,16 @@ function buildCameraLogsMarkdown(payload) {
   runs.forEach((run, index) => {
     const entries = Array.isArray(run?.entries) ? run.entries : [];
     const summaryHints = Array.isArray(run?.summary?.diagnosticHints) ? run.summary.diagnosticHints : [];
-    const frontSuccess = entries.some((entry) => {
-      const event = String(entry?.event || "");
-      const label = String(entry?.detail?.label || "");
-      const phase = String(entry?.detail?.phase || "");
-      return (event === "phase_get_user_media_success" && phase === "front")
-        || (event === "get_user_media_success" && label === "facing_user_exact");
-    });
-    const frontError = entries.find((entry) => {
-      const event = String(entry?.event || "");
-      const label = String(entry?.detail?.label || "");
-      const phase = String(entry?.detail?.phase || "");
-      return (event === "phase_get_user_media_error" && phase === "front")
-        || (event === "get_user_media_error" && label === "facing_user_exact");
-    });
-    const rearSuccess = entries.some((entry) => {
-      const event = String(entry?.event || "");
-      const label = String(entry?.detail?.label || "");
-      const phase = String(entry?.detail?.phase || "");
-      return (event === "phase_get_user_media_success" && phase === "rear")
-        || (event === "get_user_media_success" && label === "facing_environment_exact");
-    });
-    const rearError = entries.find((entry) => {
-      const event = String(entry?.event || "");
-      const label = String(entry?.detail?.label || "");
-      const phase = String(entry?.detail?.phase || "");
-      return (event === "phase_get_user_media_error" && phase === "rear")
-        || (event === "get_user_media_error" && label === "facing_environment_exact");
-    });
-    const frontState = frontSuccess
-      ? "OK"
-      : `KO${frontError ? ` (${cameraLogDetailToSentence(frontError?.detail || {})})` : ""}`;
-    const rearState = rearSuccess
-      ? "OK"
-      : `KO${rearError ? ` (${cameraLogDetailToSentence(rearError?.detail || {})})` : ""}`;
+    const frontFallback = inferPhaseStatusFromEntries(entries, "front");
+    const rearFallback = inferPhaseStatusFromEntries(entries, "rear");
+    const frontStatus = String(run?.summary?.frontCameraStatus || frontFallback.status || "").trim();
+    const rearStatus = String(run?.summary?.rearCameraStatus || rearFallback.status || "").trim();
+    const frontError = String(run?.summary?.frontCameraError || frontFallback.error || "").trim();
+    const rearError = String(run?.summary?.rearCameraError || rearFallback.error || "").trim();
+    const frontState = cameraPhaseStatusToText(frontStatus, frontError);
+    const rearState = cameraPhaseStatusToText(rearStatus, rearError);
+    const switchCheck = String(run?.summary?.cameraSwitchCheck || "").trim() || "N/A";
+    const clips = cameraRunClips(run);
 
     lines.push(`## Session ${index + 1} — ${String(run?.runId || "run").trim() || "run"}`);
     lines.push(`- Statut: ${String(run?.status || "unknown")}`);
@@ -4632,12 +4979,25 @@ function buildCameraLogsMarkdown(payload) {
     lines.push(`- Fin: ${String(run?.endedAt || "N/A")}`);
     lines.push(`- Caméra avant (user): ${frontState}`);
     lines.push(`- Caméra arrière (environment): ${rearState}`);
+    lines.push(`- Vérif basculement avant/arrière: ${switchCheck}`);
+    lines.push(`- Captures vidéo: ${clips.length}`);
     lines.push(`- Nombre de logs techniques: ${entries.length}`);
+    if (clips.length) {
+      clips.forEach((clip) => {
+        const phaseLabel = String(clip?.phaseLabel || clip?.phase || "camera").trim();
+        const mimeType = String(clip?.mimeType || "video/unknown").trim();
+        const durationMs = Number(clip?.durationMs || 0);
+        const byteLength = Number(clip?.byteLength || 0);
+        const verdict = String(clip?.verification?.verdict || "unknown").trim();
+        const state = clip?.dataUrl ? "téléchargeable" : "non conservée";
+        lines.push(`- Capture ${phaseLabel}: ${state} (${mimeType}, ${durationMs} ms, ${byteLength} octets, vérif=${verdict})`);
+      });
+    }
     lines.push("");
     lines.push("### Pistes de diagnostic");
     if (summaryHints.length) {
       summaryHints.forEach((hint) => lines.push(`- ${String(hint || "").trim()}`));
-    } else if (!frontSuccess || !rearSuccess) {
+    } else if (frontStatus !== "ok" || rearStatus !== "ok") {
       lines.push("- Vérifier les permissions navigateur/OS puis retester.");
       lines.push("- Fermer les applications susceptibles d'utiliser déjà la caméra.");
       lines.push("- Recharger la page en HTTPS et refaire un test complet.");
@@ -4679,13 +5039,59 @@ function triggerFileDownload(content, type, fileName) {
   URL.revokeObjectURL(href);
 }
 
+function sanitizeFileToken(value = "") {
+  return String(value || "")
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60) || "run";
+}
+
+function downloadCameraRecordings(payload, baseName = "camera-logs") {
+  const runs = Array.isArray(payload?.runs) ? payload.runs : [];
+  let clipCount = 0;
+  let availableCount = 0;
+  runs.forEach((run, runIndex) => {
+    const runId = sanitizeFileToken(run?.runId || `session-${runIndex + 1}`);
+    const clips = cameraRunClips(run);
+    clips.forEach((clip, clipIndex) => {
+      clipCount += 1;
+      const dataUrl = String(clip?.dataUrl || "").trim();
+      if (!dataUrl) return;
+      const blob = parseDataUrlToBlob(dataUrl);
+      if (!blob || !blob.size) return;
+      const phase = sanitizeFileToken(clip?.phase || clip?.phaseLabel || `phase-${clipIndex + 1}`);
+      const ext = sanitizeFileToken(clip?.extension || videoExtensionFromMime(clip?.mimeType || "")) || "webm";
+      const fileName = `${sanitizeFileToken(baseName)}-${runId}-${phase}.${ext}`;
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(href);
+      availableCount += 1;
+    });
+  });
+  return { clipCount, availableCount };
+}
+
 function downloadCameraLogs(payload, fileName = "") {
   const jsonName = fileName || `camera-logs-${Date.now()}.json`;
   const markdownName = jsonName.replace(/\.json$/i, ".md");
+  const baseName = jsonName.replace(/\.json$/i, "");
   const json = JSON.stringify(payload || {}, null, 2);
   const markdown = buildCameraLogsMarkdown(payload || {});
   triggerFileDownload(json, "application/json;charset=utf-8", jsonName);
   triggerFileDownload(markdown, "text/markdown;charset=utf-8", markdownName);
+  const recordingStats = downloadCameraRecordings(payload || {}, baseName);
+  return {
+    jsonName,
+    markdownName,
+    ...recordingStats
+  };
 }
 
 function readMobileFormPayload() {
@@ -4727,7 +5133,7 @@ function createMobileQuoteRecord({ code, payload }) {
     },
     cameraDiagnostics: {
       updatedAt: new Date().toISOString(),
-      runs: mobileCameraRuns.slice(-8)
+      runs: compactCameraRunsForStorage(mobileCameraRuns)
     },
     config: {
       total: 0,
@@ -4773,177 +5179,250 @@ async function runMobileCameraDiagnostic() {
   stopMobileCameraStream();
 
   const run = createCameraRun();
-  const env = collectClientEnvironmentSnapshot();
-  pushCameraLog(run, "environment_snapshot", env, "info");
-  run.summary.supportsMediaDevices = true;
-  run.summary.supportsPermissionsApi = Boolean(navigator.permissions?.query);
-  run.summary.previewSequence = "front_then_rear";
-  run.summary.phaseSeconds = 6;
+  try {
+    const env = collectClientEnvironmentSnapshot();
+    pushCameraLog(run, "environment_snapshot", env, "info");
+    run.summary.supportsMediaDevices = true;
+    run.summary.supportsPermissionsApi = Boolean(navigator.permissions?.query);
+    run.summary.supportsMediaRecorder = Boolean(window.MediaRecorder);
+    run.summary.previewSequence = "front_then_rear";
+    run.summary.phaseSeconds = CAMERA_PHASE_SECONDS;
+    run.summary.recordingSeconds = Math.min(CAMERA_RECORD_SECONDS, CAMERA_PHASE_SECONDS);
+    run.summary.recordingMimeType = pickRecorderMimeType() || "unavailable";
+    ensureRunMediaBucket(run);
 
-  if (navigator.permissions?.query) {
+    if (navigator.permissions?.query) {
+      try {
+        const camPerm = await navigator.permissions.query({ name: "camera" });
+        run.summary.cameraPermissionState = String(camPerm?.state || "unknown");
+        pushCameraLog(run, "permission_query_before", { state: camPerm?.state || "unknown" }, "info");
+      } catch (err) {
+        pushCameraLog(run, "permission_query_error", simplifyMediaError(err), "warn");
+        run.summary.cameraPermissionState = "unknown";
+      }
+    } else {
+      run.summary.cameraPermissionState = "unsupported";
+      pushCameraLog(run, "permission_api_unsupported", { note: "navigator.permissions.query non supporte pour camera" }, "warn");
+    }
+
+    let afterVideo = [];
     try {
-      const camPerm = await navigator.permissions.query({ name: "camera" });
-      run.summary.cameraPermissionState = String(camPerm?.state || "unknown");
-      pushCameraLog(run, "permission_query_before", { state: camPerm?.state || "unknown" }, "info");
+      const beforeDevices = await navigator.mediaDevices.enumerateDevices();
+      const beforeVideo = beforeDevices.filter((d) => d.kind === "videoinput");
+      pushCameraLog(run, "enumerate_before_permission", {
+        videoInputs: beforeVideo.map((d) => ({
+          deviceId: d.deviceId || "",
+          groupId: d.groupId || "",
+          label: d.label || ""
+        })),
+        count: beforeVideo.length
+      }, "info");
     } catch (err) {
-      pushCameraLog(run, "permission_query_error", simplifyMediaError(err), "warn");
-      run.summary.cameraPermissionState = "unknown";
+      pushCameraLog(run, "enumerate_before_permission_error", simplifyMediaError(err), "warn");
     }
-  } else {
-    run.summary.cameraPermissionState = "unsupported";
-    pushCameraLog(run, "permission_api_unsupported", { note: "navigator.permissions.query non supporte pour camera" }, "warn");
-  }
 
-  let afterVideo = [];
-  try {
-    const beforeDevices = await navigator.mediaDevices.enumerateDevices();
-    const beforeVideo = beforeDevices.filter((d) => d.kind === "videoinput");
-    pushCameraLog(run, "enumerate_before_permission", {
-      videoInputs: beforeVideo.map((d) => ({
-        deviceId: d.deviceId || "",
-        groupId: d.groupId || "",
-        label: d.label || ""
+    try {
+      const afterDevices = await navigator.mediaDevices.enumerateDevices();
+      afterVideo = afterDevices.filter((d) => d.kind === "videoinput");
+      run.summary.detectedVideoInputs = afterVideo.length;
+      pushCameraLog(run, "enumerate_after_permission", {
+        videoInputs: afterVideo.map((d) => ({
+          deviceId: d.deviceId || "",
+          groupId: d.groupId || "",
+          label: d.label || ""
+        })),
+        count: afterVideo.length,
+        labelsAccessible: afterVideo.some((d) => String(d.label || "").trim().length > 0)
+      }, "info");
+    } catch (err) {
+      pushCameraLog(run, "enumerate_after_permission_error", simplifyMediaError(err), "warn");
+    }
+
+    const deviceHints = pickCameraDeviceIds(afterVideo);
+    pushCameraLog(run, "phase_device_hints", deviceHints, "info");
+    const phaseResults = { front: null, rear: null };
+    let successfulStreams = 0;
+    let testedStreams = 0;
+
+    const frontResult = await openCameraPhaseStream("front", run, env, deviceHints);
+    phaseResults.front = frontResult;
+    testedStreams += Number(frontResult?.attempts || 0);
+    if (frontResult.ok && frontResult.stream) {
+      successfulStreams += 1;
+      mobileActiveStream = frontResult.stream;
+      if (mobileCameraVideoEl) {
+        mobileCameraVideoEl.srcObject = mobileActiveStream;
+        await mobileCameraVideoEl.play().catch(() => {});
+      }
+      if (mobileCameraPanelEl) mobileCameraPanelEl.hidden = false;
+      const recordFrontPromise = recordCameraPhaseClip({
+        stream: mobileActiveStream,
+        phase: "front",
+        run,
+        seconds: Math.min(CAMERA_RECORD_SECONDS, CAMERA_PHASE_SECONDS),
+        verification: frontResult?.verification
+      });
+      await showPhasePreview({ phaseLabel: "Caméra avant", seconds: CAMERA_PHASE_SECONDS, run });
+      const frontClipResult = await recordFrontPromise;
+      if (frontClipResult?.clip) ensureRunMediaBucket(run).clips.push(frontClipResult.clip);
+      stopMobileCameraStream();
+    }
+
+    const rearResult = await openCameraPhaseStream("rear", run, env, deviceHints);
+    phaseResults.rear = rearResult;
+    testedStreams += Number(rearResult?.attempts || 0);
+    if (rearResult.ok && rearResult.stream) {
+      successfulStreams += 1;
+      mobileActiveStream = rearResult.stream;
+      if (mobileCameraVideoEl) {
+        mobileCameraVideoEl.srcObject = mobileActiveStream;
+        await mobileCameraVideoEl.play().catch(() => {});
+      }
+      if (mobileCameraPanelEl) mobileCameraPanelEl.hidden = false;
+      const recordRearPromise = recordCameraPhaseClip({
+        stream: mobileActiveStream,
+        phase: "rear",
+        run,
+        seconds: Math.min(CAMERA_RECORD_SECONDS, CAMERA_PHASE_SECONDS),
+        verification: rearResult?.verification
+      });
+      await showPhasePreview({ phaseLabel: "Caméra arrière", seconds: CAMERA_PHASE_SECONDS, run });
+      const rearClipResult = await recordRearPromise;
+      if (rearClipResult?.clip) ensureRunMediaBucket(run).clips.push(rearClipResult.clip);
+      stopMobileCameraStream();
+    }
+
+    const frontState = cameraPhaseStatusFromResult(phaseResults.front);
+    const rearState = cameraPhaseStatusFromResult(phaseResults.rear);
+    run.summary.frontCameraStatus = frontState;
+    run.summary.rearCameraStatus = rearState;
+    run.summary.frontCameraVerification = String(phaseResults.front?.verification?.verdict || "none");
+    run.summary.rearCameraVerification = String(phaseResults.rear?.verification?.verdict || "none");
+    run.summary.frontCameraError = phaseResults.front?.ok
+      ? ""
+      : String(phaseResults.front?.errors?.[0]?.error?.name || phaseResults.front?.errors?.[0]?.error?.message || "UNKNOWN");
+    run.summary.rearCameraError = phaseResults.rear?.ok
+      ? ""
+      : String(phaseResults.rear?.errors?.[0]?.error?.name || phaseResults.rear?.errors?.[0]?.error?.message || "UNKNOWN");
+    run.summary.frontAttemptCount = Number(phaseResults.front?.attempts || 0);
+    run.summary.rearAttemptCount = Number(phaseResults.rear?.attempts || 0);
+    run.summary.testedStreams = testedStreams;
+    run.summary.successfulTests = successfulStreams;
+    run.summary.recordingCount = ensureRunMediaBucket(run).clips.length;
+
+    const frontDeviceId = String(phaseResults.front?.trackInfo?.settings?.deviceId || "").trim();
+    const rearDeviceId = String(phaseResults.rear?.trackInfo?.settings?.deviceId || "").trim();
+    const frontFacing = normalizeFacingMode(phaseResults.front?.trackInfo?.settings?.facingMode || "");
+    const rearFacing = normalizeFacingMode(phaseResults.rear?.trackInfo?.settings?.facingMode || "");
+    let switchCheck = "not_tested";
+    if (phaseResults.front?.ok && phaseResults.rear?.ok) {
+      if (frontDeviceId && rearDeviceId) {
+        switchCheck = frontDeviceId !== rearDeviceId ? "device_changed" : "same_device_id";
+      } else if (frontFacing && rearFacing) {
+        switchCheck = frontFacing !== rearFacing ? "facing_changed" : "same_facing_mode";
+      } else {
+        switchCheck = "not_verifiable";
+      }
+    }
+    run.summary.cameraSwitchCheck = switchCheck;
+    pushCameraLog(run, "camera_switch_check", {
+      switchCheck,
+      frontDeviceId: frontDeviceId || "hidden",
+      rearDeviceId: rearDeviceId || "hidden",
+      frontFacing: frontFacing || "hidden",
+      rearFacing: rearFacing || "hidden"
+    }, switchCheck === "device_changed" || switchCheck === "facing_changed" ? "info" : "warn");
+
+    const hints = [];
+    (phaseResults.front?.errors || []).forEach((entry) => {
+      (entry?.hints || []).forEach((hint) => hints.push(hint));
+    });
+    (phaseResults.rear?.errors || []).forEach((entry) => {
+      (entry?.hints || []).forEach((hint) => hints.push(hint));
+    });
+    if (frontState === "unverified" || rearState === "unverified") {
+      hints.push("Basculement caméra non vérifiable: le navigateur masque facingMode/deviceId/label.");
+    }
+    if (frontState === "mismatch") hints.push("Flux avant reçu mais indices incompatibles avec la caméra frontale.");
+    if (rearState === "mismatch") hints.push("Flux arrière reçu mais indices incompatibles avec la caméra arrière.");
+    if (!run.summary.supportsMediaRecorder) {
+      hints.push("MediaRecorder non supporté: impossible de conserver les clips vidéo sur ce navigateur.");
+    }
+    if (switchCheck === "same_device_id" && Number(run.summary.detectedVideoInputs || 0) >= 2) {
+      hints.push("Même deviceId entre les deux phases: basculement possiblement ignoré par le navigateur.");
+    }
+    if (switchCheck === "not_verifiable") {
+      hints.push("Impossible de prouver le basculement avant/arrière sur cet appareil (limite navigateur/OS).");
+    }
+    if (!hints.length && (frontState !== "ok" || rearState !== "ok")) {
+      hints.push("Le navigateur a refusé ou limité l'accès caméra sans détail pleinement exploitable.");
+      hints.push("Vérifier les permissions OS + navigateur puis retester après fermeture des apps caméra.");
+    }
+    run.summary.diagnosticHints = [...new Set(hints)];
+    pushCameraLog(run, "dual_camera_summary", {
+      front: {
+        status: frontState,
+        selected: phaseResults.front?.label || "",
+        verification: phaseResults.front?.verification || null,
+        error: phaseResults.front?.errors?.[0]?.error || null
+      },
+      rear: {
+        status: rearState,
+        selected: phaseResults.rear?.label || "",
+        verification: phaseResults.rear?.verification || null,
+        error: phaseResults.rear?.errors?.[0]?.error || null
+      },
+      switchCheck,
+      recordings: ensureRunMediaBucket(run).clips.map((clip) => ({
+        phase: clip.phase,
+        byteLength: clip.byteLength,
+        durationMs: clip.durationMs,
+        dropped: Boolean(clip.dropped)
       })),
-      count: beforeVideo.length
-    }, "info");
-  } catch (err) {
-    pushCameraLog(run, "enumerate_before_permission_error", simplifyMediaError(err), "warn");
-  }
+      hints: run.summary.diagnosticHints
+    }, (frontState === "ok" && rearState === "ok") ? "info" : "warn");
 
-  try {
-    const afterDevices = await navigator.mediaDevices.enumerateDevices();
-    afterVideo = afterDevices.filter((d) => d.kind === "videoinput");
-    run.summary.detectedVideoInputs = afterVideo.length;
-    pushCameraLog(run, "enumerate_after_permission", {
-      videoInputs: afterVideo.map((d) => ({
-        deviceId: d.deviceId || "",
-        groupId: d.groupId || "",
-        label: d.label || ""
-      })),
-      count: afterVideo.length,
-      labelsAccessible: afterVideo.some((d) => String(d.label || "").trim().length > 0)
-    }, "info");
-  } catch (err) {
-    pushCameraLog(run, "enumerate_after_permission_error", simplifyMediaError(err), "warn");
-  }
-
-  const deviceHints = pickCameraDeviceIds(afterVideo);
-  pushCameraLog(run, "phase_device_hints", deviceHints, "info");
-  const phaseDurationSeconds = 6;
-  const phaseResults = {
-    front: null,
-    rear: null
-  };
-  let successfulTests = 0;
-  let testedStreams = 0;
-
-  const frontResult = await openCameraPhaseStream("front", run, env, deviceHints);
-  phaseResults.front = frontResult;
-  testedStreams += Number(frontResult?.attempts || 0);
-  if (frontResult.ok && frontResult.stream) {
-    successfulTests += 1;
-    mobileActiveStream = frontResult.stream;
-    if (mobileCameraVideoEl) {
-      mobileCameraVideoEl.srcObject = mobileActiveStream;
-      await mobileCameraVideoEl.play().catch(() => {});
-    }
-    if (mobileCameraPanelEl) mobileCameraPanelEl.hidden = false;
-    await showPhasePreview({ phaseLabel: "Caméra avant", seconds: phaseDurationSeconds, run });
+    const hasAnySuccess = frontState !== "error" || rearState !== "error";
+    const allConfirmed = frontState === "ok" && rearState === "ok";
+    if (!hasAnySuccess) run.status = "failure";
+    else if (allConfirmed) run.status = "success";
+    else run.status = "partial_failure";
+    run.endedAt = new Date().toISOString();
     stopMobileCameraStream();
-  }
+    if (mobileCameraPanelMetaEl) mobileCameraPanelMetaEl.textContent = "Diagnostic terminé.";
 
-  const rearResult = await openCameraPhaseStream("rear", run, env, deviceHints);
-  phaseResults.rear = rearResult;
-  testedStreams += Number(rearResult?.attempts || 0);
-  if (rearResult.ok && rearResult.stream) {
-    successfulTests += 1;
-    mobileActiveStream = rearResult.stream;
-    if (mobileCameraVideoEl) {
-      mobileCameraVideoEl.srcObject = mobileActiveStream;
-      await mobileCameraVideoEl.play().catch(() => {});
+    mobileCameraRuns = [...mobileCameraRuns, run].slice(-8);
+    const payload = readMobileFormPayload();
+    const record = createMobileQuoteRecord({ code: currentMobileQuoteCode, payload });
+    await persistMobileQuoteRecord(record);
+
+    const frontStatusText = `avant: ${cameraPhaseStatusToText(frontState, run.summary.frontCameraError)}`;
+    const rearStatusText = `arrière: ${cameraPhaseStatusToText(rearState, run.summary.rearCameraError)}`;
+    if (run.status === "success") {
+      setMobileCameraHint(`Diagnostic caméra terminé. ${frontStatusText} • ${rearStatusText}.`);
+    } else if (run.status === "partial_failure") {
+      setMobileCameraHint(`Diagnostic partiel. ${frontStatusText} • ${rearStatusText}. Voir les logs côté admin.`);
+    } else {
+      const hintLead = Array.isArray(run.summary.diagnosticHints) && run.summary.diagnosticHints.length
+        ? ` ${run.summary.diagnosticHints[0]}`
+        : "";
+      setMobileCameraHint(`Diagnostic en échec. ${frontStatusText} • ${rearStatusText}.${hintLead}`);
     }
-    if (mobileCameraPanelEl) mobileCameraPanelEl.hidden = false;
-    await showPhasePreview({ phaseLabel: "Caméra arrière", seconds: phaseDurationSeconds, run });
+  } catch (err) {
+    pushCameraLog(run, "diagnostic_runtime_error", simplifyMediaError(err), "error");
+    run.status = "failure";
+    run.endedAt = new Date().toISOString();
+    mobileCameraRuns = [...mobileCameraRuns, run].slice(-8);
+    const payload = readMobileFormPayload();
+    const record = createMobileQuoteRecord({ code: currentMobileQuoteCode, payload });
+    await persistMobileQuoteRecord(record);
+    setMobileCameraHint("Diagnostic interrompu par une erreur inattendue. Voir les logs côté admin.");
+  } finally {
     stopMobileCameraStream();
+    updateMobileCameraAvailabilityUI();
+    mobileCameraTestBusy = false;
+    if (mobileCameraTestBtn) mobileCameraTestBtn.disabled = false;
   }
-
-  run.summary.frontCameraStatus = phaseResults.front?.ok ? "ok" : "error";
-  run.summary.rearCameraStatus = phaseResults.rear?.ok ? "ok" : "error";
-  run.summary.frontCameraError = phaseResults.front?.ok
-    ? ""
-    : String(phaseResults.front?.errors?.[0]?.error?.name || phaseResults.front?.errors?.[0]?.error?.message || "UNKNOWN");
-  run.summary.rearCameraError = phaseResults.rear?.ok
-    ? ""
-    : String(phaseResults.rear?.errors?.[0]?.error?.name || phaseResults.rear?.errors?.[0]?.error?.message || "UNKNOWN");
-  run.summary.frontAttemptCount = Number(phaseResults.front?.attempts || 0);
-  run.summary.rearAttemptCount = Number(phaseResults.rear?.attempts || 0);
-  run.summary.testedStreams = testedStreams;
-  run.summary.successfulTests = successfulTests;
-
-  const hints = [];
-  (phaseResults.front?.errors || []).forEach((entry) => {
-    (entry?.hints || []).forEach((hint) => hints.push(hint));
-  });
-  (phaseResults.rear?.errors || []).forEach((entry) => {
-    (entry?.hints || []).forEach((hint) => hints.push(hint));
-  });
-  if (!hints.length && (!phaseResults.front?.ok || !phaseResults.rear?.ok)) {
-    hints.push("Le navigateur a refusé l'accès caméra sans message détaillé exploitable.");
-    hints.push("Vérifier les permissions OS + navigateur, puis retester après fermeture des apps utilisant la caméra.");
-  }
-  run.summary.diagnosticHints = [...new Set(hints)];
-  pushCameraLog(run, "dual_camera_summary", {
-    front: {
-      ok: Boolean(phaseResults.front?.ok),
-      selected: phaseResults.front?.label || "",
-      error: phaseResults.front?.errors?.[0]?.error || null
-    },
-    rear: {
-      ok: Boolean(phaseResults.rear?.ok),
-      selected: phaseResults.rear?.label || "",
-      error: phaseResults.rear?.errors?.[0]?.error || null
-    },
-    hints: run.summary.diagnosticHints
-  }, (phaseResults.front?.ok && phaseResults.rear?.ok) ? "info" : "warn");
-
-  const frontOk = Boolean(phaseResults.front?.ok);
-  const rearOk = Boolean(phaseResults.rear?.ok);
-  const detectedInputs = Number(run.summary.detectedVideoInputs || 0);
-  const expectsDual = detectedInputs >= 2;
-  const anyOk = frontOk || rearOk;
-  if (!anyOk) run.status = "failure";
-  else if (expectsDual && (!frontOk || !rearOk)) run.status = "partial_failure";
-  else if (!frontOk || !rearOk) run.status = "partial_failure";
-  else run.status = "success";
-  run.endedAt = new Date().toISOString();
-  stopMobileCameraStream();
-  if (mobileCameraPanelMetaEl) mobileCameraPanelMetaEl.textContent = "Diagnostic terminé.";
-
-  mobileCameraRuns = [...mobileCameraRuns, run].slice(-8);
-  const payload = readMobileFormPayload();
-  const record = createMobileQuoteRecord({ code: currentMobileQuoteCode, payload });
-  await persistMobileQuoteRecord(record);
-
-  const frontStatus = run.summary.frontCameraStatus === "ok"
-    ? "avant OK"
-    : `avant KO (${run.summary.frontCameraError || "raison inconnue"})`;
-  const rearStatus = run.summary.rearCameraStatus === "ok"
-    ? "arrière OK"
-    : `arrière KO (${run.summary.rearCameraError || "raison inconnue"})`;
-  if (run.status === "success") {
-    setMobileCameraHint(`Diagnostic caméra terminé. ${frontStatus} • ${rearStatus}.`);
-  } else if (run.status === "partial_failure") {
-    setMobileCameraHint(`Diagnostic partiel. ${frontStatus} • ${rearStatus}. Voir les logs côté admin.`);
-  } else {
-    const hintLead = Array.isArray(run.summary.diagnosticHints) && run.summary.diagnosticHints.length
-      ? ` ${run.summary.diagnosticHints[0]}`
-      : "";
-    setMobileCameraHint(`Diagnostic en échec. ${frontStatus} • ${rearStatus}.${hintLead}`);
-  }
-
-  updateMobileCameraAvailabilityUI();
-  mobileCameraTestBusy = false;
-  if (mobileCameraTestBtn) mobileCameraTestBtn.disabled = false;
 }
 
 function applyMobileQuoteRecord(record, sourceLabel = "") {
@@ -5066,8 +5545,11 @@ async function openOrDownloadCameraLogsForQuote(code, shouldDownload = false, ru
   const payload = mobileCameraLogsPayloadFromRuns(runs, normalized);
   if (shouldDownload) {
     const suffix = targetRunId ? `-${targetRunId}` : "";
-    downloadCameraLogs(payload, `camera-logs-${normalized}${suffix}.json`);
-    toast("Logs caméra téléchargés (JSON + MD).");
+    const dl = downloadCameraLogs(payload, `camera-logs-${normalized}${suffix}.json`);
+    const clipInfo = Number(dl?.availableCount || 0) > 0
+      ? ` + ${Number(dl?.availableCount || 0)} vidéo(s)`
+      : "";
+    toast(`Logs caméra téléchargés (JSON + MD${clipInfo}).`);
     return true;
   }
   const titleSuffix = targetRunId ? ` • ${targetRunId}` : "";
@@ -6215,7 +6697,8 @@ function renderAdminCameraRunsPanel(quote) {
       const endedAt = formatDateTimeFr(run?.endedAt || run?.startedAt || "");
       const status = String(run?.status || "unknown");
       const count = Number(run?.entryCount || 0);
-      meta.textContent = `${runId || "run"} • ${status} • ${count} logs • ${endedAt || "date inconnue"}`;
+      const clips = Number(run?.recordingCount || 0);
+      meta.textContent = `${runId || "run"} • ${status} • ${count} logs • ${clips} vidéo(s) • ${endedAt || "date inconnue"}`;
 
       const actions = document.createElement("div");
       actions.className = "admin-camera-run__actions";
