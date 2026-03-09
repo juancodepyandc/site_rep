@@ -169,17 +169,17 @@
             <div class="form__grid">
               <div class="field">
                 <label>Nom</label>
-                <input type="text" name="from_name" placeholder="Ex : Juan" required />
+                <input type="text" id="pcFromName" name="from_name" placeholder="Ex : Juan" required />
               </div>
 
               <div class="field">
                 <label>Email</label>
-                <input type="email" name="reply_to" placeholder="Ex : nom@domaine.fr" required />
+                <input type="email" id="pcReplyTo" name="reply_to" placeholder="Ex : nom@domaine.fr" required />
               </div>
 
               <div class="field">
                 <label>Type de problème</label>
-                <select name="pc_issue" required>
+                <select id="pcIssue" name="pc_issue" required>
                   <option value="" disabled selected>Choisir…</option>
                   <option>Démarrage / écran noir</option>
                   <option>Lenteur / freezes</option>
@@ -193,7 +193,7 @@
 
               <div class="field">
                 <label>Urgence</label>
-                <select name="urgency" required>
+                <select id="pcUrgency" name="urgency" required>
                   <option value="" disabled selected>Choisir…</option>
                   <option>Standard</option>
                   <option>Prioritaire</option>
@@ -203,18 +203,23 @@
 
               <div class="field field--full">
                 <label>Modèle du PC / composants connus</label>
-                <input type="text" name="pc_model" placeholder="Ex : Lenovo Legion / i7 / RTX / RAM…" required />
+                <input type="text" id="pcModel" name="pc_model" placeholder="Ex : Lenovo Legion / i7 / RTX / RAM…" required />
               </div>
 
               <div class="field field--full">
                 <label>Description très détaillée</label>
-                <textarea name="description" rows="7" placeholder="Contexte, messages d’erreur, températures, bruit, dernière action (update, chute, liquide), etc." required></textarea>
+                <textarea id="pcDescription" name="description" rows="7" placeholder="Contexte, messages d’erreur, températures, bruit, dernière action (update, chute, liquide), etc." required></textarea>
               </div>
             </div>
 
             <div class="form__actions">
               <button class="btn btn--primary btn--shine" type="submit">Demander un devis</button>
               <div class="form__hint" id="pcStatus" aria-live="polite"></div>
+            </div>
+            <div class="form__hint repair-code" id="pcQuoteCodeHint" aria-live="polite"></div>
+            <div class="quote-inline-lookup">
+              <input type="text" id="pcQuoteLookup" placeholder="Code devis PC (DV-... ou admin:clé)" />
+              <button class="btn btn--ghost btn--tiny" type="button" id="pcLoadQuoteCode">Récupérer</button>
             </div>
           </form>
         </div>
@@ -282,8 +287,6 @@
                 <label>Diagnostic caméra</label>
                 <div class="mobile-camera-tools__actions">
                   <button class="btn btn--ghost btn--tiny" type="button" id="mobileCameraTestBtn">Test caméra</button>
-                  <button class="btn btn--ghost btn--tiny" type="button" id="mobileCameraLogsBtn">Voir les logs</button>
-                  <button class="btn btn--ghost btn--tiny" type="button" id="mobileCameraDownloadBtn">Télécharger les logs</button>
                 </div>
                 <div class="form__hint" id="mobileCameraHint" aria-live="polite"></div>
               </div>
@@ -299,6 +302,10 @@
               <div class="form__hint" id="mobileStatus" aria-live="polite"></div>
             </div>
             <div class="form__hint mobile-code" id="mobileQuoteCodeHint" aria-live="polite"></div>
+            <div class="quote-inline-lookup">
+              <input type="text" id="mobileQuoteLookup" placeholder="Code devis mobile (DV-... ou admin:clé)" />
+              <button class="btn btn--ghost btn--tiny" type="button" id="mobileLoadQuoteCode">Récupérer</button>
+            </div>
           </form>
         </div>
       </div>
@@ -562,7 +569,7 @@
                     <button class="btn btn--ghost" type="button" id="openPreview3d">Aperçu</button>
                     <button class="btn btn--primary btn--shine" type="submit">Envoyer mon devis</button>
                     <button class="btn btn--primary btn--shine" type="button" id="buyNow">Acheter maintenant</button>
-                    <button class="btn btn--ghost btn--sandbox" type="button" id="buyNowSandbox">Simuler paiement (sandbox)</button>
+                    <button class="btn btn--ghost btn--sandbox" type="button" id="buyNowSandbox" hidden>Simuler paiement (sandbox)</button>
                   </div>
 
                   <div class="form__hint" id="customStatus" aria-live="polite"></div>

@@ -290,6 +290,47 @@ function buildPartsSummary(record) {
     .slice(0, 12);
 }
 
+function normalizeServiceType(record) {
+  const raw = String(record?.serviceType || "").trim().toLowerCase();
+  if (raw === "pc-custom" || raw === "pc-repair" || raw === "mobile-repair") return raw;
+  if (record?.mobileRequest && typeof record.mobileRequest === "object") return "mobile-repair";
+  const hasSelects = record?.selects && typeof record.selects === "object" && Object.keys(record.selects).length > 0;
+  return hasSelects ? "pc-custom" : "pc-repair";
+}
+
+function normalizeIssueCategory(record, serviceType) {
+  const raw = String(record?.issueCategory || "").trim().toLowerCase();
+  if (raw) return raw;
+  if (serviceType === "pc-custom") return "custom-build";
+  if (serviceType === "mobile-repair") return "other";
+  const issue = String(record?.config?.parts?.issue || "").trim().toLowerCase();
+  if (!issue) return "other";
+  if (issue.includes("surchauffe")) return "thermal";
+  if (issue.includes("demarrage") || issue.includes("ecran noir")) return "boot-display";
+  if (issue.includes("stockage") || issue.includes("donnees")) return "storage-data";
+  if (issue.includes("virus") || issue.includes("systeme")) return "software";
+  if (issue.includes("port") || issue.includes("connectique")) return "io";
+  return "other";
+}
+
+function summarizeCameraRuns(record) {
+  const rawRuns = Array.isArray(record?.cameraDiagnostics?.runs) ? record.cameraDiagnostics.runs : [];
+  const runs = rawRuns.slice(-12).map((run) => {
+    const entries = Array.isArray(run?.entries) ? run.entries : [];
+    return {
+      runId: clampText(run?.runId || "", 120),
+      startedAt: toIsoOrEmpty(run?.startedAt),
+      endedAt: toIsoOrEmpty(run?.endedAt),
+      status: clampText(run?.status || "", 60),
+      entryCount: entries.length,
+      cameraPermissionState: clampText(run?.summary?.cameraPermissionState || "", 40)
+    };
+  });
+  const totalEntries = runs.reduce((sum, run) => sum + Number(run.entryCount || 0), 0);
+  const latestRun = runs.length ? runs[runs.length - 1] : null;
+  return { runs, totalEntries, latestRun };
+}
+
 async function scanQuoteKeys(client) {
   const out = [];
   let cursor = "0";
@@ -464,9 +505,9 @@ async function handleList(req, res, client) {
     const totalValue = Number(record?.config?.total || 0) || 0;
     const status = String(record?.adminStatus?.state || "open").trim() === "settled" ? "settled" : "open";
     const priority = priorityFromRecord(record, Boolean(pending));
-    const cameraRuns = Array.isArray(record?.cameraDiagnostics?.runs) ? record.cameraDiagnostics.runs : [];
-    const latestRun = cameraRuns.length ? cameraRuns[cameraRuns.length - 1] : null;
-    const latestEntries = Array.isArray(latestRun?.entries) ? latestRun.entries : [];
+    const camera = summarizeCameraRuns(record);
+    const serviceType = normalizeServiceType(record);
+    const issueCategory = normalizeIssueCategory(record, serviceType);
 
     quotes.push({
       code,
@@ -479,17 +520,19 @@ async function handleList(req, res, client) {
       totalLabel: totalValue > 0 ? euro(totalValue) : "—",
       deliveryName: String(record?.config?.parts?.delivery || "").trim() || String(record?.selects?.delivery || "").trim(),
       status,
-      serviceType: String(record?.serviceType || "").trim(),
-      issueCategory: String(record?.issueCategory || "").trim(),
+      serviceType,
+      issueCategory,
       pendingModification: Boolean(pending),
       pendingExpiresAt: toIsoOrEmpty(pending?.expiresAt),
       priorityLevel: priority.level,
       priorityLabel: priority.label,
       priorityReason: priority.reason,
       partsSummary: buildPartsSummary(record),
-      hasCameraLogs: latestEntries.length > 0,
-      cameraLogCount: latestEntries.length,
-      cameraLastRunAt: toIsoOrEmpty(latestRun?.endedAt || latestRun?.startedAt)
+      hasCameraLogs: camera.totalEntries > 0,
+      cameraLogCount: camera.totalEntries,
+      cameraRunCount: camera.runs.length,
+      cameraRuns: camera.runs,
+      cameraLastRunAt: toIsoOrEmpty(camera.latestRun?.endedAt || camera.latestRun?.startedAt)
     });
   }
 
@@ -538,6 +581,48 @@ async function handleDelete(body, res, client) {
     code,
     deleted: Number(quoteDeleted || 0) > 0,
     pendingDeleted: Number(pendingDeleted || 0) > 0
+  });
+}
+
+async function handleDeleteCameraLogRun(body, res, client) {
+  const code = normalizeCode(body.code || "");
+  if (!code) return res.status(400).json({ error: "MISSING_CODE" });
+  if (!QUOTE_CODE_RE.test(code)) return res.status(400).json({ error: "INVALID_CODE_FORMAT" });
+
+  const clearAll = body.clear_all === true || body.clearAll === true;
+  const runId = clampText(body.run_id || body.runId || "", 120);
+  if (!clearAll && !runId) return res.status(400).json({ error: "MISSING_RUN_ID" });
+
+  const key = `quote:${code}`;
+  const raw = await client.get(key);
+  if (!raw) return res.status(404).json({ error: "NOT_FOUND" });
+  const record = JSON.parse(raw);
+  const currentRuns = Array.isArray(record?.cameraDiagnostics?.runs) ? record.cameraDiagnostics.runs : [];
+  if (!currentRuns.length) {
+    return res.status(200).json({ ok: true, code, deletedRuns: 0, remainingRuns: 0 });
+  }
+
+  const nextRuns = clearAll
+    ? []
+    : currentRuns.filter((run) => String(run?.runId || "").trim() !== runId);
+  const deletedRuns = currentRuns.length - nextRuns.length;
+  if (!clearAll && deletedRuns <= 0) return res.status(404).json({ error: "RUN_NOT_FOUND" });
+
+  const nowIso = new Date().toISOString();
+  record.cameraDiagnostics = {
+    ...(record?.cameraDiagnostics && typeof record.cameraDiagnostics === "object" ? record.cameraDiagnostics : {}),
+    updatedAt: nowIso,
+    runs: nextRuns
+  };
+  record.updatedAt = nowIso;
+  await client.set(key, JSON.stringify(record), { EX: QUOTE_TTL_SECONDS });
+
+  return res.status(200).json({
+    ok: true,
+    code,
+    deletedRuns,
+    remainingRuns: nextRuns.length,
+    updatedAt: nowIso
   });
 }
 
@@ -650,6 +735,7 @@ export default async function handler(req, res) {
 
     if (action === "set-status") return handleSetStatus(body, res, client);
     if (action === "delete") return handleDelete(body, res, client);
+    if (action === "delete-camera-log-run") return handleDeleteCameraLogRun(body, res, client);
     if (action === "test-receipt") {
       if (!ENABLE_TEST_RECEIPT) return res.status(403).json({ error: "TEST_RECEIPT_DISABLED" });
       return handleTestReceipt(body, res, client);

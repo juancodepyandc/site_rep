@@ -1,5 +1,7 @@
 const BASE_PRICE = 20;
 const QUOTE_STORAGE_KEY = "atelier_quotes_v2";
+const PC_REPAIR_QUOTE_STORAGE_KEY = "atelier_pc_repair_quotes_v1";
+const PC_REPAIR_LAST_QUOTE_CODE_KEY = "atelier_pc_repair_last_quote_code";
 const MOBILE_QUOTE_STORAGE_KEY = "atelier_mobile_quotes_v1";
 const MOBILE_LAST_QUOTE_CODE_KEY = "atelier_mobile_last_quote_code";
 
@@ -3937,8 +3939,6 @@ function bindClassicForm(formId, subject, statusElId) {
   });
 }
 
-bindClassicForm("form-pc", "Demande devis — Réparation PC", "pcStatus");
-
 const formContact = document.getElementById("form-contact");
 if (formContact) {
   formContact.addEventListener("submit", async (e) => {
@@ -3963,6 +3963,17 @@ if (formContact) {
   });
 }
 
+const formPc = document.getElementById("form-pc");
+const pcFromNameEl = document.getElementById("pcFromName");
+const pcReplyToEl = document.getElementById("pcReplyTo");
+const pcIssueEl = document.getElementById("pcIssue");
+const pcUrgencyEl = document.getElementById("pcUrgency");
+const pcModelEl = document.getElementById("pcModel");
+const pcDescriptionEl = document.getElementById("pcDescription");
+const pcQuoteCodeHintEl = document.getElementById("pcQuoteCodeHint");
+const pcQuoteLookupEl = document.getElementById("pcQuoteLookup");
+const pcLoadQuoteBtn = document.getElementById("pcLoadQuoteCode");
+
 const formMobile = document.getElementById("form-mobile");
 const mobileFromNameEl = document.getElementById("mobileFromName");
 const mobileReplyToEl = document.getElementById("mobileReplyTo");
@@ -3978,8 +3989,8 @@ const mobileCameraVideoEl = document.getElementById("mobileCameraVideo");
 const mobileCameraPanelMetaEl = document.getElementById("mobileCameraPanelMeta");
 const mobileCameraHintEl = document.getElementById("mobileCameraHint");
 const mobileCameraTestBtn = document.getElementById("mobileCameraTestBtn");
-const mobileCameraLogsBtn = document.getElementById("mobileCameraLogsBtn");
-const mobileCameraDownloadBtn = document.getElementById("mobileCameraDownloadBtn");
+const mobileQuoteLookupEl = document.getElementById("mobileQuoteLookup");
+const mobileLoadQuoteBtn = document.getElementById("mobileLoadQuoteCode");
 
 const formCustom = document.getElementById("form-custom");
 const quoteNameEl = document.getElementById("quoteName");
@@ -4010,6 +4021,7 @@ const adminQuotesMetaEl = document.getElementById("adminQuotesMeta");
 const adminQuotesStatusEl = document.getElementById("adminQuotesStatus");
 const adminRefreshQuotesBtn = document.getElementById("adminRefreshQuotes");
 const openAdminQuotesViewBtn = document.getElementById("openAdminQuotesView");
+const buyNowSandboxBtn = document.getElementById("buyNowSandbox");
 
 const requestModifyBtn = document.getElementById("requestModifyQuote");
 const confirmModifyBtn = document.getElementById("confirmModifyQuote");
@@ -4036,6 +4048,7 @@ let optimizedPresetSnapshot = {};
 let isNoviceMode = false;
 const CORE_CATEGORY_KEYS = ["cpu", "mobo", "ram", "gpu", "storage", "psu", "case"];
 let currentMobileQuoteCode = "";
+let currentPcRepairQuoteCode = "";
 let mobileCameraRuns = [];
 let mobileActiveStream = null;
 let mobileCameraTestBusy = false;
@@ -4071,6 +4084,10 @@ function updateModifyActionVisibility() {
 function applyAdminUI() {
   updateModifyActionVisibility();
   if (adminNavLinkEl) adminNavLinkEl.hidden = !isAdmin;
+  if (buyNowSandboxBtn) {
+    buyNowSandboxBtn.hidden = !isAdmin;
+    if (!isAdmin) buyNowSandboxBtn.disabled = true;
+  }
   if (!isAdmin && adminQuotesViewEl?.classList.contains("is-active")) {
     showView("custom");
   }
@@ -4083,6 +4100,18 @@ function setQuoteCodeUI(code, meta) {
   if (quoteCodeValueEl) quoteCodeValueEl.textContent = code || "Non généré";
   if (quoteCodeMetaEl) quoteCodeMetaEl.textContent = meta || "Génère un code devis pour retrouver ta simulation.";
   updateModifyActionVisibility();
+}
+
+function readPcRepairQuoteStore() {
+  try {
+    return JSON.parse(localStorage.getItem(PC_REPAIR_QUOTE_STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function writePcRepairQuoteStore(store) {
+  localStorage.setItem(PC_REPAIR_QUOTE_STORAGE_KEY, JSON.stringify(store || {}));
 }
 
 function readMobileQuoteStore() {
@@ -4119,6 +4148,73 @@ function setMobileQuoteCodeHint(text = "") {
   if (mobileQuoteCodeHintEl) mobileQuoteCodeHintEl.textContent = text;
 }
 
+function setPcQuoteCodeHint(text = "") {
+  if (pcQuoteCodeHintEl) pcQuoteCodeHintEl.textContent = text;
+}
+
+function readPcRepairFormPayload() {
+  return {
+    fromName: String(pcFromNameEl?.value || "").trim(),
+    replyTo: String(pcReplyToEl?.value || "").trim().toLowerCase(),
+    issue: String(pcIssueEl?.value || "").trim(),
+    urgency: String(pcUrgencyEl?.value || "").trim(),
+    model: String(pcModelEl?.value || "").trim(),
+    description: String(pcDescriptionEl?.value || "").trim()
+  };
+}
+
+function pcRepairIssueCategory(issueLabel = "") {
+  const normalized = normalizeFreeText(issueLabel);
+  if (!normalized) return "other";
+  if (normalized.includes("surchauffe")) return "thermal";
+  if (normalized.includes("demarrage") || normalized.includes("ecran noir")) return "boot-display";
+  if (normalized.includes("stockage") || normalized.includes("donnees")) return "storage-data";
+  if (normalized.includes("virus") || normalized.includes("systeme")) return "software";
+  if (normalized.includes("port") || normalized.includes("connectique")) return "io";
+  return "other";
+}
+
+function createPcRepairQuoteRecord({ code, payload }) {
+  const issueLabel = String(payload?.issue || "").trim();
+  const urgency = String(payload?.urgency || "").trim();
+  return {
+    code,
+    createdAt: new Date().toISOString(),
+    requester: {
+      name: String(payload?.fromName || "").trim(),
+      email: String(payload?.replyTo || "").trim().toLowerCase(),
+      details: String(payload?.description || "").trim(),
+      noviceMode: false,
+      noviceBrief: "",
+      budgetMin: 0,
+      budgetMax: 0
+    },
+    signature: JSON.stringify(payload || {}),
+    selects: {},
+    external: {},
+    usage: `Réparation PC - ${issueLabel || "N/A"}`,
+    serviceType: "pc-repair",
+    issueCategory: pcRepairIssueCategory(issueLabel),
+    config: {
+      total: 0,
+      parts: {
+        issue: issueLabel,
+        urgency: urgency || "Standard",
+        model: String(payload?.model || "").trim()
+      }
+    }
+  };
+}
+
+async function persistPcRepairQuoteRecord(record) {
+  if (!record?.code) return;
+  const store = readPcRepairQuoteStore();
+  store[record.code] = record;
+  writePcRepairQuoteStore(store);
+  localStorage.setItem(PC_REPAIR_LAST_QUOTE_CODE_KEY, record.code);
+  await saveQuoteToDatabase(record);
+}
+
 function stopMobileCameraStream() {
   if (!mobileActiveStream) return;
   try {
@@ -4137,8 +4233,6 @@ function updateMobileCameraAvailabilityUI() {
     setMobileCameraHint("");
     stopMobileCameraStream();
   }
-  if (mobileCameraLogsBtn) mobileCameraLogsBtn.disabled = !eligible || !mobileCameraRuns.length;
-  if (mobileCameraDownloadBtn) mobileCameraDownloadBtn.disabled = !eligible || !mobileCameraRuns.length;
 }
 
 function parseBrowserInfo(ua = "") {
@@ -4480,9 +4574,9 @@ async function runMobileCameraDiagnostic() {
   await persistMobileQuoteRecord(record);
 
   if (run.status === "success") {
-    setMobileCameraHint("Diagnostic caméra terminé. Logs enregistrés.");
+    setMobileCameraHint("Diagnostic caméra terminé. Résultat transmis au devis.");
   } else if (run.status === "partial_failure") {
-    setMobileCameraHint("Diagnostic partiel: certaines étapes ont échoué. Consulte les logs.");
+    setMobileCameraHint("Diagnostic partiel: certaines étapes ont échoué.");
   }
 
   updateMobileCameraAvailabilityUI();
@@ -4490,56 +4584,184 @@ async function runMobileCameraDiagnostic() {
   if (mobileCameraTestBtn) mobileCameraTestBtn.disabled = false;
 }
 
+function applyMobileQuoteRecord(record, sourceLabel = "") {
+  if (!record) return false;
+  const code = String(record.code || "").trim().toUpperCase();
+  if (!code) return false;
+  const req = record.mobileRequest && typeof record.mobileRequest === "object" ? record.mobileRequest : {};
+  currentMobileQuoteCode = code;
+  if (mobileFromNameEl) mobileFromNameEl.value = String(record.requester?.name || "").trim();
+  if (mobileReplyToEl) mobileReplyToEl.value = String(record.requester?.email || "").trim().toLowerCase();
+  if (mobileDeviceTypeEl) mobileDeviceTypeEl.value = String(req.deviceType || "").trim();
+  if (mobileIssueEl) mobileIssueEl.value = String(req.issue || "").trim();
+  if (mobileModelEl) mobileModelEl.value = String(req.model || "").trim();
+  if (mobileDescriptionEl) mobileDescriptionEl.value = String(req.description || record.requester?.details || "").trim();
+  mobileCameraRuns = Array.isArray(record?.cameraDiagnostics?.runs) ? record.cameraDiagnostics.runs : [];
+  const suffix = sourceLabel ? ` (${sourceLabel})` : "";
+  setMobileQuoteCodeHint(`Devis mobile chargé: ${code}${suffix}`);
+  updateMobileCameraAvailabilityUI();
+  return true;
+}
+
+async function loadMobileQuoteByCode(code, { silent = false } = {}) {
+  const normalized = String(code || "").trim().toUpperCase();
+  if (!normalized) return false;
+  const store = readMobileQuoteStore();
+  let record = store[normalized] || null;
+  if (!record) {
+    record = await fetchQuoteFromDatabase(normalized);
+    if (record) {
+      store[normalized] = record;
+      writeMobileQuoteStore(store);
+    }
+  }
+  const service = String(record?.serviceType || "").trim();
+  const looksMobile = Boolean(record?.mobileRequest && typeof record.mobileRequest === "object");
+  if (!record || (service !== "mobile-repair" && !looksMobile)) return false;
+  localStorage.setItem(MOBILE_LAST_QUOTE_CODE_KEY, normalized);
+  const applied = applyMobileQuoteRecord(record, "rechargé");
+  if (applied && !silent) toast(`Devis mobile ${normalized} rechargé.`);
+  return applied;
+}
+
 async function restoreLastMobileQuoteSession() {
   if (!formMobile) return;
   const lastCode = String(localStorage.getItem(MOBILE_LAST_QUOTE_CODE_KEY) || "").trim().toUpperCase();
   if (!lastCode) return;
-  const store = readMobileQuoteStore();
-  let record = store[lastCode] || null;
+  await loadMobileQuoteByCode(lastCode, { silent: true });
+}
+
+function applyPcRepairQuoteRecord(record, sourceLabel = "") {
+  if (!record) return false;
+  const code = String(record.code || "").trim().toUpperCase();
+  if (!code) return false;
+  const parts = record?.config?.parts && typeof record.config.parts === "object" ? record.config.parts : {};
+  currentPcRepairQuoteCode = code;
+  if (pcFromNameEl) pcFromNameEl.value = String(record.requester?.name || "").trim();
+  if (pcReplyToEl) pcReplyToEl.value = String(record.requester?.email || "").trim().toLowerCase();
+  if (pcIssueEl) pcIssueEl.value = String(parts.issue || "").trim();
+  if (pcUrgencyEl) pcUrgencyEl.value = String(parts.urgency || "").trim();
+  if (pcModelEl) pcModelEl.value = String(parts.model || "").trim();
+  if (pcDescriptionEl) pcDescriptionEl.value = String(record.requester?.details || "").trim();
+  const suffix = sourceLabel ? ` (${sourceLabel})` : "";
+  setPcQuoteCodeHint(`Devis réparation PC chargé: ${code}${suffix}`);
+  return true;
+}
+
+async function loadPcRepairQuoteByCode(code, { silent = false } = {}) {
+  const normalized = String(code || "").trim().toUpperCase();
+  if (!normalized) return false;
+  const store = readPcRepairQuoteStore();
+  let record = store[normalized] || null;
   if (!record) {
-    record = await fetchQuoteFromDatabase(lastCode);
+    record = await fetchQuoteFromDatabase(normalized);
     if (record) {
-      store[lastCode] = record;
-      writeMobileQuoteStore(store);
+      store[normalized] = record;
+      writePcRepairQuoteStore(store);
     }
   }
-  if (!record || String(record.serviceType || "") !== "mobile-repair") return;
+  const service = String(record?.serviceType || "").trim();
+  if (!record || service !== "pc-repair") return false;
+  localStorage.setItem(PC_REPAIR_LAST_QUOTE_CODE_KEY, normalized);
+  const applied = applyPcRepairQuoteRecord(record, "rechargé");
+  if (applied && !silent) toast(`Devis réparation PC ${normalized} rechargé.`);
+  return applied;
+}
 
-  currentMobileQuoteCode = String(record.code || lastCode).trim().toUpperCase();
-  const req = record.mobileRequest && typeof record.mobileRequest === "object" ? record.mobileRequest : {};
-  if (mobileFromNameEl) mobileFromNameEl.value = String(record.requester?.name || "").trim();
-  if (mobileReplyToEl) mobileReplyToEl.value = String(record.requester?.email || "").trim().toLowerCase();
-  if (mobileDeviceTypeEl && req.deviceType) mobileDeviceTypeEl.value = String(req.deviceType || "").trim();
-  if (mobileIssueEl && req.issue) mobileIssueEl.value = String(req.issue || "").trim();
-  if (mobileModelEl) mobileModelEl.value = String(req.model || "").trim();
-  if (mobileDescriptionEl) mobileDescriptionEl.value = String(req.description || record.requester?.details || "").trim();
-  mobileCameraRuns = Array.isArray(record?.cameraDiagnostics?.runs) ? record.cameraDiagnostics.runs : [];
-  setMobileQuoteCodeHint(`Devis mobile rechargé: ${currentMobileQuoteCode}`);
-  updateMobileCameraAvailabilityUI();
+async function restoreLastPcRepairQuoteSession() {
+  if (!formPc) return;
+  const lastCode = String(localStorage.getItem(PC_REPAIR_LAST_QUOTE_CODE_KEY) || "").trim().toUpperCase();
+  if (!lastCode) return;
+  await loadPcRepairQuoteByCode(lastCode, { silent: true });
 }
 
 function cameraRunsFromRecord(record) {
   return Array.isArray(record?.cameraDiagnostics?.runs) ? record.cameraDiagnostics.runs : [];
 }
 
-async function openOrDownloadCameraLogsForQuote(code, shouldDownload = false) {
+async function openOrDownloadCameraLogsForQuote(code, shouldDownload = false, runId = "") {
   const normalized = String(code || "").trim().toUpperCase();
   if (!normalized) return false;
   const record = await getQuoteRecordByCode(normalized);
-  const runs = cameraRunsFromRecord(record);
+  const allRuns = cameraRunsFromRecord(record);
+  const targetRunId = String(runId || "").trim();
+  const runs = targetRunId
+    ? allRuns.filter((run) => String(run?.runId || "").trim() === targetRunId)
+    : allRuns;
   if (!runs.length) {
-    toast("Aucun log caméra sur ce devis.");
+    toast(targetRunId ? "Ce log caméra n'existe plus." : "Aucun log caméra sur ce devis.");
     return false;
   }
   const payload = mobileCameraLogsPayloadFromRuns(runs, normalized);
   if (shouldDownload) {
-    downloadCameraLogs(payload, `camera-logs-${normalized}.json`);
+    const suffix = targetRunId ? `-${targetRunId}` : "";
+    downloadCameraLogs(payload, `camera-logs-${normalized}${suffix}.json`);
     toast("Logs caméra téléchargés.");
     return true;
   }
-  const opened = openCameraLogsWindow(payload, `Logs camera ${normalized}`);
+  const titleSuffix = targetRunId ? ` • ${targetRunId}` : "";
+  const opened = openCameraLogsWindow(payload, `Logs camera ${normalized}${titleSuffix}`);
   if (!opened) toast("Popup bloquée: autorise les popups pour voir les logs.");
   return opened;
+}
+
+function bindPcRepairFormFlow() {
+  if (!formPc) return;
+
+  if (pcLoadQuoteBtn) {
+    pcLoadQuoteBtn.addEventListener("click", async () => {
+      const raw = String(pcQuoteLookupEl?.value || "").trim();
+      if (!raw) {
+        toast("Entre un code devis PC.");
+        return;
+      }
+      const consumed = await tryHandleAdminLookupCommand(raw, pcQuoteLookupEl);
+      if (consumed) return;
+      const ok = await loadPcRepairQuoteByCode(raw, { silent: true });
+      if (!ok) {
+        toast("Code devis réparation PC introuvable.");
+        return;
+      }
+      if (pcQuoteLookupEl) pcQuoteLookupEl.value = "";
+      toast("Devis réparation PC chargé.");
+    });
+  }
+
+  formPc.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const payload = readPcRepairFormPayload();
+    if (!payload.fromName || !payload.replyTo || !payload.issue || !payload.urgency || !payload.model || !payload.description) {
+      setStatus("pcStatus", "Complète tous les champs du devis réparation PC.");
+      return;
+    }
+
+    const code = currentPcRepairQuoteCode || createQuoteCode();
+    currentPcRepairQuoteCode = code;
+    const quoteRecord = createPcRepairQuoteRecord({ code, payload });
+    await persistPcRepairQuoteRecord(quoteRecord);
+
+    const message = [
+      "type : devis_reparation_pc",
+      `code_devis : ${code}`,
+      `nom : ${payload.fromName}`,
+      `email : ${payload.replyTo}`,
+      `probleme : ${payload.issue}`,
+      `urgence : ${payload.urgency}`,
+      `modele : ${payload.model}`,
+      `description : ${payload.description}`
+    ].join("\n");
+
+    const ok = await sendEmail({
+      subject: `Demande devis — Réparation PC (${code})`,
+      from_name: payload.fromName,
+      reply_to: payload.replyTo,
+      message,
+      statusElId: "pcStatus"
+    });
+
+    if (!ok) return;
+    setPcQuoteCodeHint(`Code devis réparation PC: ${code}. Conserve-le pour le suivi.`);
+  });
 }
 
 function bindMobileFormFlow() {
@@ -4555,27 +4777,22 @@ function bindMobileFormFlow() {
       await runMobileCameraDiagnostic();
     });
   }
-  if (mobileCameraLogsBtn) {
-    mobileCameraLogsBtn.addEventListener("click", () => {
-      if (!mobileCameraRuns.length) {
-        toast("Aucun log caméra disponible.");
+  if (mobileLoadQuoteBtn) {
+    mobileLoadQuoteBtn.addEventListener("click", async () => {
+      const raw = String(mobileQuoteLookupEl?.value || "").trim();
+      if (!raw) {
+        toast("Entre un code devis mobile.");
         return;
       }
-      const payload = mobileCameraLogsPayloadFromRuns(mobileCameraRuns, currentMobileQuoteCode);
-      const opened = openCameraLogsWindow(payload, `Logs camera ${currentMobileQuoteCode || ""}`.trim());
-      if (!opened) toast("Popup bloquée: autorise les popups pour voir les logs.");
-    });
-  }
-  if (mobileCameraDownloadBtn) {
-    mobileCameraDownloadBtn.addEventListener("click", () => {
-      if (!mobileCameraRuns.length) {
-        toast("Aucun log caméra à télécharger.");
+      const consumed = await tryHandleAdminLookupCommand(raw, mobileQuoteLookupEl);
+      if (consumed) return;
+      const ok = await loadMobileQuoteByCode(raw, { silent: true });
+      if (!ok) {
+        toast("Code devis mobile introuvable.");
         return;
       }
-      const payload = mobileCameraLogsPayloadFromRuns(mobileCameraRuns, currentMobileQuoteCode);
-      const file = `camera-logs-${currentMobileQuoteCode || Date.now()}.json`;
-      downloadCameraLogs(payload, file);
-      toast("Logs caméra téléchargés.");
+      if (mobileQuoteLookupEl) mobileQuoteLookupEl.value = "";
+      toast("Devis mobile chargé.");
     });
   }
 
@@ -5022,6 +5239,8 @@ function buildQuoteRecord(state, code, {
         .map(([key, value]) => [key, { query: value.query }])
     ),
     usage: document.getElementById("usage")?.value || "",
+    serviceType: "pc-custom",
+    issueCategory: "custom-build",
     config: collectConfig(state),
     preview3d: previewState
   };
@@ -5185,6 +5404,9 @@ function loadQuote(code) {
   const store = readQuoteStore();
   const quote = store[code];
   if (!quote) return false;
+  const serviceType = String(quote?.serviceType || "").trim().toLowerCase();
+  if (serviceType && serviceType !== "pc-custom") return false;
+  if (quote?.mobileRequest && typeof quote.mobileRequest === "object") return false;
 
   Object.keys(UNKNOWN_COMPONENTS).forEach((key) => delete UNKNOWN_COMPONENTS[key]);
 
@@ -5496,10 +5718,301 @@ async function apiDeleteAdminQuote(code) {
   return data;
 }
 
+async function apiDeleteCameraLogRun(code, runId = "", clearAll = false) {
+  const res = await fetch("/api/admin-tools", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "delete-camera-log-run",
+      code: String(code || "").trim().toUpperCase(),
+      run_id: String(runId || "").trim(),
+      clear_all: Boolean(clearAll),
+      admin_key: adminSessionKey
+    })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || "ADMIN_CAMERA_LOG_DELETE_FAILED");
+  return data;
+}
+
+async function tryHandleAdminLookupCommand(rawInput, sourceInputEl = null) {
+  const raw = String(rawInput || "").trim();
+  if (!raw.toLowerCase().startsWith("admin:")) return false;
+
+  const command = raw.slice("admin:".length).trim();
+  const turnOff = /\s+--off$/i.test(command);
+  const keyRaw = command.replace(/\s+--off$/i, "").trim();
+  const key = keyRaw
+    .replace(/^admin\s*:/i, "")
+    .replace(/^["']|["']$/g, "")
+    .trim();
+
+  if (!key) {
+    toast("Saisis la clé admin après admin:");
+    return true;
+  }
+
+  const valid = await apiValidateAdminKey(key);
+  if (valid) {
+    if (turnOff) {
+      isAdmin = false;
+      adminSessionKey = "";
+      applyAdminUI();
+      if (sourceInputEl) sourceInputEl.value = "";
+      toast("Mode admin désactivé");
+      return true;
+    }
+    isAdmin = true;
+    adminSessionKey = key;
+    if (sourceInputEl) sourceInputEl.value = "";
+    applyAdminUI();
+    toast("Mode admin activé");
+    return true;
+  }
+
+  isAdmin = false;
+  adminSessionKey = "";
+  applyAdminUI();
+  if (lastAdminAuthError === "ADMIN_NOT_CONFIGURED") {
+    toast("Clé admin non configurée côté serveur (env ADMIN_MODIFY_KEY).");
+  } else if (lastAdminAuthError === "TOO_MANY_REQUESTS" || lastAdminAuthError === "AUTH_LOCKED_TEMPORARY") {
+    toast("Trop de tentatives admin, réessaie plus tard.");
+  } else if (lastAdminAuthError === "NETWORK_OR_SERVER_ERROR") {
+    toast("Impossible de joindre l'auth admin serveur.");
+  } else {
+    toast("Clé admin incorrecte");
+  }
+  return true;
+}
+
 function adminPriorityClass(level) {
   if (level >= 3) return "admin-quote__badge admin-quote__badge--high";
   if (level >= 2) return "admin-quote__badge admin-quote__badge--normal";
   return "admin-quote__badge admin-quote__badge--low";
+}
+
+function normalizeAdminServiceType(value = "") {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "mobile-repair") return "mobile-repair";
+  if (normalized === "pc-repair") return "pc-repair";
+  return "pc-custom";
+}
+
+function adminServiceLabel(serviceType = "") {
+  const normalized = normalizeAdminServiceType(serviceType);
+  if (normalized === "mobile-repair") return "Réparation mobile";
+  if (normalized === "pc-repair") return "Réparation PC";
+  return "Création PC";
+}
+
+function renderAdminCameraRunsPanel(quote) {
+  const runs = Array.isArray(quote?.cameraRuns) ? quote.cameraRuns : [];
+  const holder = document.createElement("details");
+  holder.className = "admin-camera-runs";
+  holder.hidden = !runs.length;
+
+  const summary = document.createElement("summary");
+  summary.className = "admin-camera-runs__summary";
+  summary.textContent = `Sessions caméra (${runs.length})`;
+  holder.appendChild(summary);
+
+  const list = document.createElement("div");
+  list.className = "admin-camera-runs__list";
+  if (!runs.length) {
+    const empty = document.createElement("div");
+    empty.className = "admin-camera-runs__empty";
+    empty.textContent = "Aucun log caméra.";
+    list.appendChild(empty);
+  } else {
+    runs.forEach((run) => {
+      const runId = String(run?.runId || "").trim();
+      const row = document.createElement("div");
+      row.className = "admin-camera-run";
+
+      const meta = document.createElement("div");
+      meta.className = "admin-camera-run__meta";
+      const endedAt = formatDateTimeFr(run?.endedAt || run?.startedAt || "");
+      const status = String(run?.status || "unknown");
+      const count = Number(run?.entryCount || 0);
+      meta.textContent = `${runId || "run"} • ${status} • ${count} logs • ${endedAt || "date inconnue"}`;
+
+      const actions = document.createElement("div");
+      actions.className = "admin-camera-run__actions";
+
+      const viewBtn = document.createElement("button");
+      viewBtn.type = "button";
+      viewBtn.className = "btn btn--ghost btn--tiny";
+      viewBtn.dataset.adminAction = "view-camera-log-run";
+      viewBtn.dataset.code = String(quote.code || "");
+      viewBtn.dataset.runId = runId;
+      viewBtn.textContent = "Voir";
+
+      const downloadBtn = document.createElement("button");
+      downloadBtn.type = "button";
+      downloadBtn.className = "btn btn--ghost btn--tiny";
+      downloadBtn.dataset.adminAction = "download-camera-log-run";
+      downloadBtn.dataset.code = String(quote.code || "");
+      downloadBtn.dataset.runId = runId;
+      downloadBtn.textContent = "Télécharger";
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "btn btn--ghost btn--tiny";
+      deleteBtn.dataset.adminAction = "delete-camera-log-run";
+      deleteBtn.dataset.code = String(quote.code || "");
+      deleteBtn.dataset.runId = runId;
+      deleteBtn.textContent = "Supprimer";
+
+      actions.append(viewBtn, downloadBtn, deleteBtn);
+      row.append(meta, actions);
+      list.appendChild(row);
+    });
+
+    if (runs.length > 1) {
+      const clearAllBtn = document.createElement("button");
+      clearAllBtn.type = "button";
+      clearAllBtn.className = "btn btn--ghost btn--tiny";
+      clearAllBtn.dataset.adminAction = "delete-camera-runs-all";
+      clearAllBtn.dataset.code = String(quote.code || "");
+      clearAllBtn.textContent = "Supprimer tous les logs caméra";
+      list.appendChild(clearAllBtn);
+    }
+  }
+
+  holder.appendChild(list);
+  return holder;
+}
+
+function buildAdminQuoteCard(quote) {
+  const details = document.createElement("details");
+  details.className = "admin-quote";
+
+  const summary = document.createElement("summary");
+  summary.className = "admin-quote__summary";
+
+  const chevron = document.createElement("span");
+  chevron.className = "admin-quote__chevron";
+  chevron.textContent = "›";
+
+  const head = document.createElement("div");
+  head.className = "admin-quote__head";
+
+  const code = document.createElement("span");
+  code.className = "admin-quote__code";
+  code.textContent = `Devis ${quote.code || "—"}`;
+
+  const badge = document.createElement("span");
+  badge.className = adminPriorityClass(Number(quote.priorityLevel || 1));
+  badge.textContent = String(quote.priorityLabel || "normale");
+
+  const statusBadge = document.createElement("span");
+  statusBadge.className = "admin-quote__badge admin-quote__badge--normal";
+  statusBadge.textContent = quote.status === "settled" ? "réglé" : "ouvert";
+
+  const date = document.createElement("span");
+  date.className = "admin-quote__date";
+  date.textContent = formatDateTimeFr(quote.createdAt);
+
+  head.append(code, badge, statusBadge);
+  summary.append(chevron, head, date);
+
+  const body = document.createElement("div");
+  body.className = "admin-quote__body";
+
+  const grid = document.createElement("div");
+  grid.className = "admin-quote__grid";
+  const cards = [
+    { label: "Client", value: `${quote.requesterName || "—"}${quote.requesterEmail ? ` (${quote.requesterEmail})` : ""}` },
+    { label: "Service", value: adminServiceLabel(quote.serviceType) },
+    { label: "Catégorie", value: quote.issueCategory || "—" },
+    { label: "Usage", value: quote.usage || "—" },
+    { label: "Total estimé", value: quote.totalLabel || "—" },
+    { label: "Traitement", value: quote.deliveryName || "—" },
+    { label: "Créé le", value: formatDateTimeFr(quote.createdAt) },
+    { label: "MAJ", value: formatDateTimeFr(quote.updatedAt || quote.createdAt) },
+    { label: "OTP modification", value: quote.pendingModification ? `En attente (exp. ${formatDateTimeFr(quote.pendingExpiresAt)})` : "Aucun" },
+    { label: "Priorité", value: quote.priorityReason || "—" },
+    { label: "Logs caméra", value: quote.hasCameraLogs ? `${quote.cameraRunCount || 0} session(s), ${quote.cameraLogCount || 0} logs` : "Aucun" }
+  ];
+  cards.forEach((entry) => {
+    const cell = document.createElement("div");
+    cell.className = "admin-quote__cell";
+    const lbl = document.createElement("span");
+    lbl.className = "admin-quote__label";
+    lbl.textContent = entry.label;
+    const val = document.createElement("div");
+    val.className = "admin-quote__value";
+    val.textContent = entry.value;
+    cell.append(lbl, val);
+    grid.appendChild(cell);
+  });
+
+  const partsLabel = document.createElement("span");
+  partsLabel.className = "admin-quote__label";
+  partsLabel.textContent = "Configuration";
+  const partsList = document.createElement("ul");
+  partsList.className = "admin-quote__list";
+  const parts = Array.isArray(quote.partsSummary) ? quote.partsSummary : [];
+  if (!parts.length) {
+    const li = document.createElement("li");
+    li.textContent = "Composants non disponibles.";
+    partsList.appendChild(li);
+  } else {
+    parts.forEach((part) => {
+      const li = document.createElement("li");
+      li.textContent = part;
+      partsList.appendChild(li);
+    });
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "admin-quote__actions";
+
+  const settleBtn = document.createElement("button");
+  settleBtn.type = "button";
+  settleBtn.className = "btn btn--ghost btn--tiny";
+  settleBtn.dataset.adminAction = "toggle-status";
+  settleBtn.dataset.code = String(quote.code || "");
+  settleBtn.dataset.status = quote.status === "settled" ? "open" : "settled";
+  settleBtn.textContent = quote.status === "settled" ? "Marquer ouvert" : "Réglé";
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.className = "btn btn--ghost btn--tiny";
+  deleteBtn.dataset.adminAction = "delete";
+  deleteBtn.dataset.code = String(quote.code || "");
+  deleteBtn.textContent = "Supprimer";
+
+  const testReceiptBtn = document.createElement("button");
+  testReceiptBtn.type = "button";
+  testReceiptBtn.className = "btn btn--ghost btn--tiny";
+  testReceiptBtn.dataset.adminAction = "test-receipt";
+  testReceiptBtn.dataset.code = String(quote.code || "");
+  testReceiptBtn.dataset.email = String(quote.requesterEmail || "");
+  testReceiptBtn.textContent = "Facture test";
+
+  const viewCameraLogsBtn = document.createElement("button");
+  viewCameraLogsBtn.type = "button";
+  viewCameraLogsBtn.className = "btn btn--ghost btn--tiny";
+  viewCameraLogsBtn.dataset.adminAction = "view-camera-logs";
+  viewCameraLogsBtn.dataset.code = String(quote.code || "");
+  viewCameraLogsBtn.textContent = "Voir logs";
+  viewCameraLogsBtn.hidden = !quote.hasCameraLogs;
+
+  const downloadCameraLogsBtn = document.createElement("button");
+  downloadCameraLogsBtn.type = "button";
+  downloadCameraLogsBtn.className = "btn btn--ghost btn--tiny";
+  downloadCameraLogsBtn.dataset.adminAction = "download-camera-logs";
+  downloadCameraLogsBtn.dataset.code = String(quote.code || "");
+  downloadCameraLogsBtn.textContent = "Télécharger logs";
+  downloadCameraLogsBtn.hidden = !quote.hasCameraLogs;
+
+  actions.append(settleBtn, testReceiptBtn, viewCameraLogsBtn, downloadCameraLogsBtn, deleteBtn);
+  body.append(grid, partsLabel, partsList);
+  if (quote.hasCameraLogs) body.appendChild(renderAdminCameraRunsPanel(quote));
+  body.appendChild(actions);
+  details.append(summary, body);
+  return details;
 }
 
 function renderAdminQuotesList(quotes) {
@@ -5514,134 +6027,43 @@ function renderAdminQuotesList(quotes) {
     return;
   }
 
+  const groups = [
+    { key: "pc-custom", label: "Création PC sur mesure" },
+    { key: "pc-repair", label: "Réparation PC" },
+    { key: "mobile-repair", label: "Réparation mobile" }
+  ];
+  const grouped = new Map(groups.map((group) => [group.key, []]));
   quotes.forEach((quote) => {
-    const details = document.createElement("details");
-    details.className = "admin-quote";
+    const key = normalizeAdminServiceType(quote?.serviceType);
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(quote);
+  });
 
-    const summary = document.createElement("summary");
-    summary.className = "admin-quote__summary";
+  groups.forEach((group) => {
+    const entries = grouped.get(group.key) || [];
+    if (!entries.length) return;
 
-    const chevron = document.createElement("span");
-    chevron.className = "admin-quote__chevron";
-    chevron.textContent = "›";
+    const section = document.createElement("section");
+    section.className = "admin-quotes__group";
 
     const head = document.createElement("div");
-    head.className = "admin-quote__head";
+    head.className = "admin-quotes__group-head";
+    const title = document.createElement("h3");
+    title.className = "admin-quotes__group-title";
+    title.textContent = group.label;
+    const count = document.createElement("span");
+    count.className = "admin-quotes__group-count";
+    count.textContent = `${entries.length} devis`;
+    head.append(title, count);
 
-    const code = document.createElement("span");
-    code.className = "admin-quote__code";
-    code.textContent = `Devis ${quote.code || "—"}`;
-
-    const badge = document.createElement("span");
-    badge.className = adminPriorityClass(Number(quote.priorityLevel || 1));
-    badge.textContent = String(quote.priorityLabel || "normale");
-
-    const statusBadge = document.createElement("span");
-    statusBadge.className = "admin-quote__badge admin-quote__badge--normal";
-    statusBadge.textContent = quote.status === "settled" ? "réglé" : "ouvert";
-
-    const date = document.createElement("span");
-    date.className = "admin-quote__date";
-    date.textContent = formatDateTimeFr(quote.createdAt);
-
-    head.append(code, badge, statusBadge);
-    summary.append(chevron, head, date);
-
-    const body = document.createElement("div");
-    body.className = "admin-quote__body";
-
-    const grid = document.createElement("div");
-    grid.className = "admin-quote__grid";
-    const cards = [
-      { label: "Client", value: `${quote.requesterName || "—"}${quote.requesterEmail ? ` (${quote.requesterEmail})` : ""}` },
-      { label: "Service", value: quote.serviceType || "pc-custom" },
-      { label: "Catégorie", value: quote.issueCategory || "—" },
-      { label: "Usage", value: quote.usage || "—" },
-      { label: "Total estimé", value: quote.totalLabel || "—" },
-      { label: "Traitement", value: quote.deliveryName || "—" },
-      { label: "Créé le", value: formatDateTimeFr(quote.createdAt) },
-      { label: "MAJ", value: formatDateTimeFr(quote.updatedAt || quote.createdAt) },
-      { label: "OTP modification", value: quote.pendingModification ? `En attente (exp. ${formatDateTimeFr(quote.pendingExpiresAt)})` : "Aucun" },
-      { label: "Priorité", value: quote.priorityReason || "—" },
-      { label: "Logs caméra", value: quote.hasCameraLogs ? `${quote.cameraLogCount || 0} entrées (maj ${formatDateTimeFr(quote.cameraLastRunAt)})` : "Aucun" }
-    ];
-    cards.forEach((entry) => {
-      const cell = document.createElement("div");
-      cell.className = "admin-quote__cell";
-      const lbl = document.createElement("span");
-      lbl.className = "admin-quote__label";
-      lbl.textContent = entry.label;
-      const val = document.createElement("div");
-      val.className = "admin-quote__value";
-      val.textContent = entry.value;
-      cell.append(lbl, val);
-      grid.appendChild(cell);
+    const list = document.createElement("div");
+    list.className = "admin-quotes__group-list";
+    entries.forEach((quote) => {
+      list.appendChild(buildAdminQuoteCard(quote));
     });
 
-    const partsLabel = document.createElement("span");
-    partsLabel.className = "admin-quote__label";
-    partsLabel.textContent = "Configuration";
-    const partsList = document.createElement("ul");
-    partsList.className = "admin-quote__list";
-    const parts = Array.isArray(quote.partsSummary) ? quote.partsSummary : [];
-    if (!parts.length) {
-      const li = document.createElement("li");
-      li.textContent = "Composants non disponibles.";
-      partsList.appendChild(li);
-    } else {
-      parts.forEach((part) => {
-        const li = document.createElement("li");
-        li.textContent = part;
-        partsList.appendChild(li);
-      });
-    }
-
-    const actions = document.createElement("div");
-    actions.className = "admin-quote__actions";
-
-    const settleBtn = document.createElement("button");
-    settleBtn.type = "button";
-    settleBtn.className = "btn btn--ghost btn--tiny";
-    settleBtn.dataset.adminAction = "toggle-status";
-    settleBtn.dataset.code = String(quote.code || "");
-    settleBtn.dataset.status = quote.status === "settled" ? "open" : "settled";
-    settleBtn.textContent = quote.status === "settled" ? "Marquer ouvert" : "Réglé";
-
-    const deleteBtn = document.createElement("button");
-    deleteBtn.type = "button";
-    deleteBtn.className = "btn btn--ghost btn--tiny";
-    deleteBtn.dataset.adminAction = "delete";
-    deleteBtn.dataset.code = String(quote.code || "");
-    deleteBtn.textContent = "Supprimer";
-
-    const testReceiptBtn = document.createElement("button");
-    testReceiptBtn.type = "button";
-    testReceiptBtn.className = "btn btn--ghost btn--tiny";
-    testReceiptBtn.dataset.adminAction = "test-receipt";
-    testReceiptBtn.dataset.code = String(quote.code || "");
-    testReceiptBtn.dataset.email = String(quote.requesterEmail || "");
-    testReceiptBtn.textContent = "Facture test";
-
-    const viewCameraLogsBtn = document.createElement("button");
-    viewCameraLogsBtn.type = "button";
-    viewCameraLogsBtn.className = "btn btn--ghost btn--tiny";
-    viewCameraLogsBtn.dataset.adminAction = "view-camera-logs";
-    viewCameraLogsBtn.dataset.code = String(quote.code || "");
-    viewCameraLogsBtn.textContent = "Voir logs";
-    viewCameraLogsBtn.hidden = !quote.hasCameraLogs;
-
-    const downloadCameraLogsBtn = document.createElement("button");
-    downloadCameraLogsBtn.type = "button";
-    downloadCameraLogsBtn.className = "btn btn--ghost btn--tiny";
-    downloadCameraLogsBtn.dataset.adminAction = "download-camera-logs";
-    downloadCameraLogsBtn.dataset.code = String(quote.code || "");
-    downloadCameraLogsBtn.textContent = "Télécharger logs";
-    downloadCameraLogsBtn.hidden = !quote.hasCameraLogs;
-
-    actions.append(settleBtn, testReceiptBtn, viewCameraLogsBtn, downloadCameraLogsBtn, deleteBtn);
-    body.append(grid, partsLabel, partsList, actions);
-    details.append(summary, body);
-    adminQuotesListEl.appendChild(details);
+    section.append(head, list);
+    adminQuotesListEl.appendChild(section);
   });
 }
 
@@ -5662,8 +6084,11 @@ async function refreshAdminQuotes({ silent = false } = {}) {
     const openCount = Number(data?.stats?.open || 0);
     const settledCount = Number(data?.stats?.settled || 0);
     const pendingCount = Number(data?.stats?.pendingModification || 0);
+    const customCount = quotes.filter((q) => normalizeAdminServiceType(q?.serviceType) === "pc-custom").length;
+    const pcRepairCount = quotes.filter((q) => normalizeAdminServiceType(q?.serviceType) === "pc-repair").length;
+    const mobileCount = quotes.filter((q) => normalizeAdminServiceType(q?.serviceType) === "mobile-repair").length;
     if (adminQuotesMetaEl) {
-      adminQuotesMetaEl.textContent = `${quotes.length} devis • ouverts ${openCount} • réglés ${settledCount} • OTP en attente ${pendingCount}`;
+      adminQuotesMetaEl.textContent = `${quotes.length} devis • Création PC ${customCount} • Réparation PC ${pcRepairCount} • Mobile ${mobileCount} • ouverts ${openCount} • réglés ${settledCount} • OTP en attente ${pendingCount}`;
     }
     setAdminQuotesStatus(`Liste mise à jour (${quotes.length} devis).`, "good");
   } catch (err) {
@@ -5987,50 +6412,8 @@ function bindCustomBuilder() {
   if (loadCodeBtn) {
     loadCodeBtn.addEventListener("click", async () => {
       const raw = String(quoteLookupEl?.value || "").trim();
-
-      if (raw.toLowerCase().startsWith("admin:")) {
-        const command = raw.slice("admin:".length).trim();
-        const turnOff = /\s+--off$/i.test(command);
-        const keyRaw = command.replace(/\s+--off$/i, "").trim();
-        const key = keyRaw
-          .replace(/^admin\s*:/i, "")
-          .replace(/^["']|["']$/g, "")
-          .trim();
-        if (!key) {
-          toast("Saisis la cle admin apres admin:");
-          return;
-        }
-        const valid = await apiValidateAdminKey(key);
-        if (valid) {
-          if (turnOff) {
-            isAdmin = false;
-            adminSessionKey = "";
-            applyAdminUI();
-            quoteLookupEl.value = "";
-            toast("Mode admin désactivé");
-            return;
-          }
-          isAdmin = true;
-          adminSessionKey = key;
-          quoteLookupEl.value = "";
-          applyAdminUI();
-          toast("Mode admin activé");
-        } else {
-          isAdmin = false;
-          adminSessionKey = "";
-          applyAdminUI();
-          if (lastAdminAuthError === "ADMIN_NOT_CONFIGURED") {
-            toast("Clé admin non configurée côté serveur (env ADMIN_MODIFY_KEY).");
-          } else if (lastAdminAuthError === "TOO_MANY_REQUESTS" || lastAdminAuthError === "AUTH_LOCKED_TEMPORARY") {
-            toast("Trop de tentatives admin, réessaie plus tard.");
-          } else if (lastAdminAuthError === "NETWORK_OR_SERVER_ERROR") {
-            toast("Impossible de joindre l'auth admin serveur.");
-          } else {
-            toast("Clé admin incorrecte");
-          }
-        }
-        return;
-      }
+      const consumed = await tryHandleAdminLookupCommand(raw, quoteLookupEl);
+      if (consumed) return;
       const code = (quoteLookupEl?.value || "").trim().toUpperCase();
       if (!code) {
         toast("Entre un code devis");
@@ -6131,6 +6514,65 @@ function bindCustomBuilder() {
 
       if (action === "download-camera-logs") {
         await openOrDownloadCameraLogsForQuote(code, true);
+        return;
+      }
+
+      if (action === "view-camera-log-run") {
+        const runId = String(button.dataset.runId || "").trim();
+        await openOrDownloadCameraLogsForQuote(code, false, runId);
+        return;
+      }
+
+      if (action === "download-camera-log-run") {
+        const runId = String(button.dataset.runId || "").trim();
+        await openOrDownloadCameraLogsForQuote(code, true, runId);
+        return;
+      }
+
+      if (action === "delete-camera-log-run") {
+        const runId = String(button.dataset.runId || "").trim();
+        if (!runId) {
+          toast("runId manquant.");
+          return;
+        }
+        const ok = await themedConfirm(
+          `Supprimer ce log caméra (${runId}) pour ${code} ?`,
+          {
+            title: "Suppression log caméra",
+            confirmText: "Supprimer",
+            cancelText: "Annuler"
+          }
+        );
+        if (!ok) return;
+        try {
+          await apiDeleteCameraLogRun(code, runId, false);
+          setAdminQuotesStatus(`Log caméra ${runId} supprimé pour ${code}.`, "good");
+          await refreshAdminQuotes({ silent: true });
+        } catch (err) {
+          console.error(err);
+          setAdminQuotesStatus(`Impossible de supprimer le log ${runId}.`, "bad");
+        }
+        return;
+      }
+
+      if (action === "delete-camera-runs-all") {
+        const ok = await themedConfirm(
+          `Supprimer tous les logs caméra du devis ${code} ?`,
+          {
+            title: "Suppression logs caméra",
+            confirmText: "Supprimer tout",
+            cancelText: "Annuler"
+          }
+        );
+        if (!ok) return;
+        try {
+          await apiDeleteCameraLogRun(code, "", true);
+          setAdminQuotesStatus(`Tous les logs caméra ont été supprimés pour ${code}.`, "good");
+          await refreshAdminQuotes({ silent: true });
+        } catch (err) {
+          console.error(err);
+          setAdminQuotesStatus(`Impossible de supprimer les logs caméra de ${code}.`, "bad");
+        }
         return;
       }
 
@@ -6441,7 +6883,6 @@ function bindCustomBuilder() {
   });
 
   const buyNowBtn = document.getElementById("buyNow");
-  const buyNowSandboxBtn = document.getElementById("buyNowSandbox");
 
   const setCheckoutButtonsIdle = () => {
     if (buyNowBtn) {
@@ -6449,7 +6890,8 @@ function bindCustomBuilder() {
       buyNowBtn.textContent = "Acheter maintenant";
     }
     if (buyNowSandboxBtn) {
-      buyNowSandboxBtn.disabled = false;
+      buyNowSandboxBtn.hidden = !isAdmin;
+      buyNowSandboxBtn.disabled = !isAdmin;
       buyNowSandboxBtn.textContent = "Simuler paiement (sandbox)";
     }
   };
@@ -6465,6 +6907,10 @@ function bindCustomBuilder() {
   };
 
   async function launchPayPalCheckout(mode = "live") {
+    if (mode === "sandbox" && !isAdmin) {
+      toast("Simulation sandbox réservée au mode admin.");
+      return;
+    }
     const state = compute();
     if (!state.ready) {
       toast("Complète la configuration avant d'acheter");
@@ -6548,7 +6994,9 @@ function bindCustomBuilder() {
 
 initThemeCustomizer();
 bindCustomBuilder();
+bindPcRepairFormFlow();
 bindMobileFormFlow();
+void restoreLastPcRepairQuoteSession();
 void restoreLastMobileQuoteSession();
 window.addEventListener("pagehide", () => {
   stopMobileCameraStream();
