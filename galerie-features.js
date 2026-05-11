@@ -295,9 +295,21 @@ function injectCompareView() {
     const ref = nav.querySelector('[data-nav="custom"]');
     const a = document.createElement("a");
     a.href = "#comparer"; a.dataset.nav = "compare"; a.className = "nav__link"; a.textContent = "Comparer";
+    a.addEventListener("click", e => {
+      e.preventDefault();
+      switchToView("compare");
+    });
     if (ref) ref.after(a); else nav.appendChild(a);
   }
   bindCompare();
+}
+
+function switchToView(name) {
+  gqq(".view").forEach(v => v.classList.toggle("is-active", v.dataset.view === name));
+  gqq(".nav__link").forEach(l => l.classList.toggle("is-active", l.dataset.nav === name));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  const sweep = gq("#galerieSpotlight");
+  if (sweep) { sweep.classList.remove("is-flash"); void sweep.offsetWidth; sweep.classList.add("is-flash"); }
 }
 
 const COMPARE_PRESETS = {
