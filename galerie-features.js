@@ -211,7 +211,7 @@ function buildSpecimensGrid() {
       <div class="galerie-specimen__visual">
         <canvas id="galerieSp-${i}" data-specimen-canvas="${i}"></canvas>
         <div class="galerie-specimen__corners"></div>
-        <div class="galerie-specimen__placeholder">Bientôt exposé · prévisualisation procédurale</div>
+        <div class="galerie-specimen__placeholder">Pas encore présenté</div>
       </div>
       <div class="galerie-specimen__body">
         <div class="galerie-specimen__cat">${s.cat}</div>
