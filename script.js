@@ -4123,6 +4123,9 @@ function applyAdminUI() {
     showView("custom");
   }
   if (isAdmin) void refreshAdminQuotes({ silent: true });
+  window.AE_isAdmin = isAdmin;
+  window.AE_adminSessionKey = isAdmin ? adminSessionKey : "";
+  try { window.dispatchEvent(new CustomEvent("ae-admin-state", { detail: { isAdmin } })); } catch {}
 }
 
 applyAdminUI();
@@ -7127,6 +7130,8 @@ async function refreshAdminQuotes({ silent = false } = {}) {
   try {
     const data = await apiFetchAdminQuotes(adminSessionKey);
     const quotes = Array.isArray(data?.quotes) ? data.quotes : [];
+    window.AE_adminQuotes = quotes;
+    try { window.dispatchEvent(new CustomEvent("ae-admin-quotes", { detail: { quotes } })); } catch {}
     renderAdminQuotesList(quotes);
     const openCount = Number(data?.stats?.open || 0);
     const settledCount = Number(data?.stats?.settled || 0);

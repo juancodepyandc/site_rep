@@ -558,10 +558,10 @@ function injectAdminUpload() {
     </div>
     <div class="galerie-admin-catalog__proposals">
       <div class="galerie-admin-catalog__proposals-head">
-        <span class="galerie-admin-catalog__proposals-title">Propositions clients</span>
-        <span class="galerie-admin-catalog__proposals-count">à venir</span>
+        <span class="galerie-admin-catalog__proposals-title">Propositions clients · références hors catalogue trouvées dans les devis</span>
+        <span class="galerie-admin-catalog__proposals-count" id="galerieAdminPropsCount">—</span>
       </div>
-      <div class="galerie-admin-catalog__proposals-empty">Module d'envoi de proposition côté client en préparation. Les références suggérées arriveront ici pour validation.</div>
+      <div class="galerie-admin-catalog__proposals-list" id="galerieAdminPropsList"></div>
     </div>
   `;
   adminPanel.parentElement.appendChild(block);
@@ -569,6 +569,113 @@ function injectAdminUpload() {
   setActiveCategory("cpu");
   refreshAdminCatalog();
   refreshGlbInventory();
+  refreshClientProposals();
+  window.addEventListener("ae-admin-quotes", () => refreshClientProposals());
+  window.addEventListener("ae-admin-state", () => refreshClientProposals());
+}
+
+function refreshClientProposals() {
+  const list = gq("#galerieAdminPropsList");
+  const count = gq("#galerieAdminPropsCount");
+  if (!list || !count) return;
+  const quotes = Array.isArray(window.AE_adminQuotes) ? window.AE_adminQuotes : [];
+  const proposals = [];
+  quotes.forEach(q => {
+    const refs = Array.isArray(q?.externalRefs) ? q.externalRefs : [];
+    refs.forEach(r => {
+      proposals.push({
+        quoteCode: q.code,
+        requesterName: q.requesterName || "",
+        requesterEmail: q.requesterEmail || "",
+        createdAt: q.createdAt,
+        category: r.category,
+        categoryLabel: r.categoryLabel,
+        query: r.query
+      });
+    });
+  });
+  const knownIds = new Set();
+  Object.entries(CATALOG_STATE.extras || {}).forEach(([cat, items]) => {
+    (Array.isArray(items) ? items : []).forEach(it => {
+      if (it.fromProposal) knownIds.add(`${cat}::${(it.proposalQuery || "").toLowerCase().trim()}`);
+    });
+  });
+  const open = proposals.filter(p => !knownIds.has(`${p.category}::${p.query.toLowerCase().trim()}`));
+  count.textContent = open.length === 0
+    ? (proposals.length ? `${proposals.length} déjà promu${proposals.length > 1 ? "s" : ""}` : "aucune en attente")
+    : `${open.length} en attente · ${proposals.length} total`;
+  if (open.length === 0) {
+    list.innerHTML = `<div class="galerie-admin-catalog__proposals-empty">${quotes.length === 0 ? "Aucun devis chargé pour l'instant — passe en mode admin pour voir les références proposées par les clients dans leurs devis." : "Aucune proposition en attente. Les références hors catalogue typées par les clients dans le simulateur apparaîtront ici."}</div>`;
+    return;
+  }
+  const grouped = new Map();
+  open.forEach(p => {
+    const key = `${p.category}::${p.query.toLowerCase().trim()}`;
+    const ex = grouped.get(key);
+    if (ex) {
+      ex.occurrences += 1;
+      if (!ex.quotes.includes(p.quoteCode)) ex.quotes.push(p.quoteCode);
+    } else {
+      grouped.set(key, { ...p, occurrences: 1, quotes: [p.quoteCode] });
+    }
+  });
+  const dedup = Array.from(grouped.values()).sort((a, b) => b.occurrences - a.occurrences);
+  list.innerHTML = dedup.map(p => `
+    <div class="galerie-admin-catalog__prop" data-prop-cat="${p.category}" data-prop-query="${escapeHTML(p.query)}">
+      <div class="galerie-admin-catalog__prop-main">
+        <div class="galerie-admin-catalog__prop-head">
+          <span class="galerie-admin-catalog__prop-cat">${escapeHTML(p.categoryLabel)}</span>
+          <span class="galerie-admin-catalog__prop-occ">${p.occurrences} mention${p.occurrences > 1 ? "s" : ""}</span>
+        </div>
+        <div class="galerie-admin-catalog__prop-query">${escapeHTML(p.query)}</div>
+        <div class="galerie-admin-catalog__prop-meta">Devis : ${p.quotes.map(c => `<code>${escapeHTML(c)}</code>`).join(" · ")}</div>
+      </div>
+      <div class="galerie-admin-catalog__prop-actions">
+        <button type="button" class="btn btn--tiny galerie-admin-catalog__prop-promote">Promouvoir au catalogue</button>
+      </div>
+    </div>
+  `).join("");
+  list.querySelectorAll(".galerie-admin-catalog__prop-promote").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const wrap = btn.closest("[data-prop-cat]");
+      if (!wrap) return;
+      promoteProposal(wrap.dataset.propCat, wrap.dataset.propQuery);
+    });
+  });
+}
+
+function promoteProposal(category, query) {
+  setActiveCategory(category);
+  const form = gq("#galerieAdminCatalogForm");
+  if (!form) return;
+  const brandInput = form.querySelector("[name='brand']");
+  const nameInput = form.querySelector("[name='name']");
+  const parsed = parseQueryGuess(query);
+  if (brandInput) brandInput.value = parsed.brand || "";
+  if (nameInput) nameInput.value = parsed.name || query;
+  let proposalMeta = form.querySelector("[name='_proposalQuery']");
+  if (!proposalMeta) {
+    proposalMeta = document.createElement("input");
+    proposalMeta.type = "hidden";
+    proposalMeta.name = "_proposalQuery";
+    form.appendChild(proposalMeta);
+  }
+  proposalMeta.value = query;
+  setCatalogStatus(`Pré-remplissage depuis proposition · complétez les specs et le prix avant d'enregistrer`, "running");
+  form.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function parseQueryGuess(query) {
+  const q = String(query || "").trim();
+  const known = ["AMD", "Intel", "NVIDIA", "Corsair", "G.Skill", "ASUS", "MSI", "Gigabyte", "ASRock", "WD", "Samsung", "Kingston", "Seagate", "Crucial", "Seasonic", "Be Quiet!", "NZXT", "Lian Li", "Fractal", "Cooler Master", "Noctua", "Arctic", "EK", "Thermalright"];
+  const lower = q.toLowerCase();
+  for (const b of known) {
+    if (lower.startsWith(b.toLowerCase() + " ") || lower === b.toLowerCase()) {
+      return { brand: b, name: q.slice(b.length).trim() || q };
+    }
+  }
+  const first = q.split(/\s+/)[0] || "";
+  return { brand: first, name: q.slice(first.length).trim() || q };
 }
 
 function setCatalogStatus(txt, tone) {
@@ -738,6 +845,12 @@ async function handleCatalogFormSubmit(e) {
     catch (e) { setCatalogStatus("Lecture du fichier 3D échouée", "err"); return; }
   }
 
+  const proposalQuery = String(fd.get("_proposalQuery") || "").trim();
+  if (proposalQuery) {
+    entry.fromProposal = true;
+    entry.proposalQuery = proposalQuery;
+  }
+
   setCatalogStatus("Enregistrement…", "running");
   try {
     const body = { action: "catalogAdd", category: cat, entry };
@@ -747,7 +860,7 @@ async function handleCatalogFormSubmit(e) {
     if (!r.ok) { setCatalogStatus("Erreur : " + (data.error || r.status), "err"); return; }
     setCatalogStatus(`Ajouté · ${data.entry?.brand || ""} ${data.entry?.name || ""}`, "ok");
     form.reset();
-    setTimeout(() => { refreshAdminCatalog(); refreshGlbInventory(); }, 800);
+    setTimeout(() => { refreshAdminCatalog(); refreshGlbInventory(); refreshClientProposals(); }, 800);
   } catch (e) {
     setCatalogStatus("Réseau : " + e.message, "err");
   }

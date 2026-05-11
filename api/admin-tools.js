@@ -258,6 +258,19 @@ function priorityFromRecord(record, pendingExists) {
   return { level, label, reason: reasons.join(" • ") };
 }
 
+function buildExternalRefs(record) {
+  const external = record?.external && typeof record.external === "object" ? record.external : {};
+  const labels = { cpu: "CPU", mobo: "Carte mère", ram: "RAM", gpu: "GPU", storage: "Stockage", psu: "Alimentation", case: "Boîtier", watercooling: "Refroidissement" };
+  const refs = [];
+  Object.entries(external).forEach(([key, value]) => {
+    if (!labels[key]) return;
+    const query = value && typeof value === "object" ? String(value.query || "").trim() : String(value || "").trim();
+    if (!query) return;
+    refs.push({ category: key, categoryLabel: labels[key], query });
+  });
+  return refs;
+}
+
 function buildPartsSummary(record) {
   const parts = record?.config?.parts;
   if (!parts || typeof parts !== "object") return [];
@@ -530,6 +543,7 @@ async function handleList(req, res, client) {
       priorityLabel: priority.label,
       priorityReason: priority.reason,
       partsSummary: buildPartsSummary(record),
+      externalRefs: buildExternalRefs(record),
       hasCameraLogs: camera.totalEntries > 0,
       cameraLogCount: camera.totalEntries,
       cameraRunCount: camera.runs.length,
