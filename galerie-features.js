@@ -36,11 +36,11 @@ function getTickerItems() {
   const status = getAtelierStatus();
   return [
     { tone: status.open ? "ok" : "warn", text: status.label },
-    { tone: "",    text: "Paris XI · 45 €/h main d'œuvre" },
+    { tone: "",    text: "Devis clair avant intervention" },
     { tone: "ok",  text: "Diagnostic transparent & documenté" },
     { tone: "",    text: "Réparation PC · Mobile · PC sur mesure" },
     { tone: "ok",  text: "Concierge en ligne · réponse instantanée" },
-    { tone: "",    text: "Rendu réaliste Aurora · 20-30 min" }
+    { tone: "",    text: "Rendu réaliste Aurora" }
   ];
 }
 
@@ -55,7 +55,7 @@ const CONCIERGE_SUGGESTIONS = [
   "Mon PC est lent, que faire ?"
 ];
 
-const CONCIERGE_SYSTEM = `Tu es le Concierge de l'Atelier Électronique, maison technique parisienne (Paris XI).
+const CONCIERGE_SYSTEM = `Tu es le Concierge de l'Atelier Électronique.
 
 PERSONNALITÉ
 - Réponses en français, ton chaleureux, précis, sans esbroufe.
@@ -63,37 +63,28 @@ PERSONNALITÉ
 - Tu reconnais quand tu ne sais pas et invites à écrire à rabuteaujuandavid@gmail.com.
 
 L'ATELIER PROPOSE
-1) Réparation PC — diagnostic, pannes, récupération de données. Main d'œuvre 45 €/h + pièces.
-2) Réparation mobile — écran, batterie, charge, caméra, audio. iPhone 13 écran 109-149 €, batterie 69-89 €.
-3) PC sur mesure — simulateur avec aperçu 3D procédural ou rendu IA réaliste Aurora.
+1) Réparation PC — diagnostic, pannes, récupération de données.
+2) Réparation mobile — écran, batterie, charge, caméra, audio.
+3) PC sur mesure — simulateur de configuration avec aperçu 3D, et rendu réaliste Aurora.
 
-CATALOGUE INDICATIF
-- CPU : Ryzen 5 7600 (219 €), Ryzen 7 7700X (339 €), Ryzen 9 7900X (489 €), Core i5-14600K (329 €), Core i7-14700K (479 €)
-- GPU : RTX 4060 (309 €), RTX 4070 Super (619 €) sweet 1440p, RTX 4080 Super (1099 €), RX 7800 XT (549 €), RTX 4090 (1799 €)
-- RAM : 32 GB DDR5-6000 (109 €), 64 GB DDR5-6000 (229 €)
-- Stockage : 1 TB NVMe Gen4 (99 €), 2 TB NVMe Gen4 (179 €)
+RÈGLES TARIFAIRES
+- Tu ne donnes JAMAIS de prix exact, ni de fourchette, ni d'estimation chiffrée.
+- Pour un tarif, tu invites l'utilisateur à demander un devis via la page Réparation PC ou Mobile, ou à ouvrir le simulateur PC sur mesure qui calcule le prix.
+- Pas d'accès aux devis stockés — propose le code DV-XXXXXX dans la salle correspondante.
 
-ACTIONS QUE TU PEUX DÉCLENCHER (un seul marqueur max, sa propre ligne, transformé en bouton par l'interface)
-[[OPEN:home]] | [[OPEN:pc]] | [[OPEN:mobile]] | [[OPEN:custom]] | [[OPEN:compare]] | [[OPEN:contact]] | [[OPEN:legal]]
-
-RÈGLES : Tu ne donnes pas de prix exact si tu n'es pas sûr — fourchette. Pas d'accès aux devis stockés — propose le code DV-XXXXXX dans la salle correspondante.`;
+ACTIONS QUE TU PEUX DÉCLENCHER (un seul marqueur max, sur sa propre ligne, transformé en bouton par l'interface)
+[[OPEN:home]] | [[OPEN:pc]] | [[OPEN:mobile]] | [[OPEN:custom]] | [[OPEN:compare]] | [[OPEN:contact]] | [[OPEN:legal]]`;
 
 const SPECIMENS = [
-  { cat: "Carte graphique", name: "RTX 4070 Super", price: "619 €", meta: "12 GB GDDR6X · 220 W · sweet spot 1440p", slot: "gpu" },
-  { cat: "Processeur",      name: "Ryzen 7 7700X",   price: "339 €", meta: "8 cœurs · AM5 · 105 W",                  slot: "cpu" },
-  { cat: "Refroidissement", name: "AIO 280 mm",      price: "169 €", meta: "Silencieux · TDP 350 W",                slot: "cooling" },
-  { cat: "Boîtier",         name: "Lian Li O11D Mini", price: "149 €", meta: "Verre trempé · airflow",              slot: "case" },
-  { cat: "RAM",             name: "32 GB DDR5-6000",  price: "109 €", meta: "Kit dual-rank · CL30",                 slot: "ram" },
-  { cat: "Stockage",        name: "WD SN850X 2 TB",   price: "179 €", meta: "Gen4 · 7 300 MB/s",                   slot: "storage" }
+  { cat: "Carte graphique", slot: "gpu" },
+  { cat: "Processeur",      slot: "cpu" },
+  { cat: "Refroidissement", slot: "cooling" },
+  { cat: "Boîtier",         slot: "case" },
+  { cat: "Mémoire vive",    slot: "ram" },
+  { cat: "Stockage",        slot: "storage" }
 ];
 
-const CARNET_ENTRIES = [
-  { date: "11 mai", body: "Tour signature livrée — <em>Ryzen 7 7700X + RTX 4070 Super</em>, finitions cuivre brossé.", tag: "Sur mesure" },
-  { date: "10 mai", body: "Récupération de données sur SSD NVMe corrompu — <em>2,3 TB récupérés</em>.", tag: "Réparation PC" },
-  { date: "09 mai", body: "Remplacement batterie iPhone 13 + nettoyage capteur photo arrière.", tag: "Mobile" },
-  { date: "07 mai", body: "Repaste + nettoyage Lenovo Legion 5 — <em>température GPU − 12 °C</em>.", tag: "Réparation PC" },
-  { date: "06 mai", body: "Audit thermique custom loop client — pas de fuite, débit nominal.", tag: "Diagnostic" }
-];
+const CARNET_ENTRIES = [];
 
 function gq(sel, root = document) { return root.querySelector(sel); }
 function gqq(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
@@ -261,9 +252,8 @@ function buildSpecimensGrid() {
       </div>
       <div class="galerie-specimen__body">
         <div class="galerie-specimen__cat">${s.cat}</div>
-        <div class="galerie-specimen__name">${s.name}</div>
-        <div class="galerie-specimen__meta">${s.meta}</div>
-        <div class="galerie-specimen__price">${s.price}</div>
+        <div class="galerie-specimen__name">—</div>
+        <div class="galerie-specimen__meta">Modèle en attente de mise en ligne</div>
       </div>
     `;
     grid.appendChild(card);
@@ -273,6 +263,17 @@ function buildSpecimensGrid() {
 function buildCarnetList() {
   const list = gq("#galerieCarnetList"); if (!list) return;
   list.innerHTML = "";
+  if (CARNET_ENTRIES.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "galerie-carnet__empty";
+    empty.innerHTML = `
+      <div class="galerie-carnet__empty-mark"></div>
+      <div class="galerie-carnet__empty-text">Pas encore d'entrée publiée</div>
+      <div class="galerie-carnet__empty-sub">Le carnet sera ouvert au public dès que les premiers passages à l'atelier seront consignés.</div>
+    `;
+    list.appendChild(empty);
+    return;
+  }
   CARNET_ENTRIES.forEach(c => {
     const entry = document.createElement("div");
     entry.className = "galerie-carnet__entry";
@@ -285,22 +286,54 @@ function buildCarnetList() {
   });
 }
 
+const HERO_REQUIRED_SLOTS = ["case", "motherboard", "cpu", "cooling", "gpu", "ram", "storage", "psu"];
+
 function injectHeroFloats() {
-  if (window.innerWidth < 768) return;
   const heroRight = gq('.view[data-view="home"] .hero__right');
-  if (!heroRight || gq("#galerieHeroFloats")) return;
+  if (!heroRight || gq("#galerieHeroStage")) return;
   const wrap = document.createElement("div");
-  wrap.id = "galerieHeroFloats";
-  wrap.className = "galerie-hero-floats";
+  wrap.id = "galerieHeroStage";
+  wrap.className = "galerie-hero-stage";
   wrap.innerHTML = `
-    <div class="galerie-hero-float galerie-hero-float--gpu" data-fdepth="1.8"><canvas data-float="gpu"></canvas><span>GPU · 12 GB</span></div>
-    <div class="galerie-hero-float galerie-hero-float--ram" data-fdepth="1.2"><canvas data-float="ram"></canvas><span>RAM · 32 GB</span></div>
-    <div class="galerie-hero-float galerie-hero-float--fan" data-fdepth="2.4"><canvas data-float="fan"></canvas><span>Fan · 140 mm</span></div>
-    <div class="galerie-hero-float galerie-hero-float--cpu" data-fdepth="1.4"><canvas data-float="cpu"></canvas><span>CPU · AM5</span></div>
-    <div class="galerie-hero-float galerie-hero-float--ssd" data-fdepth="3.0"><canvas data-float="ssd"></canvas><span>NVMe · Gen4</span></div>
+    <div class="galerie-hero-stage__empty">
+      <div class="galerie-hero-stage__frame" aria-hidden="true">
+        <span class="galerie-hero-stage__corner galerie-hero-stage__corner--tl"></span>
+        <span class="galerie-hero-stage__corner galerie-hero-stage__corner--tr"></span>
+        <span class="galerie-hero-stage__corner galerie-hero-stage__corner--bl"></span>
+        <span class="galerie-hero-stage__corner galerie-hero-stage__corner--br"></span>
+      </div>
+      <div class="galerie-hero-stage__center">
+        <div class="galerie-hero-stage__plinth">
+          <span class="galerie-hero-stage__plinth-line"></span>
+          <span class="galerie-hero-stage__plinth-mark"></span>
+          <span class="galerie-hero-stage__plinth-line"></span>
+        </div>
+        <div class="galerie-hero-stage__title">Pas présentable</div>
+        <div class="galerie-hero-stage__sub" id="galerieHeroStageSub">L'exposition s'ouvrira dès que la galerie sera complète.</div>
+      </div>
+    </div>
   `;
   heroRight.appendChild(wrap);
-  if (window.THREE_GALERIE) initHeroFloats();
+  upgradeHeroStage();
+}
+
+async function upgradeHeroStage() {
+  const wrap = gq("#galerieHeroStage");
+  if (!wrap) return;
+  try {
+    const r = await fetch("/api/aurora?action=list", { cache: "no-store" });
+    if (!r.ok) return;
+    const data = await r.json();
+    if (!data || !Array.isArray(data.files)) return;
+    const haystack = data.files.map(f => f.name.toLowerCase()).join("|");
+    const missing = HERO_REQUIRED_SLOTS.filter(slot => !haystack.includes(slot));
+    const sub = gq("#galerieHeroStageSub");
+    if (missing.length === 0) {
+      wrap.classList.add("is-ready");
+    } else if (sub && data.count > 0) {
+      sub.textContent = `${data.count} pièce${data.count > 1 ? "s" : ""} déposée${data.count > 1 ? "s" : ""} · il manque ${missing.length} composant${missing.length > 1 ? "s" : ""}.`;
+    }
+  } catch {}
 }
 
 function injectCompareView() {
@@ -508,20 +541,20 @@ function setupViewTransitions() {
         if (m.attributeName !== "class") return;
         const el = m.target;
         if (!el || !el.classList || !el.classList.contains("view")) return;
-        if (el.classList.contains("is-active") && !el.dataset._entering) {
-          el.dataset._entering = "1";
-          el.classList.remove("galerie-view-entering");
-          void el.offsetWidth;
-          el.classList.add("galerie-view-entering");
-          setTimeout(() => {
-            el.classList.remove("galerie-view-entering");
-            delete el.dataset._entering;
+        const isActive = el.classList.contains("is-active");
+        if (isActive && !el.dataset._entered) {
+          el.dataset._entered = "1";
+          requestAnimationFrame(() => {
+            el.classList.add("galerie-view-entering");
+            setTimeout(() => el.classList.remove("galerie-view-entering"), 600);
             try {
               el.querySelectorAll(".galerie-fadein:not(.galerie-fadein--in)").forEach((n, i) => {
-                setTimeout(() => n.classList.add("galerie-fadein--in"), i * 50);
+                setTimeout(() => n.classList.add("galerie-fadein--in"), i * 40);
               });
             } catch {}
-          }, 700);
+          });
+        } else if (!isActive && el.dataset._entered) {
+          delete el.dataset._entered;
         }
       } catch {}
     });
@@ -530,81 +563,7 @@ function setupViewTransitions() {
 }
 
 async function initThreeFeatures() {
-  if (window.THREE_GALERIE) return;
-  try {
-    const mod = await import("https://unpkg.com/three@0.161.0/build/three.module.js");
-    window.THREE_GALERIE = mod;
-    initHeroFloats();
-  } catch {}
-}
-
-function initHeroFloats() {
-  if (!window.THREE_GALERIE) return;
-  if (window.innerWidth < 768) return;
-  const THREE = window.THREE_GALERIE;
-  const stage = gq('.view[data-view="home"] .hero__right');
-  if (!stage) return;
-  gqq("canvas[data-float]", stage).forEach(canvas => {
-    if (canvas.dataset._init) return;
-    canvas.dataset._init = "1";
-    const type = canvas.dataset.float;
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    const scene = new THREE.Scene();
-    const cam = new THREE.PerspectiveCamera(40, 1, 0.1, 20);
-    cam.position.set(0, 0.8, 3); cam.lookAt(0, 0, 0);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(2, 3, 2); scene.add(key);
-    const rim = new THREE.PointLight(0xa8553a, 2.2, 6, 1.5); rim.position.set(-2, 0.5, -1); scene.add(rim);
-    const grp = new THREE.Group(); scene.add(grp);
-    let mesh, detail;
-    if (type === "gpu") {
-      mesh = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.55, 0.65), new THREE.MeshStandardMaterial({ color: 0x1a3a5c, metalness: 0.6, roughness: 0.35 }));
-      detail = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.05, 0.05), new THREE.MeshStandardMaterial({ color: 0xa8553a, metalness: 0.9, roughness: 0.2 })); detail.position.y = 0.32;
-    } else if (type === "ram") {
-      mesh = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.35, 0.18), new THREE.MeshStandardMaterial({ color: 0x9c8359, metalness: 0.7, roughness: 0.3 }));
-      detail = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.06, 0.12), new THREE.MeshStandardMaterial({ color: 0x1a1814, metalness: 0.4, roughness: 0.6 })); detail.position.y = -0.16;
-    } else if (type === "fan") {
-      mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.18, 32), new THREE.MeshStandardMaterial({ color: 0xebe6da, metalness: 0.4, roughness: 0.45 }));
-      detail = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.04, 12, 48), new THREE.MeshStandardMaterial({ color: 0xa8553a, metalness: 0.9, roughness: 0.2 })); detail.rotation.x = Math.PI / 2;
-    } else if (type === "cpu") {
-      mesh = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.12, 0.95), new THREE.MeshStandardMaterial({ color: 0x14110e, metalness: 0.85, roughness: 0.2 }));
-      detail = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.04, 0.55), new THREE.MeshStandardMaterial({ color: 0x9c8359, metalness: 0.95, roughness: 0.15 })); detail.position.y = 0.08;
-    } else {
-      mesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.1, 0.35), new THREE.MeshStandardMaterial({ color: 0x1a3a5c, metalness: 0.5, roughness: 0.35 }));
-      detail = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.2), new THREE.MeshStandardMaterial({ color: 0xebe6da, metalness: 0.2, roughness: 0.6 })); detail.position.y = 0.07;
-    }
-    grp.add(mesh); grp.add(detail);
-    function resize() { const r = canvas.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); cam.aspect = r.width / Math.max(1, r.height); cam.updateProjectionMatrix(); }
-    resize(); new ResizeObserver(resize).observe(canvas);
-    const seed = Math.random() * 10;
-    function loop(t) { grp.rotation.y = t / 2200 + seed; grp.rotation.x = Math.sin(t / 3000 + seed) * 0.25; renderer.render(scene, cam); requestAnimationFrame(loop); }
-    requestAnimationFrame(loop);
-  });
-  bindHeroParallax();
-}
-
-function bindHeroParallax() {
-  const stage = gq('.view[data-view="home"] .hero__right');
-  if (!stage || stage.dataset._parallax) return;
-  stage.dataset._parallax = "1";
-  const floats = gqq(".galerie-hero-float", stage);
-  let mx = 0, my = 0, fmx = 0, fmy = 0;
-  stage.addEventListener("pointermove", e => {
-    const r = stage.getBoundingClientRect();
-    mx = (e.clientX - r.left) / r.width - 0.5;
-    my = (e.clientY - r.top) / r.height - 0.5;
-  });
-  stage.addEventListener("pointerleave", () => { mx = 0; my = 0; });
-  function loop() {
-    fmx += (mx - fmx) * 0.08; fmy += (my - fmy) * 0.08;
-    floats.forEach(f => {
-      const d = parseFloat(f.dataset.fdepth || "1.5");
-      f.style.transform = `translate3d(${-fmx * 40 * d}px, ${-fmy * 28 * d}px, 0) rotate(${fmx * 12 * d}deg)`;
-    });
-    requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
+  return;
 }
 
 const Concierge = (() => {
