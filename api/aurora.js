@@ -236,6 +236,59 @@ async function handleStatus(req, res) {
   });
 }
 
+async function handleUpload(req, res) {
+  let body = req.body || {};
+  const filenameRaw = String(body.filename || "").trim();
+  const content = String(body.content || "").trim();
+  if (!filenameRaw || !content) return res.status(400).json({ error: "MISSING_FILE" });
+
+  const safe = filenameRaw.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
+  if (!/\.(glb|gltf)$/i.test(safe)) return res.status(400).json({ error: "INVALID_EXTENSION" });
+
+  let buffer;
+  try { buffer = Buffer.from(content, "base64"); }
+  catch { return res.status(400).json({ error: "INVALID_BASE64" }); }
+  if (buffer.length === 0) return res.status(400).json({ error: "EMPTY_FILE" });
+  if (buffer.length > 30 * 1024 * 1024) return res.status(413).json({ error: "FILE_TOO_LARGE" });
+
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return res.status(503).json({ error: "GITHUB_TOKEN_MISSING" });
+  const owner = (process.env.GITHUB_OWNER || "juancodepyandc").trim();
+  const repo = (process.env.GITHUB_REPO || "site_rep").trim();
+  const branch = (process.env.GITHUB_BRANCH || "main").trim();
+  const path = `assets/aurora/manual/${safe}`;
+
+  try {
+    let sha = null;
+    try {
+      const g = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "User-Agent": "atelier-aurora" }
+      });
+      if (g.ok) sha = (await g.json()).sha || null;
+    } catch {}
+    const putBody = { message: `aurora manual: ${safe}`, content: buffer.toString("base64"), branch };
+    if (sha) putBody.sha = sha;
+    const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/vnd.github+json", "User-Agent": "atelier-aurora" },
+      body: JSON.stringify(putBody)
+    });
+    if (!r.ok) {
+      const t = await r.text().catch(() => "");
+      return res.status(r.status).json({ error: "GITHUB_PUT_FAILED", detail: t.slice(0, 300) });
+    }
+    return res.status(200).json({
+      ok: true,
+      filename: safe,
+      localPath: `/${path}`,
+      rawUrl: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`,
+      size: buffer.length
+    });
+  } catch (e) {
+    return res.status(500).json({ error: "UPLOAD_FAILED", detail: e.message });
+  }
+}
+
 async function handleChat(req, res) {
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = {}; } }
@@ -282,6 +335,10 @@ export default async function handler(req, res) {
     if (body.action === "chat") {
       req.body = body;
       return handleChat(req, res);
+    }
+    if (body.action === "upload") {
+      req.body = body;
+      return handleUpload(req, res);
     }
     req.body = body;
     return handleGenerate(req, res);
