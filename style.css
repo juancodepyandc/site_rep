@@ -2466,6 +2466,7 @@ body.is-modal-open{
   justify-content:flex-end;gap:8px;flex-wrap:wrap;
 }
 
+.aurora-ribbon[hidden]{display:none !important}
 .aurora-ribbon{
   position:fixed;left:50%;bottom:18px;
   transform:translateX(-50%);z-index:1400;
