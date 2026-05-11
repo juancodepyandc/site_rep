@@ -567,6 +567,7 @@
                   <div class="btnrow">
                     <button class="btn btn--ghost" type="button" id="resetCustom">Réinitialiser</button>
                     <button class="btn btn--ghost" type="button" id="openPreview3d">Aperçu</button>
+                    <button class="btn btn--ghost" type="button" id="openAuroraPreview">Aperçu réaliste (IA)</button>
                     <button class="btn btn--primary btn--shine" type="submit">Envoyer mon devis</button>
                     <button class="btn btn--primary btn--shine" type="button" id="buyNow">Acheter maintenant</button>
                     <button class="btn btn--ghost btn--sandbox" type="button" id="buyNowSandbox" hidden>Simuler paiement (sandbox)</button>
@@ -914,6 +915,75 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
+  <div class="aurora-loading" id="auroraLoading" aria-hidden="true">
+    <div class="aurora-loading__back"></div>
+    <div class="aurora-loading__card">
+      <div class="aurora-loading__badge">
+        <span class="aurora-loading__orbit"></span>
+        <span class="aurora-loading__orbit aurora-loading__orbit--mid"></span>
+        <span class="aurora-loading__core"></span>
+      </div>
+      <div class="aurora-loading__subject-line">
+        <span class="aurora-loading__subject-label">Sujet :</span>
+        <span class="aurora-loading__subject" id="auroraLoadingSubject">—</span>
+      </div>
+      <div class="aurora-loading__title" id="auroraLoadingTitle">Génération du rendu réaliste</div>
+      <div class="aurora-loading__lead" id="auroraLoadingLead">Le pipeline Aurora synthétise plusieurs vues de référence avant de reconstruire la géométrie 3D et de peindre le mesh. Comptez 20 à 30 minutes — vous pouvez continuer de naviguer.</div>
+
+      <div class="aurora-loading__steps" id="auroraLoadingSteps">
+        <div class="aurora-loading__step" data-step="queued"><span class="aurora-loading__step-dot"></span><span>En file d'attente</span></div>
+        <div class="aurora-loading__step" data-step="reference"><span class="aurora-loading__step-dot"></span><span>Synthèse images de référence</span></div>
+        <div class="aurora-loading__step" data-step="mesh"><span class="aurora-loading__step-dot"></span><span>Reconstruction du mesh 3D</span></div>
+        <div class="aurora-loading__step" data-step="polish"><span class="aurora-loading__step-dot"></span><span>Post-traitement & couleurs</span></div>
+        <div class="aurora-loading__step" data-step="rescue"><span class="aurora-loading__step-dot"></span><span>Validation qualité (auto-rescue)</span></div>
+      </div>
+
+      <div class="aurora-loading__meter">
+        <div class="aurora-loading__meter-fill" id="auroraLoadingFill"></div>
+        <div class="aurora-loading__meter-sweep"></div>
+      </div>
+
+      <div class="aurora-loading__meta">
+        <div class="aurora-loading__meta-item"><span class="aurora-loading__meta-label">Temps écoulé</span><span class="aurora-loading__meta-value" id="auroraLoadingElapsed">0:00</span></div>
+        <div class="aurora-loading__meta-item"><span class="aurora-loading__meta-label">Étape</span><span class="aurora-loading__meta-value" id="auroraLoadingStep">—</span></div>
+        <div class="aurora-loading__meta-item"><span class="aurora-loading__meta-label">Passe</span><span class="aurora-loading__meta-value" id="auroraLoadingAttempt">1 / 2</span></div>
+        <div class="aurora-loading__meta-item"><span class="aurora-loading__meta-label">Score</span><span class="aurora-loading__meta-value" id="auroraLoadingScore">—</span></div>
+      </div>
+
+      <div class="aurora-loading__prompt" id="auroraLoadingPrompt"></div>
+
+      <div class="aurora-loading__actions">
+        <button class="btn btn--ghost" type="button" id="auroraLoadingBackground">Continuer en arrière-plan</button>
+        <button class="btn btn--ghost btn--tiny" type="button" id="auroraLoadingCancel">Annuler le suivi</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="aurora-ribbon" id="auroraRibbon" hidden>
+    <span class="aurora-ribbon__pulse"></span>
+    <span class="aurora-ribbon__text" id="auroraRibbonText">Aurora · génération en cours</span>
+    <button class="aurora-ribbon__open" type="button" id="auroraRibbonOpen">Rouvrir</button>
+  </div>
+
+  <div class="aurora-viewer" id="auroraViewer" aria-hidden="true">
+    <div class="aurora-viewer__back"></div>
+    <div class="aurora-viewer__shell">
+      <div class="aurora-viewer__toolbar">
+        <div class="aurora-viewer__title">Rendu Aurora · pièce générée</div>
+        <div class="aurora-viewer__chips" id="auroraViewerChips"></div>
+        <div class="aurora-viewer__actions">
+          <button class="btn btn--ghost btn--tiny" type="button" id="auroraViewerRotate">Rotation auto</button>
+          <button class="btn btn--ghost btn--tiny" type="button" id="auroraViewerDownload">Télécharger GLB</button>
+          <button class="btn btn--ghost btn--tiny" type="button" id="auroraViewerClose">Fermer</button>
+        </div>
+      </div>
+      <div class="aurora-viewer__stage">
+        <canvas id="auroraViewerCanvas" aria-label="Rendu 3D Aurora"></canvas>
+        <div class="aurora-viewer__hint">Glissez pour faire pivoter · molette pour zoomer</div>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
   <script type="importmap">
     {
@@ -924,5 +994,6 @@
     }
   </script>
   <script type="module" src="pc3d-viewer.js?v=20260217f"></script>
+  <script type="module" src="aurora-client.js?v=20260511a"></script>
 </body>
 </html>
