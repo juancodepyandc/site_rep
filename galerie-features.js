@@ -100,8 +100,9 @@ function gqq(sel, root = document) { return Array.from(root.querySelectorAll(sel
 
 function clearLegacyTheme() {
   try {
-    const v = localStorage.getItem("ae_theme_v1");
-    if (v && !v.includes('"presetName":"galerie"')) localStorage.removeItem("ae_theme_v1");
+    if (localStorage.getItem("galerie_seen_v1")) return;
+    localStorage.removeItem("ae_theme_v1");
+    localStorage.setItem("galerie_seen_v1", "1");
   } catch {}
   const root = document.documentElement;
   ["--bg","--text","--muted","--muted2","--stroke","--panel","--panel2","--accent","--accent2","--accent3","--accentWarm","--ui-panel-top","--ui-panel-bottom","--ui-input-bg","--ui-input-border","--ui-input-focus","--ui-btn-border","--ui-btn-bg","--ui-btn-hover-bg","--ui-btn-ghost-bg","--ui-btn-ghost-border","--ui-btn-primary-from","--ui-btn-primary-to","--ui-btn-primary-text"].forEach(v => root.style.removeProperty(v));
@@ -285,6 +286,7 @@ function buildCarnetList() {
 }
 
 function injectHeroFloats() {
+  if (window.innerWidth < 768) return;
   const heroRight = gq('.view[data-view="home"] .hero__right');
   if (!heroRight || gq("#galerieHeroFloats")) return;
   const wrap = document.createElement("div");
@@ -491,29 +493,40 @@ function setupViewTransitions() {
   document.body.appendChild(sweep);
 
   document.addEventListener("click", e => {
-    const t = e.target.closest("[data-nav]");
-    if (!t || pending) return;
-    pending = true;
-    sweep.classList.remove("is-flash"); void sweep.offsetWidth; sweep.classList.add("is-flash");
-    const current = gq(".view.is-active");
-    if (current) {
-      current.classList.add("galerie-view-leaving");
-      setTimeout(() => current.classList.remove("galerie-view-leaving"), 800);
-    }
-    setTimeout(() => { pending = false; }, 400);
+    try {
+      const t = e.target.closest("[data-nav]");
+      if (!t || pending) return;
+      pending = true;
+      sweep.classList.remove("is-flash"); void sweep.offsetWidth; sweep.classList.add("is-flash");
+      setTimeout(() => { pending = false; }, 320);
+    } catch {}
   }, true);
 
   const observer = new MutationObserver(muts => {
     muts.forEach(m => {
-      if (m.attributeName === "class" && m.target.classList?.contains("view") && m.target.classList.contains("is-active") && !m.target.dataset._entered) {
-        m.target.classList.remove("galerie-view-entering");
-        void m.target.offsetWidth;
-        m.target.classList.add("galerie-view-entering");
-        setTimeout(() => m.target.classList.remove("galerie-view-entering"), 1100);
-      }
+      try {
+        if (m.attributeName !== "class") return;
+        const el = m.target;
+        if (!el || !el.classList || !el.classList.contains("view")) return;
+        if (el.classList.contains("is-active") && !el.dataset._entering) {
+          el.dataset._entering = "1";
+          el.classList.remove("galerie-view-entering");
+          void el.offsetWidth;
+          el.classList.add("galerie-view-entering");
+          setTimeout(() => {
+            el.classList.remove("galerie-view-entering");
+            delete el.dataset._entering;
+            try {
+              el.querySelectorAll(".galerie-fadein:not(.galerie-fadein--in)").forEach((n, i) => {
+                setTimeout(() => n.classList.add("galerie-fadein--in"), i * 50);
+              });
+            } catch {}
+          }, 700);
+        }
+      } catch {}
     });
   });
-  gqq(".view").forEach(v => observer.observe(v, { attributes: true }));
+  gqq(".view").forEach(v => observer.observe(v, { attributes: true, attributeFilter: ["class"] }));
 }
 
 async function initThreeFeatures() {
@@ -527,6 +540,7 @@ async function initThreeFeatures() {
 
 function initHeroFloats() {
   if (!window.THREE_GALERIE) return;
+  if (window.innerWidth < 768) return;
   const THREE = window.THREE_GALERIE;
   const stage = gq('.view[data-view="home"] .hero__right');
   if (!stage) return;
@@ -700,34 +714,27 @@ function setupKeyboardShortcuts() {
     if (tag === "input" || tag === "textarea" || e.target.isContentEditable) return;
     if (e.key === "?" || (e.shiftKey && e.key === "/")) {
       e.preventDefault();
-      Concierge.toggle();
+      try { Concierge.toggle(); } catch {}
     } else if (e.key === "Escape") {
-      if (gq("#galerieConcierge.is-open")) Concierge.close();
-    } else if (e.key === "g" && !e.metaKey && !e.ctrlKey && !e.altKey) {
-      const next = document.querySelector(".nav__link.is-active");
-      if (!next) return;
-      const links = gqq(".nav__link[data-nav]");
-      const i = links.indexOf(next);
-      const target = links[(i + 1) % links.length];
-      if (target) target.click();
+      try { if (gq("#galerieConcierge.is-open")) Concierge.close(); } catch {}
     }
   });
 }
 
 function setupParallax() {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const items = gqq(".galerie-numeral");
-  if (!items.length) return;
+  if (window.innerWidth < 720) return;
   let raf = 0;
   const onScroll = () => {
     if (raf) return;
     raf = requestAnimationFrame(() => {
       raf = 0;
+      const items = gqq(".view.is-active .galerie-numeral");
+      const center = window.innerHeight / 2;
       items.forEach(el => {
         const r = el.getBoundingClientRect();
-        const center = window.innerHeight / 2;
         const offset = (r.top + r.height / 2 - center) / window.innerHeight;
-        el.style.transform = `translate3d(0, ${offset * -28}px, 0)`;
+        el.style.transform = `translate3d(0, ${offset * -22}px, 0)`;
       });
     });
   };
@@ -744,7 +751,7 @@ function setupRevealOnScroll() {
         io.unobserve(en.target);
       }
     });
-  }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+  }, { threshold: 0.08, rootMargin: "0px 0px -6% 0px" });
   const targets = [
     ".galerie-manifesto__title",
     ".galerie-manifesto__lead",
@@ -755,9 +762,12 @@ function setupRevealOnScroll() {
   ];
   gqq(targets.join(",")).forEach((el, i) => {
     el.classList.add("galerie-fadein");
-    el.style.transitionDelay = (i % 8) * 60 + "ms";
+    el.style.transitionDelay = (i % 6) * 50 + "ms";
     io.observe(el);
   });
+  setTimeout(() => {
+    gqq(".view.is-active .galerie-fadein:not(.galerie-fadein--in)").forEach(el => el.classList.add("galerie-fadein--in"));
+  }, 1500);
 }
 
 function init() {
@@ -776,7 +786,6 @@ function init() {
   setupKeyboardShortcuts();
   setupParallax();
   setupRevealOnScroll();
-  setTimeout(clearLegacyTheme, 1500);
 }
 
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
