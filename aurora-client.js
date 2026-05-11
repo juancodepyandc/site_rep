@@ -366,7 +366,7 @@ function updateButtonLabel() {
 }
 
 async function startJob(subjectKind) {
-  const r = await fetch("/api/aurora-generate", {
+  const r = await fetch("/api/aurora", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt: State.prompt, subject_kind: subjectKind || "pc_tower" })
@@ -379,7 +379,7 @@ async function startJob(subjectKind) {
 }
 
 async function pollStatus(jobId) {
-  const r = await fetch(`/api/aurora-status?job=${encodeURIComponent(jobId)}`);
+  const r = await fetch(`/api/aurora?job=${encodeURIComponent(jobId)}`);
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || `HTTP_${r.status}`);
   return data;

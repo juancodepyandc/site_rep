@@ -1,7 +1,8 @@
-import { auroraFetch, resolveAuroraBaseUrl } from "./_aurora.js";
+import { auroraFetch, resolveAuroraBaseUrl, promptHash } from "./_aurora.js";
 import { getRedisClient } from "./_redis.js";
 
 const CACHE_TTL_S = 60 * 60 * 24 * 90;
+const JOB_META_TTL_S = 60 * 60 * 4;
 
 async function githubGetSha(owner, repo, path, branch, token) {
   try {
@@ -20,13 +21,8 @@ async function githubGetSha(owner, repo, path, branch, token) {
 
 async function githubPutFile({ owner, repo, branch, path, buffer, message, token }) {
   const sha = await githubGetSha(owner, repo, path, branch, token);
-  const body = {
-    message,
-    content: buffer.toString("base64"),
-    branch
-  };
+  const body = { message, content: buffer.toString("base64"), branch };
   if (sha) body.sha = sha;
-
   const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
     method: "PUT",
     headers: {
@@ -37,7 +33,6 @@ async function githubPutFile({ owner, repo, branch, path, buffer, message, token
     },
     body: JSON.stringify(body)
   });
-
   if (!r.ok) {
     const t = await r.text().catch(() => "");
     throw new Error(`GITHUB_${r.status}_${t.slice(0, 200)}`);
@@ -48,15 +43,12 @@ async function githubPutFile({ owner, repo, branch, path, buffer, message, token
 async function commitGLBToRepo(filename, buffer, prompt) {
   const token = process.env.GITHUB_TOKEN;
   if (!token) return { ok: false, reason: "GITHUB_TOKEN_MISSING" };
-
   const owner = (process.env.GITHUB_OWNER || "juancodepyandc").trim();
   const repo = (process.env.GITHUB_REPO || "site_rep").trim();
   const branch = (process.env.GITHUB_BRANCH || "main").trim();
   const path = `assets/aurora/${filename}`;
-
   const summary = (prompt || "rendu").replace(/\s+/g, " ").trim().slice(0, 72);
   const message = `aurora: ${summary}`;
-
   try {
     await githubPutFile({ owner, repo, branch, path, buffer, message, token });
     return {
@@ -69,13 +61,69 @@ async function commitGLBToRepo(filename, buffer, prompt) {
   }
 }
 
-export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(204).end();
-  if (req.method !== "GET") return res.status(405).json({ error: "METHOD_NOT_ALLOWED" });
+async function handleGenerate(req, res) {
+  let body = req.body;
+  if (typeof body === "string") {
+    try { body = JSON.parse(body); } catch { body = {}; }
+  }
+  body = body || {};
 
+  const prompt = String(body.prompt || "").trim();
+  const subjectKind = body.subject_kind ? String(body.subject_kind).trim() : undefined;
+  const cacheTag = body.cache_tag ? String(body.cache_tag).slice(0, 80) : null;
+  const force = Boolean(body.force);
+
+  if (!prompt) return res.status(400).json({ error: "MISSING_PROMPT" });
+  if (prompt.length > 600) return res.status(400).json({ error: "PROMPT_TOO_LONG" });
+
+  const cacheKey = `aurora:cache:${cacheTag ? cacheTag + ":" : ""}${promptHash(prompt)}`;
+
+  if (!force) {
+    try {
+      const redis = await getRedisClient();
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.url) {
+          return res.status(200).json({ ok: true, cached: true, ...parsed });
+        }
+      }
+    } catch {}
+  }
+
+  let r;
+  try {
+    r = await auroraFetch("/api/ext/3d/generate", {
+      method: "POST",
+      body: JSON.stringify({ prompt, subject_kind: subjectKind, force })
+    });
+  } catch (e) {
+    const code = e?.message === "AURORA_KEY_MISSING" ? "AURORA_KEY_MISSING" : "AURORA_UNREACHABLE";
+    return res.status(code === "AURORA_KEY_MISSING" ? 503 : 502).json({ error: code, detail: e.message });
+  }
+
+  if (!r.ok) {
+    const text = await r.text().catch(() => "");
+    return res.status(r.status).json({ error: "AURORA_REJECTED", status: r.status, detail: text.slice(0, 400) });
+  }
+
+  let data;
+  try { data = await r.json(); } catch { return res.status(502).json({ error: "AURORA_BAD_JSON" }); }
+  if (!data.job_id) return res.status(502).json({ error: "AURORA_NO_JOB" });
+
+  try {
+    const redis = await getRedisClient();
+    await redis.set(
+      `aurora:job:${data.job_id}`,
+      JSON.stringify({ prompt, cacheKey, subjectKind: subjectKind || null }),
+      { EX: JOB_META_TTL_S }
+    );
+  } catch {}
+
+  return res.status(200).json({ ok: true, jobId: data.job_id, cacheKey });
+}
+
+async function handleStatus(req, res) {
   const jobId = String(req.query.job || "").trim();
   if (!jobId) return res.status(400).json({ error: "MISSING_JOB" });
 
@@ -186,4 +234,14 @@ export default async function handler(req, res) {
     score: data.score ?? null,
     audit: data.audit || null
   });
+}
+
+export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method === "POST") return handleGenerate(req, res);
+  if (req.method === "GET") return handleStatus(req, res);
+  return res.status(405).json({ error: "METHOD_NOT_ALLOWED" });
 }
