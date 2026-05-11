@@ -1,3 +1,4 @@
+(function() {
 const COOKIE_KEY = "galerie_cookies_v1";
 
 const TICKER_ITEMS = [
@@ -327,3 +328,4 @@ function init() {
 
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
 else init();
+})();
