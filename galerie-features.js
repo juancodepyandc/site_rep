@@ -305,12 +305,24 @@ const Concierge = (() => {
   return { build };
 })();
 
+function clearLegacyTheme() {
+  try {
+    const v = localStorage.getItem("ae_theme_v1");
+    if (v && !v.includes('"presetName":"galerie"')) localStorage.removeItem("ae_theme_v1");
+  } catch {}
+  const root = document.documentElement;
+  const inlineVars = ["--bg", "--text", "--muted", "--muted2", "--stroke", "--panel", "--panel2", "--accent", "--accent2", "--accent3", "--accentWarm", "--ui-panel-top", "--ui-panel-bottom", "--ui-input-bg", "--ui-input-border", "--ui-input-focus", "--ui-btn-border", "--ui-btn-bg", "--ui-btn-hover-bg", "--ui-btn-ghost-bg", "--ui-btn-ghost-border", "--ui-btn-primary-from", "--ui-btn-primary-to", "--ui-btn-primary-text"];
+  inlineVars.forEach(v => root.style.removeProperty(v));
+}
+
 function init() {
+  clearLegacyTheme();
   buildTicker();
   injectNumerals();
   buildCursor();
   buildCookieBanner();
   Concierge.build();
+  setTimeout(clearLegacyTheme, 1500);
 }
 
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
