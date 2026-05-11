@@ -1,14 +1,48 @@
 (function() {
 const COOKIE_KEY = "galerie_cookies_v1";
 
-const TICKER_ITEMS = [
-  { tone: "ok",  text: "Atelier ouvert · Paris XI" },
-  { tone: "",    text: "Devis clair avant intervention" },
-  { tone: "ok",  text: "Diagnostic transparent & documenté" },
-  { tone: "",    text: "Réparation PC · Mobile · PC sur mesure" },
-  { tone: "ok",  text: "Concierge IA disponible · réponse instantanée" },
-  { tone: "",    text: "Rendu 3D réaliste Aurora · 20-30 min" }
-];
+const OPENING_HOURS = {
+  1: null,
+  2: [10, 19],
+  3: [10, 19],
+  4: [10, 19],
+  5: [10, 19],
+  6: [10, 18],
+  0: null
+};
+
+function getAtelierStatus() {
+  const now = new Date();
+  const day = now.getDay();
+  const hour = now.getHours() + now.getMinutes() / 60;
+  const today = OPENING_HOURS[day];
+  if (today && hour >= today[0] && hour < today[1]) {
+    const closeH = today[1];
+    return { open: true, label: `Atelier ouvert · ferme à ${closeH}h` };
+  }
+  for (let i = 1; i <= 7; i++) {
+    const d = (day + i) % 7;
+    const h = OPENING_HOURS[d];
+    if (h) {
+      const names = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+      if (i === 1) return { open: false, label: `Atelier fermé · ouvre demain ${h[0]}h` };
+      return { open: false, label: `Atelier fermé · ouvre ${names[d]} ${h[0]}h` };
+    }
+  }
+  return { open: false, label: "Atelier fermé" };
+}
+
+function getTickerItems() {
+  const status = getAtelierStatus();
+  return [
+    { tone: status.open ? "ok" : "warn", text: status.label },
+    { tone: "",    text: "Paris XI · 45 €/h main d'œuvre" },
+    { tone: "ok",  text: "Diagnostic transparent & documenté" },
+    { tone: "",    text: "Réparation PC · Mobile · PC sur mesure" },
+    { tone: "ok",  text: "Concierge en ligne · réponse instantanée" },
+    { tone: "",    text: "Rendu réaliste Aurora · 20-30 min" }
+  ];
+}
 
 const NUMERAL_BY_VIEW = {
   pc: "01", mobile: "02", custom: "03", admin: "04", contact: "05", legal: "06", compare: "04"
@@ -45,12 +79,12 @@ ACTIONS QUE TU PEUX DÉCLENCHER (un seul marqueur max, sa propre ligne, transfor
 RÈGLES : Tu ne donnes pas de prix exact si tu n'es pas sûr — fourchette. Pas d'accès aux devis stockés — propose le code DV-XXXXXX dans la salle correspondante.`;
 
 const SPECIMENS = [
-  { cat: "Carte graphique", name: "RTX 4070 Super", price: "619 €", meta: "12 GB GDDR6X · 220 W · sweet spot 1440p", colorA: 0x1a3a5c, colorB: 0xa8553a, shape: "box-wide" },
-  { cat: "Processeur",      name: "Ryzen 7 7700X",   price: "339 €", meta: "8 cœurs · AM5 · 105 W",                  colorA: 0x9c8359, colorB: 0x14110e, shape: "thin-square" },
-  { cat: "Refroidissement", name: "AIO 280 mm",      price: "169 €", meta: "Silencieux · TDP 350 W",                colorA: 0xebe6da, colorB: 0xa8553a, shape: "cylinder" },
-  { cat: "Boîtier",         name: "Lian Li O11D Mini", price: "149 €", meta: "Verre trempé · airflow",              colorA: 0x14110e, colorB: 0x1a3a5c, shape: "box-tall" },
-  { cat: "RAM",             name: "32 GB DDR5-6000",  price: "109 €", meta: "Kit dual-rank · CL30",                 colorA: 0x9c8359, colorB: 0x14110e, shape: "stick" },
-  { cat: "Stockage",        name: "WD SN850X 2 TB",   price: "179 €", meta: "Gen4 · 7 300 MB/s",                   colorA: 0x1a3a5c, colorB: 0xebe6da, shape: "ssd" }
+  { cat: "Carte graphique", name: "RTX 4070 Super", price: "619 €", meta: "12 GB GDDR6X · 220 W · sweet spot 1440p", slot: "gpu" },
+  { cat: "Processeur",      name: "Ryzen 7 7700X",   price: "339 €", meta: "8 cœurs · AM5 · 105 W",                  slot: "cpu" },
+  { cat: "Refroidissement", name: "AIO 280 mm",      price: "169 €", meta: "Silencieux · TDP 350 W",                slot: "cooling" },
+  { cat: "Boîtier",         name: "Lian Li O11D Mini", price: "149 €", meta: "Verre trempé · airflow",              slot: "case" },
+  { cat: "RAM",             name: "32 GB DDR5-6000",  price: "109 €", meta: "Kit dual-rank · CL30",                 slot: "ram" },
+  { cat: "Stockage",        name: "WD SN850X 2 TB",   price: "179 €", meta: "Gen4 · 7 300 MB/s",                   slot: "storage" }
 ];
 
 const CARNET_ENTRIES = [
@@ -77,9 +111,12 @@ function buildTicker() {
   if (gq("#galerieTicker")) return;
   const t = document.createElement("div");
   t.className = "galerie-ticker"; t.id = "galerieTicker";
-  const make = () => TICKER_ITEMS.map(i => `<span><span class="galerie-ticker__dot${i.tone === "ok" ? " galerie-ticker__dot--ok" : ""}"></span>${i.text}</span>`).join("");
-  t.innerHTML = `<div class="galerie-ticker__strip">${make()}${make()}</div>`;
+  const dotClass = tone => tone === "ok" ? " galerie-ticker__dot--ok" : tone === "warn" ? " galerie-ticker__dot--warn" : "";
+  const make = () => getTickerItems().map(i => `<span><span class="galerie-ticker__dot${dotClass(i.tone)}"></span>${i.text}</span>`).join("");
+  const render = () => { t.innerHTML = `<div class="galerie-ticker__strip">${make()}${make()}</div>`; };
+  render();
   document.body.insertBefore(t, document.body.firstChild);
+  setInterval(render, 60_000);
 }
 
 function injectNumerals() {
@@ -207,11 +244,19 @@ function buildSpecimensGrid() {
     const card = document.createElement("div");
     card.className = "galerie-specimen";
     card.dataset.specimen = i;
+    card.dataset.slot = s.slot;
     card.innerHTML = `
       <div class="galerie-specimen__visual">
-        <canvas id="galerieSp-${i}" data-specimen-canvas="${i}"></canvas>
+        <div class="galerie-specimen__empty">
+          <div class="galerie-specimen__plinth" aria-hidden="true">
+            <span class="galerie-specimen__plinth-line"></span>
+            <span class="galerie-specimen__plinth-mark"></span>
+            <span class="galerie-specimen__plinth-line"></span>
+          </div>
+          <div class="galerie-specimen__empty-text">Pas encore présenté</div>
+          <div class="galerie-specimen__empty-sub">Spécimen en attente d'exposition</div>
+        </div>
         <div class="galerie-specimen__corners"></div>
-        <div class="galerie-specimen__placeholder">Pas encore présenté</div>
       </div>
       <div class="galerie-specimen__body">
         <div class="galerie-specimen__cat">${s.cat}</div>
@@ -222,7 +267,6 @@ function buildSpecimensGrid() {
     `;
     grid.appendChild(card);
   });
-  if (window.THREE_GALERIE) initSpecimenScenes();
 }
 
 function buildCarnetList() {
@@ -362,9 +406,47 @@ function injectAdminUpload() {
       <strong>Code d'accès admin :</strong> tapez <code>admin:&lt;votre clé&gt;</code> dans le champ "code devis" du custom builder pour activer cette section.
       Le bouton apparaît uniquement quand <code>isAdmin = true</code>.
     </div>
+    <div class="galerie-admin-upload__inventory" id="galerieAdminInventory" hidden>
+      <div class="galerie-admin-upload__inventory-head">
+        <span class="galerie-admin-upload__inventory-title">Inventaire Galerie</span>
+        <span class="galerie-admin-upload__inventory-count" id="galerieAdminInventoryCount">—</span>
+      </div>
+      <div class="galerie-admin-upload__inventory-list" id="galerieAdminInventoryList"></div>
+    </div>
   `;
   adminPanel.parentElement.appendChild(block);
   bindAdminUpload();
+  refreshInventory();
+}
+
+async function refreshInventory() {
+  const wrap = gq("#galerieAdminInventory");
+  const list = gq("#galerieAdminInventoryList");
+  const count = gq("#galerieAdminInventoryCount");
+  if (!wrap || !list || !count) return;
+  try {
+    const r = await fetch("/api/aurora?action=list", { cache: "no-store" });
+    if (!r.ok) return;
+    const data = await r.json();
+    if (!data || !Array.isArray(data.files)) return;
+    wrap.hidden = false;
+    count.textContent = `${data.count} pièce${data.count > 1 ? "s" : ""} · ${data.generated} générée${data.generated > 1 ? "s" : ""} · ${data.manual} manuelle${data.manual > 1 ? "s" : ""}`;
+    const recent = data.files.slice(-12).reverse();
+    list.innerHTML = recent.length
+      ? recent.map(f => `
+          <a class="galerie-admin-upload__inventory-item" href="${f.rawUrl}" target="_blank" rel="noopener">
+            <span class="galerie-admin-upload__inventory-name">${f.name}</span>
+            <span class="galerie-admin-upload__inventory-size">${formatBytes(f.size)}</span>
+          </a>`).join("")
+      : `<div class="galerie-admin-upload__inventory-empty">Aucune pièce déposée pour l'instant.</div>`;
+  } catch {}
+}
+
+function formatBytes(n) {
+  if (!n) return "—";
+  if (n < 1024) return n + " o";
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " ko";
+  return (n / 1024 / 1024).toFixed(2) + " Mo";
 }
 
 function bindAdminUpload() {
@@ -390,6 +472,7 @@ function bindAdminUpload() {
         const data = await r.json();
         if (!r.ok) { setStatus("Erreur : " + (data.error || r.status), "err"); return; }
         setStatus(`Déposé · ${data.localPath || file.name}`, "ok");
+        setTimeout(refreshInventory, 1200);
       } catch (e) { setStatus("Réseau : " + e.message, "err"); }
     };
     reader.readAsDataURL(file);
@@ -439,8 +522,7 @@ async function initThreeFeatures() {
     const mod = await import("https://unpkg.com/three@0.161.0/build/three.module.js");
     window.THREE_GALERIE = mod;
     initHeroFloats();
-    initSpecimenScenes();
-  } catch (e) { console.warn("Galerie three load fail:", e.message); }
+  } catch {}
 }
 
 function initHeroFloats() {
@@ -509,54 +591,6 @@ function bindHeroParallax() {
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
-}
-
-function initSpecimenScenes() {
-  if (!window.THREE_GALERIE) return;
-  const THREE = window.THREE_GALERIE;
-  SPECIMENS.forEach((s, i) => {
-    const canvas = gq(`#galerieSp-${i}`);
-    if (!canvas || canvas.dataset._init) return;
-    canvas.dataset._init = "1";
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    const scene = new THREE.Scene();
-    const cam = new THREE.PerspectiveCamera(35, 1, 0.1, 50);
-    cam.position.set(0, 1.2, 3.6); cam.lookAt(0, 0.5, 0);
-    scene.add(new THREE.AmbientLight(0xfbf8f0, 0.55));
-    const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(2, 4, 3); scene.add(key);
-    const rim = new THREE.PointLight(0xa8553a, 1.8, 8, 1.5); rim.position.set(-2, 1, -2); scene.add(rim);
-    const grp = new THREE.Group(); scene.add(grp);
-    let geom;
-    switch (s.shape) {
-      case "box-wide": geom = new THREE.BoxGeometry(1.6, 0.6, 0.8); break;
-      case "thin-square": geom = new THREE.BoxGeometry(1.1, 0.12, 1.1); break;
-      case "cylinder": geom = new THREE.CylinderGeometry(0.55, 0.55, 1.2, 32); break;
-      case "box-tall": geom = new THREE.BoxGeometry(0.9, 1.5, 0.7); break;
-      case "stick": geom = new THREE.BoxGeometry(1.6, 0.32, 0.18); break;
-      case "ssd": geom = new THREE.BoxGeometry(1.4, 0.1, 0.45); break;
-      default: geom = new THREE.BoxGeometry(1, 0.4, 0.6);
-    }
-    const body = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color: s.colorA, metalness: 0.5, roughness: 0.4 }));
-    grp.add(body);
-    const detail = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.06, 0.06), new THREE.MeshStandardMaterial({ color: s.colorB, metalness: 0.85, roughness: 0.2 }));
-    detail.position.y = 0.4; grp.add(detail);
-    function resize() { const r = canvas.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); cam.aspect = r.width / Math.max(1, r.height); cam.updateProjectionMatrix(); }
-    resize(); new ResizeObserver(resize).observe(canvas);
-    let target = i * 0.3, current = target;
-    canvas.addEventListener("pointermove", e => {
-      const r = canvas.getBoundingClientRect();
-      target = ((e.clientX - r.left) / r.width - 0.5) * Math.PI;
-    });
-    function loop(t) {
-      current += (target - current) * 0.1;
-      grp.rotation.y = current + Math.sin(t / 3000 + i) * 0.3;
-      grp.rotation.x = Math.sin(t / 4000 + i) * 0.15;
-      renderer.render(scene, cam);
-      requestAnimationFrame(loop);
-    }
-    requestAnimationFrame(loop);
-  });
 }
 
 const Concierge = (() => {
@@ -657,8 +691,74 @@ const Concierge = (() => {
       if (parsed.action) renderAction(parsed.action);
     } catch (e) { hideTyping(); addMsg("bot", "⚠ Erreur réseau : " + e.message); history.pop(); }
   }
-  return { build };
+  return { build, toggle, close };
 })();
+
+function setupKeyboardShortcuts() {
+  document.addEventListener("keydown", e => {
+    const tag = (e.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || e.target.isContentEditable) return;
+    if (e.key === "?" || (e.shiftKey && e.key === "/")) {
+      e.preventDefault();
+      Concierge.toggle();
+    } else if (e.key === "Escape") {
+      if (gq("#galerieConcierge.is-open")) Concierge.close();
+    } else if (e.key === "g" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      const next = document.querySelector(".nav__link.is-active");
+      if (!next) return;
+      const links = gqq(".nav__link[data-nav]");
+      const i = links.indexOf(next);
+      const target = links[(i + 1) % links.length];
+      if (target) target.click();
+    }
+  });
+}
+
+function setupParallax() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const items = gqq(".galerie-numeral");
+  if (!items.length) return;
+  let raf = 0;
+  const onScroll = () => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = 0;
+      items.forEach(el => {
+        const r = el.getBoundingClientRect();
+        const center = window.innerHeight / 2;
+        const offset = (r.top + r.height / 2 - center) / window.innerHeight;
+        el.style.transform = `translate3d(0, ${offset * -28}px, 0)`;
+      });
+    });
+  };
+  document.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+}
+
+function setupRevealOnScroll() {
+  if (!("IntersectionObserver" in window)) return;
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting) {
+        en.target.classList.add("galerie-fadein--in");
+        io.unobserve(en.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+  const targets = [
+    ".galerie-manifesto__title",
+    ".galerie-manifesto__lead",
+    ".galerie-editorial__copy",
+    ".galerie-specimen",
+    ".galerie-carnet__entry",
+    ".galerie-compare__col"
+  ];
+  gqq(targets.join(",")).forEach((el, i) => {
+    el.classList.add("galerie-fadein");
+    el.style.transitionDelay = (i % 8) * 60 + "ms";
+    io.observe(el);
+  });
+}
 
 function init() {
   clearLegacyTheme();
@@ -673,6 +773,9 @@ function init() {
   setupViewTransitions();
   Concierge.build();
   initThreeFeatures();
+  setupKeyboardShortcuts();
+  setupParallax();
+  setupRevealOnScroll();
   setTimeout(clearLegacyTheme, 1500);
 }
 

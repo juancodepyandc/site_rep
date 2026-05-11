@@ -289,6 +289,49 @@ async function handleUpload(req, res) {
   }
 }
 
+async function handleList(req, res) {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return res.status(503).json({ error: "GITHUB_TOKEN_MISSING" });
+  const owner = (process.env.GITHUB_OWNER || "juancodepyandc").trim();
+  const repo = (process.env.GITHUB_REPO || "site_rep").trim();
+  const branch = (process.env.GITHUB_BRANCH || "main").trim();
+
+  async function listDir(path) {
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`;
+    const r = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "User-Agent": "atelier-aurora" }
+    });
+    if (r.status === 404) return [];
+    if (!r.ok) throw new Error("LIST_FAILED_" + r.status);
+    const data = await r.json();
+    if (!Array.isArray(data)) return [];
+    return data
+      .filter(f => f.type === "file" && /\.(glb|gltf)$/i.test(f.name))
+      .map(f => ({
+        name: f.name,
+        path: f.path,
+        size: f.size,
+        rawUrl: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${f.path}`
+      }));
+  }
+
+  try {
+    const [generated, manual] = await Promise.all([
+      listDir("assets/aurora").catch(() => []),
+      listDir("assets/aurora/manual").catch(() => [])
+    ]);
+    const all = [...generated.filter(f => f.path !== "assets/aurora/manual"), ...manual];
+    return res.status(200).json({
+      count: all.length,
+      generated: generated.filter(f => f.path !== "assets/aurora/manual").length,
+      manual: manual.length,
+      files: all
+    });
+  } catch (e) {
+    return res.status(500).json({ error: "LIST_FAILED", detail: e.message });
+  }
+}
+
 async function handleChat(req, res) {
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = {}; } }
@@ -340,9 +383,17 @@ export default async function handler(req, res) {
       req.body = body;
       return handleUpload(req, res);
     }
+    if (body.action === "list") {
+      req.body = body;
+      return handleList(req, res);
+    }
     req.body = body;
     return handleGenerate(req, res);
   }
-  if (req.method === "GET") return handleStatus(req, res);
+  if (req.method === "GET") {
+    const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+    if (url.searchParams.get("action") === "list") return handleList(req, res);
+    return handleStatus(req, res);
+  }
   return res.status(405).json({ error: "METHOD_NOT_ALLOWED" });
 }
