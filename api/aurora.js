@@ -236,12 +236,56 @@ async function handleStatus(req, res) {
   });
 }
 
+async function handleChat(req, res) {
+  let body = req.body;
+  if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = {}; } }
+  body = body || {};
+  const messages = Array.isArray(body.messages) ? body.messages : null;
+  if (!messages || messages.length === 0) return res.status(400).json({ error: "MISSING_MESSAGES" });
+  const trimmed = messages.slice(-20).map(m => ({
+    role: m.role === "system" || m.role === "user" || m.role === "assistant" ? m.role : "user",
+    content: typeof m.content === "string" ? m.content.slice(0, 8000) : ""
+  })).filter(m => m.content);
+
+  let r;
+  try {
+    r = await auroraFetch("/api/ext/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        messages: trimmed,
+        temperature: typeof body.temperature === "number" ? body.temperature : 0.6,
+        model: body.model
+      })
+    });
+  } catch (e) {
+    const code = e?.message === "AURORA_KEY_MISSING" ? "AURORA_KEY_MISSING" : "AURORA_UNREACHABLE";
+    return res.status(code === "AURORA_KEY_MISSING" ? 503 : 502).json({ error: code, detail: e.message });
+  }
+  if (!r.ok) {
+    const text = await r.text().catch(() => "");
+    return res.status(r.status).json({ error: "AURORA_REJECTED", status: r.status, detail: text.slice(0, 400) });
+  }
+  let data;
+  try { data = await r.json(); } catch { return res.status(502).json({ error: "AURORA_BAD_JSON" }); }
+  return res.status(200).json({ reply: data.reply || "", model: data.model || null });
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(204).end();
-  if (req.method === "POST") return handleGenerate(req, res);
+  if (req.method === "POST") {
+    let body = req.body;
+    if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = {}; } }
+    body = body || {};
+    if (body.action === "chat") {
+      req.body = body;
+      return handleChat(req, res);
+    }
+    req.body = body;
+    return handleGenerate(req, res);
+  }
   if (req.method === "GET") return handleStatus(req, res);
   return res.status(405).json({ error: "METHOD_NOT_ALLOWED" });
 }
