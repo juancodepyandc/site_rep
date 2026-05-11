@@ -1054,6 +1054,23 @@ mergeCatalogExpansion(
   CATALOG_EXPANSION_HYPER
 );
 
+window.AE_CATALOG = CATALOG;
+window.AE_mergeCatalogExtras = function (extras) {
+  if (!extras || typeof extras !== "object") return 0;
+  let added = 0;
+  Object.entries(extras).forEach(([key, list]) => {
+    if (!Array.isArray(CATALOG[key]) || !Array.isArray(list)) return;
+    const known = new Set(CATALOG[key].map((item) => item.id));
+    list.forEach((item) => {
+      if (!item?.id || known.has(item.id)) return;
+      CATALOG[key].push(item);
+      known.add(item.id);
+      added += 1;
+    });
+  });
+  return added;
+};
+
 const MARKET_PRICE_PROFILE = {
   cpu: { multiplier: 1.03, shipping: 5, min: 109, deliveryPct: 0.008 },
   mobo: { multiplier: 1.03, shipping: 7, min: 119, deliveryPct: 0.01 },
@@ -1339,6 +1356,11 @@ function setStatus(id, text) {
 
 const THEME_STORAGE_KEY = "ae_theme_v1";
 const THEME_PRESETS = {
+  galerie: {
+    bg: "#f5f2eb", panel: "#0a09071a", text: "#0a0907",
+    accent: "#1a3a5c", accent2: "#a8553a", accent3: "#9c8359", accentWarm: "#c46f54",
+    btnPrimary: "#1a3a5c", btnSecondary: "#a8553a"
+  },
   atelier: {
     bg: "#05070c", panel: "#1a2635", text: "#f3f7ff",
     accent: "#3cd7ff", accent2: "#35f3b4", accent3: "#63a3ff", accentWarm: "#ffba66",
@@ -1559,7 +1581,7 @@ function initThemeCustomizer() {
   btnSecondaryInput?.addEventListener("input", applyCustomFromInputs);
 
   resetBtn?.addEventListener("click", () => {
-    applyThemePalette(THEME_PRESETS.atelier, { persist: true, presetName: "atelier" });
+    applyThemePalette(THEME_PRESETS.galerie, { persist: true, presetName: "galerie" });
   });
 
   let stored = null;
@@ -1568,10 +1590,12 @@ function initThemeCustomizer() {
   } catch {
     stored = null;
   }
-  if (stored && typeof stored === "object") {
-    applyThemePalette(stored, { persist: false, presetName: stored.presetName || "custom" });
+  if (stored && typeof stored === "object" && stored.presetName === "galerie") {
+    applyThemePalette(stored, { persist: false, presetName: "galerie" });
+  } else if (stored && typeof stored === "object" && stored.presetName === "custom") {
+    applyThemePalette(stored, { persist: false, presetName: "custom" });
   } else {
-    applyThemePalette(THEME_PRESETS.atelier, { persist: false, presetName: "atelier" });
+    applyThemePalette(THEME_PRESETS.galerie, { persist: true, presetName: "galerie" });
   }
 }
 

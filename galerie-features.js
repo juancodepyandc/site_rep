@@ -90,11 +90,20 @@ function gq(sel, root = document) { return root.querySelector(sel); }
 function gqq(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
 
 function clearLegacyTheme() {
+  let shouldStrip = false;
   try {
-    if (localStorage.getItem("galerie_seen_v1")) return;
-    localStorage.removeItem("ae_theme_v1");
-    localStorage.setItem("galerie_seen_v1", "1");
+    if (!localStorage.getItem("galerie_seen_v3")) {
+      const raw = localStorage.getItem("ae_theme_v1");
+      let stored = null;
+      try { stored = raw ? JSON.parse(raw) : null; } catch {}
+      if (!stored || stored.presetName !== "galerie") {
+        localStorage.removeItem("ae_theme_v1");
+        shouldStrip = true;
+      }
+      localStorage.setItem("galerie_seen_v3", "1");
+    }
   } catch {}
+  if (!shouldStrip) return;
   const root = document.documentElement;
   ["--bg","--text","--muted","--muted2","--stroke","--panel","--panel2","--accent","--accent2","--accent3","--accentWarm","--ui-panel-top","--ui-panel-bottom","--ui-input-bg","--ui-input-border","--ui-input-focus","--ui-btn-border","--ui-btn-bg","--ui-btn-hover-bg","--ui-btn-ghost-bg","--ui-btn-ghost-border","--ui-btn-primary-from","--ui-btn-primary-to","--ui-btn-primary-text"].forEach(v => root.style.removeProperty(v));
 }
@@ -417,63 +426,379 @@ function bindCompare() {
   gq("#galerieCompareReset")?.addEventListener("click", () => { state.A = null; state.B = null; render(); });
 }
 
+const CAT_LABELS = {
+  cpu: "Processeur",
+  mobo: "Carte mère",
+  ram: "Mémoire vive",
+  gpu: "Carte graphique",
+  storage: "Stockage",
+  psu: "Alimentation",
+  case: "Boîtier",
+  watercooling: "Refroidissement"
+};
+
+const CAT_FIELDS = {
+  cpu: [
+    { k: "brand", label: "Marque", required: true, placeholder: "AMD / Intel" },
+    { k: "name", label: "Modèle", required: true, placeholder: "Ryzen 7 9700X" },
+    { k: "socket", label: "Socket", type: "select", options: ["AM5", "AM4", "1700", "1851"], required: true },
+    { k: "generation", label: "Génération", type: "number", placeholder: "9000" },
+    { k: "tdp", label: "TDP (W)", type: "number", placeholder: "65" },
+    { k: "rank", label: "Rang (1-10)", type: "number", step: "0.1" },
+    { k: "score", label: "Score (1-10)", type: "number", step: "0.1" },
+    { k: "price", label: "Prix (€)", type: "number", step: "0.01", required: true }
+  ],
+  mobo: [
+    { k: "brand", label: "Marque", required: true, placeholder: "ASUS / MSI / Gigabyte" },
+    { k: "name", label: "Modèle", required: true, placeholder: "B650 Aorus Elite AX" },
+    { k: "socket", label: "Socket", type: "select", options: ["AM5", "AM4", "1700", "1851"], required: true },
+    { k: "ramType", label: "Type RAM", type: "select", options: ["DDR5", "DDR4"], required: true },
+    { k: "generation", label: "Génération chipset", type: "number", placeholder: "650" },
+    { k: "tier", label: "Tier (1-5)", type: "number" },
+    { k: "score", label: "Score (1-10)", type: "number", step: "0.1" },
+    { k: "price", label: "Prix (€)", type: "number", step: "0.01", required: true }
+  ],
+  ram: [
+    { k: "brand", label: "Marque", required: true, placeholder: "Corsair / G.Skill" },
+    { k: "name", label: "Modèle", required: true, placeholder: "Vengeance 32 Go DDR5-6000" },
+    { k: "type", label: "Type", type: "select", options: ["DDR5", "DDR4"], required: true },
+    { k: "gb", label: "Capacité (Go)", type: "number", required: true },
+    { k: "generation", label: "Fréquence (MHz)", type: "number", placeholder: "6000" },
+    { k: "score", label: "Score (1-10)", type: "number", step: "0.1" },
+    { k: "price", label: "Prix (€)", type: "number", step: "0.01", required: true }
+  ],
+  gpu: [
+    { k: "brand", label: "Marque", required: true, placeholder: "NVIDIA / AMD" },
+    { k: "name", label: "Modèle", required: true, placeholder: "GeForce RTX 4070 Super" },
+    { k: "generation", label: "Génération", type: "number", placeholder: "4000" },
+    { k: "vram", label: "VRAM (Go)", type: "number" },
+    { k: "tdp", label: "TDP (W)", type: "number" },
+    { k: "length", label: "Longueur (mm)", type: "number" },
+    { k: "rank", label: "Rang (1-10)", type: "number", step: "0.1" },
+    { k: "score", label: "Score (1-10)", type: "number", step: "0.1" },
+    { k: "price", label: "Prix (€)", type: "number", step: "0.01", required: true }
+  ],
+  storage: [
+    { k: "brand", label: "Marque", required: true, placeholder: "WD / Samsung" },
+    { k: "name", label: "Modèle", required: true, placeholder: "SN850X 2 To" },
+    { k: "generation", label: "PCIe Gen", type: "number", placeholder: "4" },
+    { k: "tb", label: "Capacité (To)", type: "number", step: "0.1", required: true },
+    { k: "score", label: "Score (1-10)", type: "number", step: "0.1" },
+    { k: "price", label: "Prix (€)", type: "number", step: "0.01", required: true }
+  ],
+  psu: [
+    { k: "brand", label: "Marque", required: true, placeholder: "Corsair / Seasonic" },
+    { k: "name", label: "Modèle", required: true, placeholder: "RM850e Gold" },
+    { k: "watts", label: "Watts", type: "number", required: true },
+    { k: "generation", label: "Watts (génération)", type: "number" },
+    { k: "score", label: "Score (1-10)", type: "number", step: "0.1" },
+    { k: "price", label: "Prix (€)", type: "number", step: "0.01", required: true }
+  ],
+  case: [
+    { k: "brand", label: "Marque", required: true, placeholder: "Lian Li / NZXT" },
+    { k: "name", label: "Modèle", required: true, placeholder: "O11 Dynamic Mini" },
+    { k: "generation", label: "Génération", type: "number" },
+    { k: "maxGpu", label: "GPU max (mm)", type: "number", required: true },
+    { k: "maxRad", label: "Radiateur max (mm)", type: "number", required: true },
+    { k: "score", label: "Score (1-10)", type: "number", step: "0.1" },
+    { k: "price", label: "Prix (€)", type: "number", step: "0.01", required: true }
+  ],
+  watercooling: [
+    { k: "brand", label: "Marque", required: true, placeholder: "Noctua / Arctic / EK" },
+    { k: "name", label: "Modèle", required: true, placeholder: "Liquid Freezer III 280" },
+    { k: "type", label: "Type", type: "select", options: ["air", "aio", "custom", "none"], required: true },
+    { k: "radiator", label: "Radiateur (mm)", type: "number", placeholder: "0 si air" },
+    { k: "score", label: "Score (1-10)", type: "number", step: "0.1" },
+    { k: "price", label: "Prix (€)", type: "number", step: "0.01", required: true }
+  ]
+};
+
+let CATALOG_STATE = { activeCat: "cpu", extras: {}, glb: { count: 0, generated: 0, manual: 0 }, search: "" };
+
 function injectAdminUpload() {
   const adminPanel = gq('.view[data-view="admin"] .admin-quotes');
-  if (!adminPanel || gq("#galerieAdminUpload")) return;
+  if (!adminPanel || gq("#galerieAdminCatalog")) return;
   const block = document.createElement("div");
-  block.id = "galerieAdminUpload";
-  block.className = "galerie-admin-upload";
+  block.id = "galerieAdminCatalog";
+  block.className = "galerie-admin-catalog";
   block.innerHTML = `
-    <div class="galerie-admin-upload__head">
+    <div class="galerie-admin-catalog__head">
       <div>
-        <div class="panel__title">Dépôt manuel · Galerie 3D</div>
-        <div class="galerie-admin-upload__sub">Glissez un fichier <code>.glb</code> ou <code>.gltf</code> ici, ou utilisez le bouton. Le fichier est commité dans <code>assets/aurora/manual/</code> du repo via l'API GitHub.</div>
+        <div class="panel__title">Catalogue composants · administration</div>
+        <div class="galerie-admin-catalog__sub">
+          Ajoute des marques et modèles par catégorie. Le composant est immédiatement utilisable dans le simulateur. Tu peux y attacher un fichier 3D (<code>.glb</code> ou <code>.gltf</code>) — facultatif. Persisté dans <code>assets/catalog-extras.json</code> via l'API GitHub.
+        </div>
       </div>
-      <div class="galerie-admin-upload__status" id="galerieAdminUploadStatus">Prêt</div>
+      <div class="galerie-admin-catalog__status" id="galerieAdminCatalogStatus">Prêt</div>
     </div>
-    <div class="galerie-admin-upload__drop" id="galerieAdminUploadDrop">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-      <p>Glisser un fichier ici, ou</p>
-      <label class="btn btn--ghost btn--tiny" for="galerieAdminUploadInput">Choisir un .glb…</label>
-      <input type="file" id="galerieAdminUploadInput" accept=".glb,.gltf,model/gltf-binary" hidden>
+    <div class="galerie-admin-catalog__tabs" id="galerieAdminCatalogTabs">
+      ${Object.keys(CAT_LABELS).map(k => `<button type="button" class="galerie-admin-catalog__tab" data-cat="${k}">${CAT_LABELS[k]} <span class="galerie-admin-catalog__tab-count" data-cat-count="${k}">—</span></button>`).join("")}
     </div>
-    <div class="galerie-admin-upload__hint">
-      <strong>Code d'accès admin :</strong> tapez <code>admin:&lt;votre clé&gt;</code> dans le champ "code devis" du custom builder pour activer cette section.
-      Le bouton apparaît uniquement quand <code>isAdmin = true</code>.
-    </div>
-    <div class="galerie-admin-upload__inventory" id="galerieAdminInventory" hidden>
-      <div class="galerie-admin-upload__inventory-head">
-        <span class="galerie-admin-upload__inventory-title">Inventaire Galerie</span>
-        <span class="galerie-admin-upload__inventory-count" id="galerieAdminInventoryCount">—</span>
+    <div class="galerie-admin-catalog__body">
+      <div class="galerie-admin-catalog__col galerie-admin-catalog__col--list">
+        <div class="galerie-admin-catalog__list-head">
+          <input type="search" class="galerie-admin-catalog__search" id="galerieAdminCatalogSearch" placeholder="Filtrer marque ou modèle…">
+          <span class="galerie-admin-catalog__list-meta" id="galerieAdminCatalogListMeta">—</span>
+        </div>
+        <div class="galerie-admin-catalog__list" id="galerieAdminCatalogList"></div>
       </div>
-      <div class="galerie-admin-upload__inventory-list" id="galerieAdminInventoryList"></div>
+      <div class="galerie-admin-catalog__col galerie-admin-catalog__col--form">
+        <div class="galerie-admin-catalog__form-head">
+          <span class="galerie-admin-catalog__form-title" id="galerieAdminCatalogFormTitle">Ajouter</span>
+        </div>
+        <form class="galerie-admin-catalog__form" id="galerieAdminCatalogForm"></form>
+      </div>
+    </div>
+    <div class="galerie-admin-catalog__glb">
+      <div class="galerie-admin-catalog__glb-head">
+        <span class="galerie-admin-catalog__glb-title">Inventaire 3D (.glb)</span>
+        <span class="galerie-admin-catalog__glb-count" id="galerieAdminGlbCount">—</span>
+      </div>
+      <div class="galerie-admin-catalog__glb-list" id="galerieAdminGlbList"></div>
+    </div>
+    <div class="galerie-admin-catalog__proposals">
+      <div class="galerie-admin-catalog__proposals-head">
+        <span class="galerie-admin-catalog__proposals-title">Propositions clients</span>
+        <span class="galerie-admin-catalog__proposals-count">à venir</span>
+      </div>
+      <div class="galerie-admin-catalog__proposals-empty">Module d'envoi de proposition côté client en préparation. Les références suggérées arriveront ici pour validation.</div>
     </div>
   `;
   adminPanel.parentElement.appendChild(block);
-  bindAdminUpload();
-  refreshInventory();
+  bindAdminCatalog();
+  setActiveCategory("cpu");
+  refreshAdminCatalog();
+  refreshGlbInventory();
 }
 
-async function refreshInventory() {
-  const wrap = gq("#galerieAdminInventory");
-  const list = gq("#galerieAdminInventoryList");
-  const count = gq("#galerieAdminInventoryCount");
-  if (!wrap || !list || !count) return;
+function setCatalogStatus(txt, tone) {
+  const el = gq("#galerieAdminCatalogStatus");
+  if (!el) return;
+  el.textContent = txt;
+  el.dataset.tone = tone || "";
+}
+
+function setActiveCategory(cat) {
+  CATALOG_STATE.activeCat = cat;
+  gqq(".galerie-admin-catalog__tab").forEach(t => t.classList.toggle("is-active", t.dataset.cat === cat));
+  renderCatalogList();
+  renderCatalogForm();
+}
+
+function bindAdminCatalog() {
+  gqq("#galerieAdminCatalogTabs .galerie-admin-catalog__tab").forEach(t => {
+    t.addEventListener("click", () => setActiveCategory(t.dataset.cat));
+  });
+  const search = gq("#galerieAdminCatalogSearch");
+  search?.addEventListener("input", () => {
+    CATALOG_STATE.search = search.value.toLowerCase();
+    renderCatalogList();
+  });
+}
+
+async function refreshAdminCatalog() {
+  try {
+    const r = await fetch("/api/aurora?action=catalogList", { cache: "no-store" });
+    if (!r.ok) return;
+    const data = await r.json();
+    CATALOG_STATE.extras = data.extras || {};
+    if (window.AE_mergeCatalogExtras) window.AE_mergeCatalogExtras(CATALOG_STATE.extras);
+    renderTabCounts();
+    renderCatalogList();
+  } catch {}
+}
+
+function renderTabCounts() {
+  Object.keys(CAT_LABELS).forEach(k => {
+    const el = gq(`[data-cat-count="${k}"]`);
+    if (!el) return;
+    const base = Array.isArray(window.AE_CATALOG?.[k]) ? window.AE_CATALOG[k].length : 0;
+    el.textContent = String(base);
+  });
+}
+
+function renderCatalogList() {
+  const list = gq("#galerieAdminCatalogList");
+  const meta = gq("#galerieAdminCatalogListMeta");
+  if (!list || !meta) return;
+  const cat = CATALOG_STATE.activeCat;
+  const items = Array.isArray(window.AE_CATALOG?.[cat]) ? [...window.AE_CATALOG[cat]] : [];
+  const q = CATALOG_STATE.search.trim();
+  const extras = new Set((CATALOG_STATE.extras[cat] || []).map(e => e.id));
+  const filtered = q
+    ? items.filter(it => `${it.brand || ""} ${it.name || ""}`.toLowerCase().includes(q))
+    : items;
+  meta.textContent = `${filtered.length} / ${items.length} référence${items.length > 1 ? "s" : ""}`;
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="galerie-admin-catalog__empty">Aucune référence ne correspond.</div>`;
+    return;
+  }
+  list.innerHTML = filtered.slice(0, 200).map(it => {
+    const isExtra = extras.has(it.id);
+    const specs = catalogSpecsSummary(cat, it);
+    return `
+      <div class="galerie-admin-catalog__item${isExtra ? " is-extra" : ""}">
+        <div class="galerie-admin-catalog__item-main">
+          <div class="galerie-admin-catalog__item-name">${escapeHTML(it.brand)} · ${escapeHTML(it.name)}</div>
+          <div class="galerie-admin-catalog__item-specs">${specs}</div>
+        </div>
+        <div class="galerie-admin-catalog__item-side">
+          <span class="galerie-admin-catalog__item-price">${typeof it.price === "number" ? formatEuro(it.price) : "—"}</span>
+          ${isExtra ? `<button type="button" class="galerie-admin-catalog__item-remove" data-remove-id="${escapeHTML(it.id)}" data-remove-cat="${cat}" title="Retirer">×</button>` : ""}
+        </div>
+      </div>`;
+  }).join("");
+  list.querySelectorAll("[data-remove-id]").forEach(btn => {
+    btn.addEventListener("click", () => removeCatalogEntry(btn.dataset.removeCat, btn.dataset.removeId));
+  });
+}
+
+function catalogSpecsSummary(cat, it) {
+  const parts = [];
+  if (cat === "cpu" && it.socket) parts.push(it.socket);
+  if (cat === "cpu" && it.tdp) parts.push(`${it.tdp} W`);
+  if (cat === "mobo" && it.socket) parts.push(it.socket);
+  if (cat === "mobo" && it.ramType) parts.push(it.ramType);
+  if (cat === "ram" && it.type) parts.push(it.type);
+  if (cat === "ram" && it.gb) parts.push(`${it.gb} Go`);
+  if (cat === "gpu" && it.vram) parts.push(`${it.vram} Go VRAM`);
+  if (cat === "gpu" && it.length) parts.push(`${it.length} mm`);
+  if (cat === "storage" && it.tb) parts.push(`${it.tb} To`);
+  if (cat === "storage" && it.generation) parts.push(`Gen ${it.generation}`);
+  if (cat === "psu" && it.watts) parts.push(`${it.watts} W`);
+  if (cat === "case" && it.maxGpu) parts.push(`GPU ≤ ${it.maxGpu} mm`);
+  if (cat === "case" && it.maxRad) parts.push(`Rad ≤ ${it.maxRad} mm`);
+  if (cat === "watercooling" && it.type) parts.push(it.type);
+  if (cat === "watercooling" && it.radiator) parts.push(`${it.radiator} mm`);
+  if (typeof it.score === "number") parts.push(`score ${it.score.toFixed(1)}`);
+  return parts.length ? escapeHTML(parts.join(" · ")) : "—";
+}
+
+function renderCatalogForm() {
+  const form = gq("#galerieAdminCatalogForm");
+  const title = gq("#galerieAdminCatalogFormTitle");
+  if (!form) return;
+  const cat = CATALOG_STATE.activeCat;
+  if (title) title.textContent = `Ajouter — ${CAT_LABELS[cat]}`;
+  const fields = CAT_FIELDS[cat] || [];
+  form.innerHTML = fields.map(f => {
+    if (f.type === "select") {
+      return `
+        <label class="galerie-admin-catalog__field">
+          <span class="galerie-admin-catalog__field-label">${f.label}${f.required ? " *" : ""}</span>
+          <select name="${f.k}" ${f.required ? "required" : ""}>
+            <option value="">—</option>
+            ${f.options.map(o => `<option value="${o}">${o}</option>`).join("")}
+          </select>
+        </label>`;
+    }
+    return `
+      <label class="galerie-admin-catalog__field">
+        <span class="galerie-admin-catalog__field-label">${f.label}${f.required ? " *" : ""}</span>
+        <input type="${f.type || "text"}" name="${f.k}" ${f.step ? `step="${f.step}"` : ""} ${f.required ? "required" : ""} placeholder="${f.placeholder || ""}">
+      </label>`;
+  }).join("") + `
+    <label class="galerie-admin-catalog__field galerie-admin-catalog__field--file">
+      <span class="galerie-admin-catalog__field-label">Modèle 3D (.glb / .gltf) — facultatif</span>
+      <input type="file" name="_glb" accept=".glb,.gltf,model/gltf-binary">
+    </label>
+    <div class="galerie-admin-catalog__form-actions">
+      <button type="submit" class="btn btn--tiny">Enregistrer</button>
+      <button type="reset" class="btn btn--ghost btn--tiny">Vider</button>
+    </div>
+  `;
+  form.onsubmit = handleCatalogFormSubmit;
+}
+
+async function handleCatalogFormSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const cat = CATALOG_STATE.activeCat;
+  const fd = new FormData(form);
+  const entry = {};
+  CAT_FIELDS[cat].forEach(f => {
+    const v = fd.get(f.k);
+    if (v == null || v === "") return;
+    if (f.type === "number") {
+      const n = Number(v);
+      if (Number.isFinite(n)) entry[f.k] = n;
+    } else {
+      entry[f.k] = String(v).trim();
+    }
+  });
+  if (!entry.brand || !entry.name) { setCatalogStatus("Marque et modèle requis", "err"); return; }
+
+  const file = fd.get("_glb");
+  let glbPayload = null;
+  if (file && file.size > 0) {
+    if (!/\.(glb|gltf)$/i.test(file.name)) { setCatalogStatus("Fichier 3D refusé : extension non supportée", "err"); return; }
+    if (file.size > 30 * 1024 * 1024) { setCatalogStatus("Fichier 3D refusé : > 30 Mo", "err"); return; }
+    setCatalogStatus("Lecture du fichier 3D…", "running");
+    try { glbPayload = await readFileBase64(file); }
+    catch (e) { setCatalogStatus("Lecture du fichier 3D échouée", "err"); return; }
+  }
+
+  setCatalogStatus("Enregistrement…", "running");
+  try {
+    const body = { action: "catalogAdd", category: cat, entry };
+    if (glbPayload) body.glb = { filename: glbPayload.filename, content: glbPayload.base64 };
+    const r = await fetch("/api/aurora", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { setCatalogStatus("Erreur : " + (data.error || r.status), "err"); return; }
+    setCatalogStatus(`Ajouté · ${data.entry?.brand || ""} ${data.entry?.name || ""}`, "ok");
+    form.reset();
+    setTimeout(() => { refreshAdminCatalog(); refreshGlbInventory(); }, 800);
+  } catch (e) {
+    setCatalogStatus("Réseau : " + e.message, "err");
+  }
+}
+
+function readFileBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = String(reader.result).split(",")[1];
+      resolve({ filename: file.name, base64 });
+    };
+    reader.onerror = () => reject(new Error("READ_FAILED"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function removeCatalogEntry(cat, id) {
+  if (!confirm(`Retirer ${id} du catalogue ?`)) return;
+  setCatalogStatus("Suppression…", "running");
+  try {
+    const r = await fetch("/api/aurora", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "catalogRemove", category: cat, id })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { setCatalogStatus("Erreur : " + (data.error || r.status), "err"); return; }
+    setCatalogStatus("Supprimé", "ok");
+    setTimeout(refreshAdminCatalog, 500);
+  } catch (e) { setCatalogStatus("Réseau : " + e.message, "err"); }
+}
+
+async function refreshGlbInventory() {
+  const list = gq("#galerieAdminGlbList");
+  const count = gq("#galerieAdminGlbCount");
+  if (!list || !count) return;
   try {
     const r = await fetch("/api/aurora?action=list", { cache: "no-store" });
     if (!r.ok) return;
     const data = await r.json();
     if (!data || !Array.isArray(data.files)) return;
-    wrap.hidden = false;
-    count.textContent = `${data.count} pièce${data.count > 1 ? "s" : ""} · ${data.generated} générée${data.generated > 1 ? "s" : ""} · ${data.manual} manuelle${data.manual > 1 ? "s" : ""}`;
+    count.textContent = `${data.count} fichier${data.count > 1 ? "s" : ""} · ${data.generated} généré${data.generated > 1 ? "s" : ""} · ${data.manual} manuel${data.manual > 1 ? "s" : ""}`;
     const recent = data.files.slice(-12).reverse();
     list.innerHTML = recent.length
       ? recent.map(f => `
-          <a class="galerie-admin-upload__inventory-item" href="${f.rawUrl}" target="_blank" rel="noopener">
-            <span class="galerie-admin-upload__inventory-name">${f.name}</span>
-            <span class="galerie-admin-upload__inventory-size">${formatBytes(f.size)}</span>
+          <a class="galerie-admin-catalog__glb-item" href="${f.rawUrl}" target="_blank" rel="noopener">
+            <span class="galerie-admin-catalog__glb-name">${escapeHTML(f.name)}</span>
+            <span class="galerie-admin-catalog__glb-size">${formatBytes(f.size)}</span>
           </a>`).join("")
-      : `<div class="galerie-admin-upload__inventory-empty">Aucune pièce déposée pour l'instant.</div>`;
+      : `<div class="galerie-admin-catalog__glb-empty">Aucun fichier 3D déposé.</div>`;
   } catch {}
 }
 
@@ -484,38 +809,12 @@ function formatBytes(n) {
   return (n / 1024 / 1024).toFixed(2) + " Mo";
 }
 
-function bindAdminUpload() {
-  const input = gq("#galerieAdminUploadInput");
-  const drop = gq("#galerieAdminUploadDrop");
-  const status = gq("#galerieAdminUploadStatus");
-  function setStatus(txt, tone) { status.textContent = txt; status.dataset.tone = tone || ""; }
-  async function send(file) {
-    if (!file) return;
-    if (!/\.(glb|gltf)$/i.test(file.name)) { setStatus("Refusé : extension non supportée", "err"); return; }
-    if (file.size > 30 * 1024 * 1024) { setStatus("Refusé : > 30 MB", "err"); return; }
-    setStatus("Lecture du fichier…", "running");
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64 = String(reader.result).split(",")[1];
-      setStatus("Envoi vers GitHub…", "running");
-      try {
-        const r = await fetch("/api/aurora", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "upload", filename: file.name, content: base64 })
-        });
-        const data = await r.json();
-        if (!r.ok) { setStatus("Erreur : " + (data.error || r.status), "err"); return; }
-        setStatus(`Déposé · ${data.localPath || file.name}`, "ok");
-        setTimeout(refreshInventory, 1200);
-      } catch (e) { setStatus("Réseau : " + e.message, "err"); }
-    };
-    reader.readAsDataURL(file);
-  }
-  input?.addEventListener("change", e => { send(e.target.files?.[0]); input.value = ""; });
-  ["dragenter", "dragover"].forEach(ev => drop?.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("is-over"); }));
-  ["dragleave", "drop"].forEach(ev => drop?.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("is-over"); }));
-  drop?.addEventListener("drop", e => { const f = e.dataTransfer?.files?.[0]; if (f) send(f); });
+function formatEuro(n) {
+  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(n);
+}
+
+function escapeHTML(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
 }
 
 function setupViewTransitions() {

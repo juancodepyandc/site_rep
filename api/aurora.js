@@ -332,6 +332,157 @@ async function handleList(req, res) {
   }
 }
 
+const CATALOG_PATH = "assets/catalog-extras.json";
+const CATALOG_CATEGORIES = ["cpu", "mobo", "ram", "gpu", "storage", "psu", "case", "watercooling"];
+
+async function readCatalogExtras(token, owner, repo, branch) {
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${CATALOG_PATH}?ref=${encodeURIComponent(branch)}`;
+  const r = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "User-Agent": "atelier-aurora" }
+  });
+  if (r.status === 404) return { sha: null, data: {} };
+  if (!r.ok) throw new Error("CATALOG_READ_FAILED_" + r.status);
+  const meta = await r.json();
+  const decoded = Buffer.from(meta.content || "", meta.encoding || "base64").toString("utf-8");
+  let data = {};
+  try { data = JSON.parse(decoded); } catch {}
+  if (!data || typeof data !== "object") data = {};
+  return { sha: meta.sha || null, data };
+}
+
+async function writeCatalogExtras(token, owner, repo, branch, data, sha, message) {
+  const body = {
+    message: message || "catalog: update extras",
+    content: Buffer.from(JSON.stringify(data, null, 2), "utf-8").toString("base64"),
+    branch
+  };
+  if (sha) body.sha = sha;
+  const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${CATALOG_PATH}`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/vnd.github+json", "User-Agent": "atelier-aurora" },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) {
+    const t = await r.text().catch(() => "");
+    throw new Error("CATALOG_WRITE_FAILED_" + r.status + ":" + t.slice(0, 200));
+  }
+  return r.json();
+}
+
+function slug(s) {
+  return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+}
+
+async function handleCatalogList(req, res) {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return res.status(503).json({ error: "GITHUB_TOKEN_MISSING" });
+  const owner = (process.env.GITHUB_OWNER || "juancodepyandc").trim();
+  const repo = (process.env.GITHUB_REPO || "site_rep").trim();
+  const branch = (process.env.GITHUB_BRANCH || "main").trim();
+  try {
+    const { data } = await readCatalogExtras(token, owner, repo, branch);
+    const counts = {};
+    CATALOG_CATEGORIES.forEach(c => { counts[c] = Array.isArray(data[c]) ? data[c].length : 0; });
+    return res.status(200).json({ extras: data, counts });
+  } catch (e) {
+    return res.status(500).json({ error: "CATALOG_LIST_FAILED", detail: e.message });
+  }
+}
+
+async function handleCatalogAdd(req, res) {
+  let body = req.body || {};
+  const category = String(body.category || "").trim();
+  if (!CATALOG_CATEGORIES.includes(category)) return res.status(400).json({ error: "INVALID_CATEGORY" });
+  const entry = body.entry && typeof body.entry === "object" ? { ...body.entry } : null;
+  if (!entry) return res.status(400).json({ error: "MISSING_ENTRY" });
+  const brand = String(entry.brand || "").trim();
+  const name = String(entry.name || "").trim();
+  if (!brand || !name) return res.status(400).json({ error: "MISSING_BRAND_OR_NAME" });
+
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return res.status(503).json({ error: "GITHUB_TOKEN_MISSING" });
+  const owner = (process.env.GITHUB_OWNER || "juancodepyandc").trim();
+  const repo = (process.env.GITHUB_REPO || "site_rep").trim();
+  const branch = (process.env.GITHUB_BRANCH || "main").trim();
+
+  let glbInfo = null;
+  if (body.glb && typeof body.glb === "object" && body.glb.content) {
+    try {
+      const safe = String(body.glb.filename || `${slug(brand)}-${slug(name)}.glb`).replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
+      const ext = /\.gltf$/i.test(safe) ? ".gltf" : ".glb";
+      const fname = /\.(glb|gltf)$/i.test(safe) ? safe : (safe + ext);
+      const buffer = Buffer.from(body.glb.content, "base64");
+      if (buffer.length > 30 * 1024 * 1024) return res.status(413).json({ error: "GLB_TOO_LARGE" });
+      const path = `assets/aurora/manual/${fname}`;
+      let sha = null;
+      try {
+        const g = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "User-Agent": "atelier-aurora" }
+        });
+        if (g.ok) sha = (await g.json()).sha || null;
+      } catch {}
+      const putBody = { message: `catalog GLB: ${fname}`, content: buffer.toString("base64"), branch };
+      if (sha) putBody.sha = sha;
+      const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/vnd.github+json", "User-Agent": "atelier-aurora" },
+        body: JSON.stringify(putBody)
+      });
+      if (!r.ok) {
+        const t = await r.text().catch(() => "");
+        return res.status(r.status).json({ error: "GLB_PUT_FAILED", detail: t.slice(0, 200) });
+      }
+      glbInfo = {
+        filename: fname,
+        url: `assets/aurora/manual/${fname}`,
+        rawUrl: `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`
+      };
+    } catch (e) {
+      return res.status(500).json({ error: "GLB_UPLOAD_FAILED", detail: e.message });
+    }
+  }
+
+  try {
+    const { sha, data } = await readCatalogExtras(token, owner, repo, branch);
+    if (!Array.isArray(data[category])) data[category] = [];
+    const id = entry.id && String(entry.id).trim()
+      ? String(entry.id).trim()
+      : `${category}-${slug(brand)}-${slug(name)}-${Date.now().toString(36).slice(-4)}`;
+    if (data[category].some(e => e.id === id)) return res.status(409).json({ error: "DUPLICATE_ID", id });
+    const finalEntry = { ...entry, id, brand, name, addedAt: new Date().toISOString(), addedBy: "admin" };
+    if (glbInfo) finalEntry.glb = glbInfo;
+    data[category].push(finalEntry);
+    await writeCatalogExtras(token, owner, repo, branch, data, sha, `catalog: add ${category}/${brand} ${name}`);
+    return res.status(200).json({ ok: true, entry: finalEntry, totalInCategory: data[category].length });
+  } catch (e) {
+    return res.status(500).json({ error: "CATALOG_ADD_FAILED", detail: e.message });
+  }
+}
+
+async function handleCatalogRemove(req, res) {
+  let body = req.body || {};
+  const category = String(body.category || "").trim();
+  const id = String(body.id || "").trim();
+  if (!CATALOG_CATEGORIES.includes(category) || !id) return res.status(400).json({ error: "BAD_REQUEST" });
+
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return res.status(503).json({ error: "GITHUB_TOKEN_MISSING" });
+  const owner = (process.env.GITHUB_OWNER || "juancodepyandc").trim();
+  const repo = (process.env.GITHUB_REPO || "site_rep").trim();
+  const branch = (process.env.GITHUB_BRANCH || "main").trim();
+  try {
+    const { sha, data } = await readCatalogExtras(token, owner, repo, branch);
+    if (!Array.isArray(data[category])) return res.status(404).json({ error: "NOT_FOUND" });
+    const before = data[category].length;
+    data[category] = data[category].filter(e => e.id !== id);
+    if (data[category].length === before) return res.status(404).json({ error: "NOT_FOUND" });
+    await writeCatalogExtras(token, owner, repo, branch, data, sha, `catalog: remove ${category}/${id}`);
+    return res.status(200).json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: "CATALOG_REMOVE_FAILED", detail: e.message });
+  }
+}
+
 async function handleChat(req, res) {
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = {}; } }
@@ -387,12 +538,22 @@ export default async function handler(req, res) {
       req.body = body;
       return handleList(req, res);
     }
+    if (body.action === "catalogAdd") {
+      req.body = body;
+      return handleCatalogAdd(req, res);
+    }
+    if (body.action === "catalogRemove") {
+      req.body = body;
+      return handleCatalogRemove(req, res);
+    }
     req.body = body;
     return handleGenerate(req, res);
   }
   if (req.method === "GET") {
     const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-    if (url.searchParams.get("action") === "list") return handleList(req, res);
+    const act = url.searchParams.get("action");
+    if (act === "list") return handleList(req, res);
+    if (act === "catalogList") return handleCatalogList(req, res);
     return handleStatus(req, res);
   }
   return res.status(405).json({ error: "METHOD_NOT_ALLOWED" });
