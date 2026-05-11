@@ -290,6 +290,7 @@ function injectCompareView() {
     </div>
   `;
   main.appendChild(section);
+  section.querySelectorAll(".reveal").forEach(r => r.classList.add("is-in"));
   const nav = gq("#navLinks");
   if (nav && !gq('[data-nav="compare"]')) {
     const ref = nav.querySelector('[data-nav="custom"]');
@@ -307,6 +308,8 @@ function injectCompareView() {
 function switchToView(name) {
   gqq(".view").forEach(v => v.classList.toggle("is-active", v.dataset.view === name));
   gqq(".nav__link").forEach(l => l.classList.toggle("is-active", l.dataset.nav === name));
+  const fresh = gq(`[data-view="${name}"]`);
+  fresh?.querySelectorAll(".reveal").forEach(r => r.classList.add("is-in"));
   window.scrollTo({ top: 0, behavior: "smooth" });
   const sweep = gq("#galerieSpotlight");
   if (sweep) { sweep.classList.remove("is-flash"); void sweep.offsetWidth; sweep.classList.add("is-flash"); }
