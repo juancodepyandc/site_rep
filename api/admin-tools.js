@@ -264,9 +264,16 @@ function buildExternalRefs(record) {
   const refs = [];
   Object.entries(external).forEach(([key, value]) => {
     if (!labels[key]) return;
-    const query = value && typeof value === "object" ? String(value.query || "").trim() : String(value || "").trim();
+    const isObj = value && typeof value === "object";
+    const query = isObj ? String(value.query || "").trim() : String(value || "").trim();
     if (!query) return;
-    refs.push({ category: key, categoryLabel: labels[key], query });
+    const ref = { category: key, categoryLabel: labels[key], query };
+    if (isObj) {
+      if (value.note) ref.note = String(value.note).slice(0, 600);
+      if (value.resolved && typeof value.resolved === "object") ref.resolved = value.resolved;
+      if (value.needsCompatConfirm === true || value.needsCompatConfirm === false) ref.needsCompatConfirm = Boolean(value.needsCompatConfirm);
+    }
+    refs.push(ref);
   });
   return refs;
 }

@@ -1068,7 +1068,19 @@ window.AE_mergeCatalogExtras = function (extras) {
       added += 1;
     });
   });
+  if (added > 0) {
+    try {
+      if (typeof renderAllCategories === "function") renderAllCategories();
+      if (typeof compute === "function") compute();
+    } catch {}
+  }
   return added;
+};
+window.AE_recomputeFromCatalog = function () {
+  try {
+    if (typeof renderAllCategories === "function") renderAllCategories();
+    if (typeof compute === "function") compute();
+  } catch {}
 };
 
 const MARKET_PRICE_PROFILE = {
@@ -2815,16 +2827,18 @@ function clearUnknownComponent(key, keepInput = false) {
   }
 }
 
-function confirmUnknownComponent(key, query) {
+function confirmUnknownComponent(key, query, note = "") {
   if (NO_EXTERNAL_REFERENCE_KEYS.has(key)) {
     toast("Cette section accepte uniquement les options de la liste.");
     return;
   }
   const q = (query || "").trim();
   if (!q) return;
+  const cleanNote = String(note || "").trim().slice(0, 600);
   UNKNOWN_COMPONENTS[key] = {
     key,
     query: q,
+    note: cleanNote,
     confirmed: true,
     resolved: null,
     confirmedAt: Date.now()
@@ -2991,8 +3005,25 @@ function renderComboMenu(key, items) {
 		    if (typed && !unknown?.confirmed && !NO_EXTERNAL_REFERENCE_KEYS.has(key)) {
 	      const ask = document.createElement("div");
 	      ask.className = "combo-empty";
-      ask.textContent = `Référence inconnue "${typed}". Es-tu sûr qu'elle existe ?`;
+      ask.textContent = `Référence inconnue "${typed}". Êtes-vous sûr qu'elle existe ?`;
 	      menuEl.appendChild(ask);
+
+      const mailInfo = document.createElement("div");
+      mailInfo.className = "combo-mail-info";
+      mailInfo.textContent = "Si tu confirmes, l'atelier reçoit ta référence dans ton devis et te répond par mail avec la confirmation de compatibilité et le prix retenu.";
+      menuEl.appendChild(mailInfo);
+
+      const noteWrap = document.createElement("label");
+      noteWrap.className = "combo-unknown-note";
+      noteWrap.innerHTML = '<span class="combo-unknown-note__label">Note pour l\'atelier — facultatif</span>';
+      const noteInput = document.createElement("textarea");
+      noteInput.className = "combo-unknown-note__input";
+      noteInput.rows = 2;
+      noteInput.placeholder = "Ex : je veux une comparaison · trouvez-moi moins cher · alternative dispo ?";
+      noteInput.addEventListener("mousedown", e => e.stopPropagation());
+      noteInput.addEventListener("click", e => e.stopPropagation());
+      noteWrap.appendChild(noteInput);
+      menuEl.appendChild(noteWrap);
 
       const actions = document.createElement("div");
       actions.className = "combo-unknown-actions";
@@ -3000,10 +3031,10 @@ function renderComboMenu(key, items) {
       const yesBtn = document.createElement("button");
       yesBtn.type = "button";
       yesBtn.className = "combo-unknown-btn";
-      yesBtn.textContent = "Oui";
+      yesBtn.textContent = "Oui, je confirme";
       yesBtn.addEventListener("mousedown", (e) => {
         e.preventDefault();
-        confirmUnknownComponent(key, typed);
+        confirmUnknownComponent(key, typed, noteInput.value);
       });
 
       const noBtn = document.createElement("button");
@@ -6279,7 +6310,12 @@ function buildQuoteRecord(state, code, {
     external: Object.fromEntries(
       Object.entries(UNKNOWN_COMPONENTS)
         .filter(([key, value]) => !NO_EXTERNAL_REFERENCE_KEYS.has(key) && value?.confirmed && value?.query)
-        .map(([key, value]) => [key, { query: value.query }])
+        .map(([key, value]) => [key, {
+          query: value.query,
+          note: value.note || "",
+          resolved: value.resolved || null,
+          needsCompatConfirm: !value.adminConfirmedAt
+        }])
     ),
     usage: document.getElementById("usage")?.value || "",
     serviceType: "pc-custom",

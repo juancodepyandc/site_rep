@@ -483,6 +483,90 @@ async function handleCatalogRemove(req, res) {
   }
 }
 
+async function handleCatalogConfirmEmail(req, res) {
+  let body = req.body || {};
+  const category = String(body.category || "").trim();
+  if (!CATALOG_CATEGORIES.includes(category)) return res.status(400).json({ error: "INVALID_CATEGORY" });
+  const entry = body.entry && typeof body.entry === "object" ? body.entry : null;
+  if (!entry || !entry.brand || !entry.name) return res.status(400).json({ error: "MISSING_ENTRY" });
+  const requesters = Array.isArray(body.requesters) ? body.requesters.filter(r => r && r.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(r.email)) : [];
+  if (!requesters.length) return res.status(400).json({ error: "NO_RECIPIENTS" });
+  const quoteCodes = Array.isArray(body.quoteCodes) ? body.quoteCodes.map(c => String(c || "").trim()).filter(Boolean) : [];
+  const proposalQuery = String(body.proposalQuery || "").trim();
+
+  let mailerModule;
+  try { mailerModule = await import("../lib/mailer.js"); }
+  catch (e) { return res.status(500).json({ error: "MAILER_UNAVAILABLE", detail: e.message }); }
+
+  const labels = { cpu: "Processeur", mobo: "Carte mère", ram: "Mémoire vive", gpu: "Carte graphique", storage: "Stockage", psu: "Alimentation", case: "Boîtier", watercooling: "Refroidissement" };
+  const specs = [];
+  ["socket", "ramType", "type", "tdp", "watts", "vram", "length", "gb", "tb", "generation", "maxGpu", "maxRad", "radiator", "rank", "score"].forEach(k => {
+    if (entry[k] != null && entry[k] !== "") specs.push([k, entry[k]]);
+  });
+  const priceLine = typeof entry.price === "number" ? `${entry.price.toFixed(2).replace(".", ",")} €` : "non communiqué";
+
+  const subject = `Atelier Électronique — référence "${entry.brand} ${entry.name}" confirmée`;
+  const textLines = [
+    `Bonjour,`,
+    ``,
+    `Vous avez ajouté la référence "${proposalQuery || entry.name}" dans votre devis (${labels[category] || category}).`,
+    `L'atelier confirme la compatibilité et retient la fiche suivante :`,
+    ``,
+    `Marque : ${entry.brand}`,
+    `Modèle : ${entry.name}`,
+    ...specs.map(([k, v]) => `${k} : ${v}`),
+    `Prix retenu : ${priceLine}`,
+    ``,
+    quoteCodes.length ? `Devis concerné(s) : ${quoteCodes.join(", ")}` : "",
+    `Rechargez votre devis pour voir la mise à jour, puis validez le paiement si tout vous convient.`,
+    ``,
+    `À très vite,`,
+    `Atelier Électronique`
+  ].filter(Boolean);
+  const text = textLines.join("\n");
+  const html = `
+    <div style="font-family: Georgia, serif; color: #0a0907; line-height: 1.55; max-width: 560px;">
+      <p>Bonjour,</p>
+      <p>Vous avez ajouté la référence <em>${proposalQuery || entry.name}</em> dans votre devis (<b>${labels[category] || category}</b>).</p>
+      <p>L'atelier confirme la compatibilité et retient la fiche suivante :</p>
+      <table style="border-collapse: collapse; margin: 14px 0;">
+        <tr><td style="padding: 4px 12px 4px 0; color: #555;">Marque</td><td style="padding: 4px 0;"><b>${entry.brand}</b></td></tr>
+        <tr><td style="padding: 4px 12px 4px 0; color: #555;">Modèle</td><td style="padding: 4px 0;"><b>${entry.name}</b></td></tr>
+        ${specs.map(([k, v]) => `<tr><td style="padding: 4px 12px 4px 0; color: #555;">${k}</td><td style="padding: 4px 0;">${v}</td></tr>`).join("")}
+        <tr><td style="padding: 4px 12px 4px 0; color: #555;">Prix retenu</td><td style="padding: 4px 0;"><b>${priceLine}</b></td></tr>
+      </table>
+      ${quoteCodes.length ? `<p style="color: #555;">Devis concerné(s) : <code style="background:#f5f2eb; padding:2px 6px; border-radius:4px;">${quoteCodes.join("</code> · <code style=\"background:#f5f2eb; padding:2px 6px; border-radius:4px;\">")}</code></p>` : ""}
+      <p>Rechargez votre devis pour voir la mise à jour, puis validez le paiement si tout vous convient.</p>
+      <p>À très vite,<br>Atelier Électronique</p>
+    </div>`;
+
+  const results = [];
+  for (const r of requesters) {
+    try {
+      const send = await mailerModule.sendMailWithFallback({
+        to: r.email,
+        subject,
+        text,
+        html,
+        replyTo: process.env.ATELIER_COMPANY_EMAIL || "rabuteaujuandavid@gmail.com",
+        fromName: "Atelier Électronique",
+        fromEmail: process.env.ATELIER_COMPANY_EMAIL || "rabuteaujuandavid@gmail.com",
+        emailjsTemplateParams: {
+          to_email: r.email,
+          to_name: r.name || "",
+          subject,
+          message: text,
+          message_html: html
+        }
+      });
+      results.push({ email: r.email, ok: !!send.ok, via: send.via || null, error: send.error || null });
+    } catch (e) {
+      results.push({ email: r.email, ok: false, error: e.message });
+    }
+  }
+  return res.status(200).json({ ok: true, results });
+}
+
 async function handleChat(req, res) {
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = {}; } }
@@ -545,6 +629,10 @@ export default async function handler(req, res) {
     if (body.action === "catalogRemove") {
       req.body = body;
       return handleCatalogRemove(req, res);
+    }
+    if (body.action === "catalogConfirmEmail") {
+      req.body = body;
+      return handleCatalogConfirmEmail(req, res);
     }
     req.body = body;
     return handleGenerate(req, res);

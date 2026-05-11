@@ -590,7 +590,10 @@ function refreshClientProposals() {
         createdAt: q.createdAt,
         category: r.category,
         categoryLabel: r.categoryLabel,
-        query: r.query
+        query: r.query,
+        note: r.note || "",
+        resolved: r.resolved || null,
+        needsCompatConfirm: r.needsCompatConfirm
       });
     });
   });
@@ -615,44 +618,139 @@ function refreshClientProposals() {
     if (ex) {
       ex.occurrences += 1;
       if (!ex.quotes.includes(p.quoteCode)) ex.quotes.push(p.quoteCode);
+      if (!ex.notes.includes(p.note) && p.note) ex.notes.push(p.note);
+      if (!ex.requesters.find(r => r.email === p.requesterEmail) && p.requesterEmail) {
+        ex.requesters.push({ name: p.requesterName, email: p.requesterEmail });
+      }
+      if (p.resolved && !ex.resolved) ex.resolved = p.resolved;
     } else {
-      grouped.set(key, { ...p, occurrences: 1, quotes: [p.quoteCode] });
+      grouped.set(key, {
+        ...p,
+        occurrences: 1,
+        quotes: [p.quoteCode],
+        notes: p.note ? [p.note] : [],
+        requesters: p.requesterEmail ? [{ name: p.requesterName, email: p.requesterEmail }] : []
+      });
     }
   });
   const dedup = Array.from(grouped.values()).sort((a, b) => b.occurrences - a.occurrences);
-  list.innerHTML = dedup.map(p => `
-    <div class="galerie-admin-catalog__prop" data-prop-cat="${p.category}" data-prop-query="${escapeHTML(p.query)}">
+  list.innerHTML = dedup.map((p, i) => {
+    const compatVerdict = p.resolved ? evaluateCompatibility(p.category, p.resolved) : null;
+    const specsRow = p.resolved ? renderResolvedSpecs(p.category, p.resolved) : "";
+    const notesRow = p.notes.length ? `
+      <div class="galerie-admin-catalog__prop-notes">
+        <span class="galerie-admin-catalog__prop-notes-label">Note client</span>
+        ${p.notes.map(n => `<span class="galerie-admin-catalog__prop-note">${escapeHTML(n)}</span>`).join("")}
+      </div>` : "";
+    const verdictRow = compatVerdict ? `
+      <div class="galerie-admin-catalog__prop-verdict galerie-admin-catalog__prop-verdict--${compatVerdict.level}">
+        <span class="galerie-admin-catalog__prop-verdict-icon">${compatVerdict.icon}</span>
+        <span>${escapeHTML(compatVerdict.text)}</span>
+      </div>` : "";
+    const promoteLabel = p.resolved ? "Oui, je confirme · ajouter" : "Pré-remplir et compléter";
+    return `
+    <div class="galerie-admin-catalog__prop" data-prop-idx="${i}">
       <div class="galerie-admin-catalog__prop-main">
         <div class="galerie-admin-catalog__prop-head">
           <span class="galerie-admin-catalog__prop-cat">${escapeHTML(p.categoryLabel)}</span>
           <span class="galerie-admin-catalog__prop-occ">${p.occurrences} mention${p.occurrences > 1 ? "s" : ""}</span>
+          ${p.resolved ? `<span class="galerie-admin-catalog__prop-tag">IA · specs récupérées</span>` : `<span class="galerie-admin-catalog__prop-tag galerie-admin-catalog__prop-tag--manual">Specs à compléter</span>`}
         </div>
         <div class="galerie-admin-catalog__prop-query">${escapeHTML(p.query)}</div>
+        ${specsRow}
+        ${notesRow}
+        ${verdictRow}
         <div class="galerie-admin-catalog__prop-meta">Devis : ${p.quotes.map(c => `<code>${escapeHTML(c)}</code>`).join(" · ")}</div>
       </div>
       <div class="galerie-admin-catalog__prop-actions">
-        <button type="button" class="btn btn--tiny galerie-admin-catalog__prop-promote">Promouvoir au catalogue</button>
+        <button type="button" class="btn btn--tiny galerie-admin-catalog__prop-promote">${escapeHTML(promoteLabel)}</button>
       </div>
-    </div>
-  `).join("");
+    </div>`;
+  }).join("");
   list.querySelectorAll(".galerie-admin-catalog__prop-promote").forEach(btn => {
     btn.addEventListener("click", () => {
-      const wrap = btn.closest("[data-prop-cat]");
+      const wrap = btn.closest("[data-prop-idx]");
       if (!wrap) return;
-      promoteProposal(wrap.dataset.propCat, wrap.dataset.propQuery);
+      const idx = Number(wrap.dataset.propIdx);
+      const data = dedup[idx];
+      if (!data) return;
+      promoteProposal(data);
     });
   });
 }
 
-function promoteProposal(category, query) {
+function renderResolvedSpecs(cat, r) {
+  const parts = [];
+  if (cat === "cpu" && r.socket) parts.push(["Socket", r.socket]);
+  if (cat === "cpu" && r.tdp) parts.push(["TDP", `${r.tdp} W`]);
+  if (cat === "mobo" && r.socket) parts.push(["Socket", r.socket]);
+  if (cat === "mobo" && r.ramType) parts.push(["RAM", r.ramType]);
+  if (cat === "ram" && r.type) parts.push(["Type", r.type]);
+  if (cat === "ram" && r.gb) parts.push(["Capacité", `${r.gb} Go`]);
+  if (cat === "gpu" && r.vram) parts.push(["VRAM", `${r.vram} Go`]);
+  if (cat === "gpu" && r.length) parts.push(["Longueur", `${r.length} mm`]);
+  if (cat === "gpu" && r.tdp) parts.push(["TDP", `${r.tdp} W`]);
+  if (cat === "storage" && r.tb) parts.push(["Capacité", `${r.tb} To`]);
+  if (cat === "psu" && r.watts) parts.push(["Puissance", `${r.watts} W`]);
+  if (cat === "case" && r.maxGpu) parts.push(["GPU max", `${r.maxGpu} mm`]);
+  if (cat === "case" && r.maxRad) parts.push(["Rad max", `${r.maxRad} mm`]);
+  if (cat === "watercooling" && r.type) parts.push(["Type", r.type]);
+  if (cat === "watercooling" && r.radiator) parts.push(["Radiateur", `${r.radiator} mm`]);
+  if (typeof r.price === "number") parts.push(["Prix", formatEuro(r.price)]);
+  if (!parts.length) return "";
+  return `<div class="galerie-admin-catalog__prop-specs">${parts.map(([l, v]) => `<span><b>${escapeHTML(l)}</b> · ${escapeHTML(String(v))}</span>`).join("")}</div>`;
+}
+
+function evaluateCompatibility(cat, resolved) {
+  const cpus = window.AE_CATALOG?.cpu || [];
+  const mobos = window.AE_CATALOG?.mobo || [];
+  const cases = window.AE_CATALOG?.case || [];
+  if (cat === "cpu" && resolved.socket) {
+    const matchingMobos = mobos.filter(m => m.socket === resolved.socket).length;
+    if (!matchingMobos) return { level: "warn", icon: "△", text: `Aucune carte mère ${resolved.socket} au catalogue — ajouter une mobo avant validation.` };
+    return { level: "ok", icon: "✓", text: `Compatible avec ${matchingMobos} carte${matchingMobos > 1 ? "s" : ""} mère ${resolved.socket} du catalogue.` };
+  }
+  if (cat === "mobo" && resolved.socket) {
+    const matchingCpus = cpus.filter(c => c.socket === resolved.socket).length;
+    if (!matchingCpus) return { level: "warn", icon: "△", text: `Aucun CPU ${resolved.socket} au catalogue — ajouter un CPU avant validation.` };
+    return { level: "ok", icon: "✓", text: `Compatible avec ${matchingCpus} CPU ${resolved.socket} du catalogue.` };
+  }
+  if (cat === "gpu" && resolved.length) {
+    const fittingCases = cases.filter(c => (c.maxGpu || 0) >= resolved.length).length;
+    if (!fittingCases) return { level: "bad", icon: "✕", text: `Trop long (${resolved.length} mm) — aucun boîtier ne peut l'accueillir.` };
+    return { level: "ok", icon: "✓", text: `Tient dans ${fittingCases} boîtier${fittingCases > 1 ? "s" : ""} du catalogue.` };
+  }
+  if (cat === "ram" && resolved.type) {
+    const matchingMobos = mobos.filter(m => m.ramType === resolved.type).length;
+    if (!matchingMobos) return { level: "warn", icon: "△", text: `Aucune mobo ${resolved.type} au catalogue.` };
+    return { level: "ok", icon: "✓", text: `Compatible avec ${matchingMobos} mobo ${resolved.type}.` };
+  }
+  if (cat === "watercooling" && resolved.radiator) {
+    const fitting = cases.filter(c => (c.maxRad || 0) >= resolved.radiator).length;
+    if (!fitting) return { level: "bad", icon: "✕", text: `Radiateur trop grand (${resolved.radiator} mm).` };
+    return { level: "ok", icon: "✓", text: `Compatible avec ${fitting} boîtier${fitting > 1 ? "s" : ""}.` };
+  }
+  return { level: "info", icon: "•", text: "Pas de contrainte de compatibilité bloquante détectée." };
+}
+
+function promoteProposal(prop) {
+  const category = prop.category;
+  const query = prop.query;
   setActiveCategory(category);
   const form = gq("#galerieAdminCatalogForm");
   if (!form) return;
-  const brandInput = form.querySelector("[name='brand']");
-  const nameInput = form.querySelector("[name='name']");
+  const resolved = prop.resolved || {};
   const parsed = parseQueryGuess(query);
-  if (brandInput) brandInput.value = parsed.brand || "";
-  if (nameInput) nameInput.value = parsed.name || query;
+  const setField = (name, value) => {
+    const el = form.querySelector(`[name='${name}']`);
+    if (el && value != null && value !== "") el.value = String(value);
+  };
+  setField("brand", resolved.brand || parsed.brand || "");
+  setField("name", resolved.name || parsed.name || query);
+  CAT_FIELDS[category].forEach(f => {
+    if (f.k === "brand" || f.k === "name") return;
+    if (resolved[f.k] != null && resolved[f.k] !== "") setField(f.k, resolved[f.k]);
+  });
   let proposalMeta = form.querySelector("[name='_proposalQuery']");
   if (!proposalMeta) {
     proposalMeta = document.createElement("input");
@@ -661,7 +759,26 @@ function promoteProposal(category, query) {
     form.appendChild(proposalMeta);
   }
   proposalMeta.value = query;
-  setCatalogStatus(`Pré-remplissage depuis proposition · complétez les specs et le prix avant d'enregistrer`, "running");
+  let requesterMeta = form.querySelector("[name='_proposalRequesters']");
+  if (!requesterMeta) {
+    requesterMeta = document.createElement("input");
+    requesterMeta.type = "hidden";
+    requesterMeta.name = "_proposalRequesters";
+    form.appendChild(requesterMeta);
+  }
+  requesterMeta.value = JSON.stringify(prop.requesters || []);
+  let quotesMeta = form.querySelector("[name='_proposalQuotes']");
+  if (!quotesMeta) {
+    quotesMeta = document.createElement("input");
+    quotesMeta.type = "hidden";
+    quotesMeta.name = "_proposalQuotes";
+    form.appendChild(quotesMeta);
+  }
+  quotesMeta.value = JSON.stringify(prop.quotes || []);
+  const msg = prop.resolved
+    ? `Specs récupérées par l'IA — vérifie et clique Enregistrer. Un mail de confirmation sera envoyé aux ${prop.requesters.length || 0} client(s).`
+    : `Pré-rempli depuis la proposition — complète les specs manquantes avant d'enregistrer.`;
+  setCatalogStatus(msg, "running");
   form.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
@@ -846,6 +963,10 @@ async function handleCatalogFormSubmit(e) {
   }
 
   const proposalQuery = String(fd.get("_proposalQuery") || "").trim();
+  let requesters = [];
+  let quoteCodes = [];
+  try { requesters = JSON.parse(String(fd.get("_proposalRequesters") || "[]")); } catch {}
+  try { quoteCodes = JSON.parse(String(fd.get("_proposalQuotes") || "[]")); } catch {}
   if (proposalQuery) {
     entry.fromProposal = true;
     entry.proposalQuery = proposalQuery;
@@ -858,9 +979,31 @@ async function handleCatalogFormSubmit(e) {
     const r = await fetch("/api/aurora", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await r.json().catch(() => ({}));
     if (!r.ok) { setCatalogStatus("Erreur : " + (data.error || r.status), "err"); return; }
-    setCatalogStatus(`Ajouté · ${data.entry?.brand || ""} ${data.entry?.name || ""}`, "ok");
+    if (proposalQuery && Array.isArray(requesters) && requesters.length > 0) {
+      setCatalogStatus(`Ajouté · envoi du mail aux ${requesters.length} client(s)…`, "running");
+      try {
+        await fetch("/api/aurora", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "catalogConfirmEmail",
+            category: cat,
+            entry: data.entry,
+            requesters,
+            quoteCodes,
+            proposalQuery
+          })
+        });
+      } catch {}
+      setCatalogStatus(`Ajouté · mail envoyé`, "ok");
+    } else {
+      setCatalogStatus(`Ajouté · ${data.entry?.brand || ""} ${data.entry?.name || ""}`, "ok");
+    }
     form.reset();
     setTimeout(() => { refreshAdminCatalog(); refreshGlbInventory(); refreshClientProposals(); }, 800);
+    if (typeof window.AE_recomputeFromCatalog === "function") {
+      try { window.AE_recomputeFromCatalog(); } catch {}
+    }
   } catch (e) {
     setCatalogStatus("Réseau : " + e.message, "err");
   }

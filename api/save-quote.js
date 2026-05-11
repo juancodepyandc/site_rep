@@ -163,7 +163,25 @@ function sanitizeRecord(record, code, inheritedAdminStatus) {
   const external = Object.fromEntries(
     Object.entries(rawExternal)
       .filter(([k]) => ALLOWED_SELECT_KEYS.has(k))
-      .map(([k, v]) => [k, v && typeof v === "object" ? { query: clampText(v.query || "", 240) } : { query: clampText(v || "", 240) }])
+      .map(([k, v]) => {
+        if (!v || typeof v !== "object") return [k, { query: clampText(v || "", 240) }];
+        const entry = { query: clampText(v.query || "", 240) };
+        if (typeof v.note === "string" && v.note.trim()) entry.note = clampText(v.note, 600);
+        if (v.resolved && typeof v.resolved === "object") {
+          const r = v.resolved;
+          const allowedSpecKeys = ["brand", "name", "socket", "ramType", "tier", "generation", "tdp", "watts", "vram", "length", "gb", "type", "tb", "maxGpu", "maxRad", "radiator", "rank", "score", "price"];
+          const cleanResolved = {};
+          allowedSpecKeys.forEach(specKey => {
+            const val = r[specKey];
+            if (typeof val === "number" && Number.isFinite(val)) cleanResolved[specKey] = val;
+            else if (typeof val === "string") cleanResolved[specKey] = clampText(val, 200);
+          });
+          if (typeof r.sourceHint === "string") cleanResolved.sourceHint = clampText(r.sourceHint, 200);
+          if (Object.keys(cleanResolved).length) entry.resolved = cleanResolved;
+        }
+        if (v.needsCompatConfirm === true || v.needsCompatConfirm === false) entry.needsCompatConfirm = Boolean(v.needsCompatConfirm);
+        return [k, entry];
+      })
   );
 
   return {
